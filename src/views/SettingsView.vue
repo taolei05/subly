@@ -43,7 +43,7 @@
           <n-form-item path="resend_domain" label="Resend邮件域名（可选）">
             <n-input 
               v-model:value="formData.resend_domain" 
-              placeholder="留空使用默认域名 resend.dev"
+              placeholder="该域名必须通过Resend域名管理页面完成配置才可填入，留空使用默认域名resend.dev"
             />
           </n-form-item>
 
