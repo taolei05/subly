@@ -16,12 +16,8 @@
         <n-select v-model:value="formData.type" :options="typeOptions" placeholder="请选择订阅类型" />
       </n-form-item>
       
-      <n-form-item v-if="formData.type === 'domain'" path="type_detail" label="域名">
-        <n-input v-model:value="formData.type_detail" placeholder="例如: example.com" />
-      </n-form-item>
-      
-      <n-form-item v-if="formData.type === 'server'" path="type_detail" label="服务器规格">
-        <n-input v-model:value="formData.type_detail" placeholder="例如: 2核4G" />
+      <n-form-item path="type_detail" :label="typeDetailLabel">
+        <n-input v-model:value="formData.type_detail" :placeholder="typeDetailPlaceholder" />
       </n-form-item>
       
       <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
@@ -111,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import type { FormInst, FormRules } from 'naive-ui';
 import type { Subscription, SubscriptionFormData, SubscriptionType, Currency } from '../../types';
 
@@ -144,6 +140,26 @@ const defaultFormData = (): SubscriptionFormData => ({
 });
 
 const formData = reactive<SubscriptionFormData>(defaultFormData());
+
+const typeDetailLabel = computed(() => {
+  switch (formData.type) {
+    case 'domain': return '域名';
+    case 'server': return '服务器规格';
+    case 'membership': return '会员详情';
+    case 'software': return '软件版本/授权';
+    default: return '详情备注';
+  }
+});
+
+const typeDetailPlaceholder = computed(() => {
+  switch (formData.type) {
+    case 'domain': return '例如: example.com';
+    case 'server': return '例如: 2核4G';
+    case 'membership': return '例如: 高级会员、年费';
+    case 'software': return '例如: v2.0、Pro版';
+    default: return '请输入相关详情信息';
+  }
+});
 
 const typeOptions = [
   { label: '域名', value: 'domain' },

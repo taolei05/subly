@@ -92,6 +92,14 @@ const columns: DataTableColumns<Subscription> = [
     }
   },
   {
+    title: '详情',
+    key: 'type_detail',
+    minWidth: 120,
+    render(row) {
+      return row.type_detail || '-';
+    }
+  },
+  {
     title: '价格',
     key: 'price',
     minWidth: 120,
