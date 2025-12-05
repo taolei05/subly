@@ -4,6 +4,7 @@
     :data="subscriptions"
     :row-key="(row: Subscription) => row.id"
     :bordered="false"
+    :scroll-x="700"
     striped
   >
     <template #empty>
@@ -78,6 +79,8 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '服务名称',
     key: 'name',
+    width: 150,
+    fixed: 'left',
     ellipsis: { tooltip: true }
   },
   {
@@ -126,6 +129,7 @@ const columns: DataTableColumns<Subscription> = [
     title: '操作',
     key: 'actions',
     width: 100,
+    fixed: 'right',
     render(row) {
       return h(NSpace, { size: 'small' }, {
         default: () => [
