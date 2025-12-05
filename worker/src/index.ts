@@ -83,6 +83,12 @@ export default {
                 });
             }
 
+            // 测试邮件发送（手动触发提醒检查）
+            if (apiPath === '/test-reminder' && method === 'POST') {
+                await checkAndSendReminders(env);
+                return jsonResponse({ success: true, message: '提醒邮件检查已触发' });
+            }
+
             return errorResponse('API 路由不存在', 404);
         }
 
