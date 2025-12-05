@@ -24,7 +24,7 @@
         <n-input v-model:value="formData.type_detail" placeholder="例如: 2核4G" />
       </n-form-item>
       
-      <n-grid :cols="2" :x-gap="24">
+      <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
         <n-gi>
           <n-form-item path="price" label="价格">
             <n-input-number 
@@ -43,7 +43,7 @@
         </n-gi>
       </n-grid>
       
-      <n-grid :cols="2" :x-gap="24">
+      <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
         <n-gi>
           <n-form-item path="start_date" label="开始日期">
             <n-date-picker 
@@ -76,7 +76,7 @@
         </n-input-number>
       </n-form-item>
       
-      <n-grid :cols="2" :x-gap="24">
+      <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
         <n-gi>
           <n-form-item path="auto_renew" label="自动续订">
             <n-switch v-model:value="formData.auto_renew" />
