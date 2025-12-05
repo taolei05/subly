@@ -38,6 +38,10 @@ export default {
                     return await getMe(request, env);
                 }
 
+                if (apiPath === '/auth/profile' && method === 'PUT') {
+                    return await import('./routes/auth').then(m => m.updateProfile(request, env));
+                }
+
                 // 设置路由
                 if (apiPath === '/settings' && method === 'PUT') {
                     return await updateSettings(request, env);

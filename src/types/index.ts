@@ -25,6 +25,12 @@ export interface Subscription {
     updated_at: string;
 }
 
+export interface UserProfileUpdate {
+    username?: string;
+    email?: string;
+    password?: string;
+}
+
 export interface SubscriptionFormData {
     name: string;
     type: SubscriptionType;

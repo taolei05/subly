@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { User, LoginCredentials, RegisterData, UserSettings, ApiResponse } from '../types';
+import type { User, LoginCredentials, RegisterData, UserSettings, UserProfileUpdate, ApiResponse } from '../types';
 import { authApi } from '../api/auth';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -62,6 +62,18 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function updateProfile(profile: UserProfileUpdate): Promise<ApiResponse> {
+        try {
+            const response = await authApi.updateProfile(profile);
+            if (response.success && response.data) {
+                user.value = response.data;
+            }
+            return response;
+        } catch (error) {
+            return { success: false, message: '更新个人信息失败' };
+        }
+    }
+
     async function sendTestEmail(data: { resend_api_key: string; resend_domain: string }): Promise<ApiResponse> {
         try {
             return await authApi.sendTestEmail(data);
@@ -79,6 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
         logout,
         fetchUser,
         updateSettings,
+        updateProfile,
         sendTestEmail
     };
 });

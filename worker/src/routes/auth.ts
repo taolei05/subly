@@ -152,3 +152,66 @@ export async function updateSettings(request: Request, env: Env): Promise<Respon
         return errorResponse('更新设置失败', 500);
     }
 }
+// 更新用户个人信息
+export async function updateProfile(request: Request, env: Env): Promise<Response> {
+    try {
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader?.startsWith('Bearer ')) {
+            return errorResponse('未授权', 401);
+        }
+
+        const token = authHeader.slice(7);
+        const payload = await verifyToken(token);
+        if (!payload) {
+            return errorResponse('Token 无效或已过期', 401);
+        }
+
+        const { username, email, password } = await request.json() as {
+            username?: string;
+            email?: string;
+            password?: string;
+        };
+
+        if (!username || !email) {
+            return errorResponse('用户名和邮箱不能为空');
+        }
+
+        if (username.length < 3) {
+            return errorResponse('用户名至少3个字符');
+        }
+
+        // 检查用户名是否被其他用户占用
+        const existing = await env.DB.prepare(
+            'SELECT id FROM users WHERE username = ? AND id != ?'
+        ).bind(username, payload.userId).first();
+
+        if (existing) {
+            return errorResponse('用户名已存在');
+        }
+
+        let query = 'UPDATE users SET username = ?, email = ?';
+        const params: any[] = [username, email];
+
+        if (password && password.length >= 6) {
+            const hashedPassword = await hashPassword(password);
+            query += ', password = ?';
+            params.push(hashedPassword);
+        } else if (password && password.length < 6) {
+            return errorResponse('密码至少6个字符');
+        }
+
+        query += ' WHERE id = ?';
+        params.push(payload.userId);
+
+        await env.DB.prepare(query).bind(...params).run();
+
+        const user = await env.DB.prepare(
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, created_at FROM users WHERE id = ?'
+        ).bind(payload.userId).first<Omit<User, 'password'>>();
+
+        return successResponse(user, '个人信息已更新');
+    } catch (error) {
+        console.error('UpdateProfile error:', error);
+        return errorResponse('更新个人信息失败', 500);
+    }
+}

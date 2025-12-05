@@ -78,6 +78,11 @@
       </n-card>
       
       <n-card title="账户信息" :bordered="false" style="margin-top: 24px;">
+        <template #header-extra>
+          <n-button size="small" secondary type="primary" @click="openProfileModal">
+            修改信息
+          </n-button>
+        </template>
         <n-descriptions label-placement="left" :column="1">
           <n-descriptions-item label="用户名">
             {{ authStore.user?.username || '-' }}
@@ -90,6 +95,52 @@
           </n-descriptions-item>
         </n-descriptions>
       </n-card>
+
+      <!-- 修改个人信息弹窗 -->
+      <n-modal
+        v-model:show="showProfileModal"
+        preset="card"
+        :title="'修改个人信息'"
+        :style="{ width: '500px' }"
+      >
+        <n-form
+          ref="profileFormRef"
+          :model="profileFormData"
+          :rules="profileRules"
+          label-placement="left"
+          label-width="80px"
+        >
+          <n-form-item path="username" label="用户名">
+            <n-input v-model:value="profileFormData.username" placeholder="请输入用户名" />
+          </n-form-item>
+          
+          <n-form-item path="email" label="邮箱">
+            <n-input v-model:value="profileFormData.email" placeholder="请输入邮箱" />
+          </n-form-item>
+          
+          <n-form-item path="password" label="新密码">
+            <n-input
+              v-model:value="profileFormData.password"
+              type="password"
+              show-password-on="click"
+              placeholder="留空则不修改密码"
+            />
+          </n-form-item>
+          
+          <n-alert type="warning" :show-icon="true" style="margin-bottom: 24px;">
+            修改用户名或密码后，您可能需要重新登录。
+          </n-alert>
+        </n-form>
+        
+        <template #footer>
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <n-button @click="showProfileModal = false">取消</n-button>
+            <n-button type="primary" :loading="updatingProfile" @click="handleUpdateProfile">
+              保存修改
+            </n-button>
+          </div>
+        </template>
+      </n-modal>
     </n-layout-content>
   </n-layout>
 </template>
@@ -100,7 +151,7 @@ import { useRouter } from 'vue-router';
 import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useThemeStore } from '../stores/theme';
 import { useAuthStore } from '../stores/auth';
-import type { UserSettings } from '../types';
+import type { UserSettings, UserProfileUpdate } from '../types';
 
 import SunIcon from '../assets/icons/SunIcon.vue';
 import MoonIcon from '../assets/icons/MoonIcon.vue';
@@ -124,6 +175,30 @@ const rules: FormRules = {
   resend_api_key: [],
   resend_domain: [],
   exchangerate_api_key: []
+};
+
+// 个人信息修改相关状态
+const showProfileModal = ref(false);
+const profileFormRef = ref<FormInst | null>(null);
+const updatingProfile = ref(false);
+const profileFormData = reactive<UserProfileUpdate>({
+  username: '',
+  email: '',
+  password: ''
+});
+
+const profileRules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, message: '用户名至少3个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ],
+  password: [
+    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
+  ]
 };
 
 onMounted(async () => {
@@ -179,6 +254,36 @@ async function handleSave() {
   } finally {
     saving.value = false;
   }
+}
+
+function openProfileModal() {
+  if (authStore.user) {
+    profileFormData.username = authStore.user.username;
+    profileFormData.email = authStore.user.email;
+    profileFormData.password = ''; // 密码留空
+    showProfileModal.value = true;
+  }
+}
+
+async function handleUpdateProfile() {
+  if (!profileFormRef.value) return;
+  
+  await profileFormRef.value.validate(async (errors) => {
+    if (!errors) {
+      updatingProfile.value = true;
+      try {
+        const result = await authStore.updateProfile(profileFormData);
+        if (result.success) {
+          message.success('个人信息已更新');
+          showProfileModal.value = false;
+        } else {
+          message.error(result.message || '更新失败');
+        }
+      } finally {
+        updatingProfile.value = false;
+      }
+    }
+  });
 }
 </script>
 

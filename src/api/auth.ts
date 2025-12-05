@@ -1,5 +1,5 @@
 import { http } from './http';
-import type { LoginCredentials, RegisterData, User, UserSettings, ApiResponse } from '../types';
+import type { LoginCredentials, RegisterData, User, UserSettings, UserProfileUpdate, ApiResponse } from '../types';
 
 interface LoginResponse {
     token: string;
@@ -21,6 +21,9 @@ export const authApi = {
 
     updateSettings: (settings: UserSettings) =>
         http.put<ApiResponse<User>>('/settings', settings),
+
+    updateProfile: (profile: UserProfileUpdate) =>
+        http.put<ApiResponse<User>>('/auth/profile', profile),
 
     sendTestEmail: (data: { resend_api_key: string; resend_domain: string }) =>
         http.post<ApiResponse>('/email/test', data)
