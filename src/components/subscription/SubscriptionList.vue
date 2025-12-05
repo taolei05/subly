@@ -79,8 +79,8 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '服务名称',
     key: 'name',
-    width: 150,
-    fixed: 'left',
+    // 移除宽度和固定，使其自适应填充剩余空间
+    minWidth: 150,
     ellipsis: { tooltip: true }
   },
   {
@@ -128,10 +128,14 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '操作',
     key: 'actions',
-    width: 100,
+    width: 120, // 增加宽度
     fixed: 'right',
     render(row) {
-      return h(NSpace, { size: 'small' }, {
+      return h(NSpace, { 
+        size: 'small', 
+        wrap: false, // 禁止换行
+        style: { flexWrap: 'nowrap' } 
+      }, {
         default: () => [
           h(
             NButton,
