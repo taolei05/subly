@@ -74,8 +74,9 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     async function createSubscription(data: SubscriptionFormData): Promise<ApiResponse> {
         try {
             const response = await subscriptionApi.create(data);
-            if (response.success) {
-                await fetchSubscriptions();
+            if (response.success && response.data) {
+                // 直接添加到本地列表
+                subscriptions.value.push(response.data);
             }
             return response;
         } catch (error) {
@@ -86,8 +87,12 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     async function updateSubscription(id: number, data: SubscriptionFormData): Promise<ApiResponse> {
         try {
             const response = await subscriptionApi.update(id, data);
-            if (response.success) {
-                await fetchSubscriptions();
+            if (response.success && response.data) {
+                // 本地更新列表中的项目
+                const index = subscriptions.value.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    subscriptions.value[index] = response.data;
+                }
             }
             return response;
         } catch (error) {
