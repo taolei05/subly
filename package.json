@@ -9,7 +9,7 @@
     "preview": "rsbuild preview",
     "check": "biome check --write",
     "format": "biome format --write",
-    "deploy": "pnpm run build && cd worker && pnpm install && npx wrangler deploy"
+    "deploy": "pnpm run build && cd worker && pnpm install && pnpm run deploy"
   },
   "dependencies": {
     "@vicons/ionicons5": "^0.13.0",
