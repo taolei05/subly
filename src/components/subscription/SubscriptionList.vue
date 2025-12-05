@@ -128,7 +128,7 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '操作',
     key: 'actions',
-    width: 120, // 增加宽度
+    width: 100, // 增加宽度
     fixed: 'right',
     render(row) {
       return h(NSpace, { 
