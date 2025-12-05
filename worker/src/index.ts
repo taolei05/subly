@@ -127,6 +127,45 @@ export default {
                 return jsonResponse({ success: true, message: '提醒邮件检查已触发' });
             }
 
+            // 发送测试邮件（系统设置页）
+            if (apiPath === '/email/test' && method === 'POST') {
+                const authHeader = request.headers.get('Authorization');
+                if (!authHeader?.startsWith('Bearer ')) {
+                    return errorResponse('未授权', 401);
+                }
+                const token = authHeader.slice(7);
+                const payload = await import('./utils').then(m => m.verifyToken(token));
+                if (!payload) return errorResponse('无效的 Token', 401);
+
+                const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
+                    .bind(payload.userId)
+                    .first<{ email: string }>();
+
+                if (!user) return errorResponse('用户不存在', 404);
+
+                const body = await request.json() as { resend_api_key: string; resend_domain: string };
+                if (!body.resend_api_key) return errorResponse('Resend API Key 不能为空', 400);
+
+                const { sendEmail } = await import('./services/email');
+                const success = await sendEmail(body.resend_api_key, body.resend_domain, {
+                    to: user.email,
+                    subject: '[Subly] 测试邮件',
+                    html: `
+                        <div style="font-family: sans-serif; padding: 20px;">
+                            <h1>邮件配置测试成功</h1>
+                            <p>恭喜！这封邮件证明您的 Resend API Key 和域名配置正确。</p>
+                            <p>时间：${new Date().toLocaleString('zh-CN')}</p>
+                        </div>
+                    `
+                });
+
+                if (success) {
+                    return jsonResponse({ success: true, message: '测试邮件发送成功，请检查邮箱' });
+                } else {
+                    return errorResponse('测试邮件发送失败，请检查配置', 500);
+                }
+            }
+
             return errorResponse('API 路由不存在', 404);
         }
 

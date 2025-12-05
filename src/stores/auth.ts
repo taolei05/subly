@@ -62,6 +62,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function sendTestEmail(data: { resend_api_key: string; resend_domain: string }): Promise<ApiResponse> {
+        try {
+            return await authApi.sendTestEmail(data);
+        } catch (error) {
+            return { success: false, message: '发送测试邮件失败' };
+        }
+    }
+
     return {
         user,
         token,
@@ -70,6 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
         register,
         logout,
         fetchUser,
-        updateSettings
+        updateSettings,
+        sendTestEmail
     };
 });

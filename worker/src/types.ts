@@ -3,6 +3,7 @@
 export interface Env {
     DB: D1Database;
     ENVIRONMENT: string;
+    ASSETS?: Fetcher;
 }
 
 export interface User {

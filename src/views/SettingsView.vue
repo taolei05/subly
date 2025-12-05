@@ -40,11 +40,24 @@
             />
           </n-form-item>
           
-          <n-form-item path="resend_domain" label="自定义域名（可选）">
+          <n-form-item path="resend_domain" label="Resend邮件域名（可选）">
             <n-input 
               v-model:value="formData.resend_domain" 
               placeholder="留空使用默认域名 resend.dev"
             />
+          </n-form-item>
+
+          <n-form-item>
+             <n-button 
+               size="small" 
+               secondary 
+               type="primary" 
+               :loading="testingEmail"
+               :disabled="!formData.resend_api_key"
+               @click="handleTestEmail"
+             >
+               发送测试邮件
+             </n-button>
           </n-form-item>
           
           <n-form-item path="exchangerate_api_key" label="ExchangeRate API Key">
@@ -99,6 +112,7 @@ const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
 const saving = ref(false);
+const testingEmail = ref(false);
 
 const formData = reactive<UserSettings>({
   resend_api_key: '',
@@ -128,6 +142,29 @@ function goBack() {
 function formatDate(dateStr?: string): string {
   if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('zh-CN');
+}
+
+async function handleTestEmail() {
+  if (!formData.resend_api_key) {
+    message.warning('请先输入 Resend API Key');
+    return;
+  }
+
+  testingEmail.value = true;
+  try {
+    const result = await authStore.sendTestEmail({
+      resend_api_key: formData.resend_api_key,
+      resend_domain: formData.resend_domain
+    });
+    
+    if (result.success) {
+      message.success(result.message || '测试邮件已发送，请查收');
+    } else {
+      message.error(result.message || '发送失败，请检查配置');
+    }
+  } finally {
+    testingEmail.value = false;
+  }
 }
 
 async function handleSave() {

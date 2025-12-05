@@ -20,5 +20,8 @@ export const authApi = {
         http.get<ApiResponse<User>>('/auth/me'),
 
     updateSettings: (settings: UserSettings) =>
-        http.put<ApiResponse<User>>('/settings', settings)
+        http.put<ApiResponse<User>>('/settings', settings),
+
+    sendTestEmail: (data: { resend_api_key: string; resend_domain: string }) =>
+        http.post<ApiResponse>('/email/test', data)
 };
