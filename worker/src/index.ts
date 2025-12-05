@@ -67,19 +67,57 @@ export default {
 
             // 汇率 API
             if (apiPath === '/exchange-rate' && method === 'GET') {
-                // 返回默认汇率（可选：调用外部 API）
+                // 默认汇率（备用）
+                const defaultRates = { CNY: 1, HKD: 1.09, USD: 0.14, EUR: 0.13, GBP: 0.11 };
+
+                // 尝试从用户设置获取 API Key
+                const authHeader = request.headers.get('Authorization');
+                if (authHeader?.startsWith('Bearer ')) {
+                    try {
+                        const token = authHeader.slice(7);
+                        const payload = await import('./utils').then(m => m.verifyToken(token));
+                        if (payload) {
+                            const user = await env.DB.prepare(
+                                'SELECT exchangerate_api_key FROM users WHERE id = ?'
+                            ).bind(payload.userId).first<{ exchangerate_api_key: string }>();
+
+                            if (user?.exchangerate_api_key) {
+                                // 调用 ExchangeRate API
+                                const apiUrl = `https://v6.exchangerate-api.com/v6/${user.exchangerate_api_key}/latest/CNY`;
+                                const response = await fetch(apiUrl);
+                                const data = await response.json() as {
+                                    result: string;
+                                    conversion_rates: Record<string, number>;
+                                };
+
+                                if (data.result === 'success') {
+                                    return jsonResponse({
+                                        success: true,
+                                        source: 'exchangerate-api',
+                                        data: {
+                                            base: 'CNY',
+                                            rates: {
+                                                CNY: 1,
+                                                HKD: data.conversion_rates.HKD || defaultRates.HKD,
+                                                USD: data.conversion_rates.USD || defaultRates.USD,
+                                                EUR: data.conversion_rates.EUR || defaultRates.EUR,
+                                                GBP: data.conversion_rates.GBP || defaultRates.GBP
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Exchange rate API error:', e);
+                    }
+                }
+
+                // 返回默认汇率
                 return jsonResponse({
                     success: true,
-                    data: {
-                        base: 'CNY',
-                        rates: {
-                            CNY: 1,
-                            HKD: 1.09,
-                            USD: 0.14,
-                            EUR: 0.13,
-                            GBP: 0.11
-                        }
-                    }
+                    source: 'default',
+                    data: { base: 'CNY', rates: defaultRates }
                 });
             }
 
