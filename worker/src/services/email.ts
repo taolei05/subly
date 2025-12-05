@@ -1,41 +1,41 @@
-import type { Env, User, Subscription } from './types';
-import { verifyToken } from './utils';
+import type { Env, User, Subscription } from '../types';
+import { verifyToken } from '../utils';
 
 interface EmailData {
-    to: string;
-    subject: string;
-    html: string;
+  to: string;
+  subject: string;
+  html: string;
 }
 
 // 发送邮件 (使用 Resend API)
 export async function sendEmail(apiKey: string, domain: string, data: EmailData): Promise<boolean> {
-    try {
-        const fromEmail = domain ? `Subly <noreply@${domain}>` : 'Subly <onboarding@resend.dev>';
+  try {
+    const fromEmail = domain ? `Subly <noreply@${domain}>` : 'Subly <onboarding@resend.dev>';
 
-        const response = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                from: fromEmail,
-                to: data.to,
-                subject: data.subject,
-                html: data.html
-            })
-        });
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: data.to,
+        subject: data.subject,
+        html: data.html
+      })
+    });
 
-        return response.ok;
-    } catch (error) {
-        console.error('Send email error:', error);
-        return false;
-    }
+    return response.ok;
+  } catch (error) {
+    console.error('Send email error:', error);
+    return false;
+  }
 }
 
 // 生成提醒邮件 HTML
 function generateReminderEmail(subscriptions: Subscription[]): string {
-    const items = subscriptions.map(sub => `
+  const items = subscriptions.map(sub => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.type}</td>
@@ -43,7 +43,7 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
     </tr>
   `).join('');
 
-    return `
+  return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -79,15 +79,15 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
 
 // 检查并发送到期提醒 (由 Cron 触发)
 export async function checkAndSendReminders(env: Env): Promise<void> {
-    try {
-        // 获取所有用户
-        const { results: users } = await env.DB.prepare(
-            'SELECT * FROM users WHERE resend_api_key IS NOT NULL AND resend_api_key != \'\''
-        ).all<User>();
+  try {
+    // 获取所有用户
+    const { results: users } = await env.DB.prepare(
+      'SELECT * FROM users WHERE resend_api_key IS NOT NULL AND resend_api_key != \'\''
+    ).all<User>();
 
-        for (const user of users) {
-            // 获取该用户即将到期的订阅（非一次性，非停用）
-            const { results: subscriptions } = await env.DB.prepare(`
+    for (const user of users) {
+      // 获取该用户即将到期的订阅（非一次性，非停用）
+      const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
         WHERE user_id = ? 
           AND status = 'active' 
@@ -95,20 +95,20 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
           AND date(end_date) BETWEEN date('now') AND date('now', '+' || remind_days || ' days')
       `).bind(user.id).all<Subscription>();
 
-            if (subscriptions.length > 0) {
-                const html = generateReminderEmail(subscriptions);
-                await sendEmail(
-                    user.resend_api_key!,
-                    user.resend_domain || '',
-                    {
-                        to: user.email,
-                        subject: `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`,
-                        html
-                    }
-                );
-            }
-        }
-    } catch (error) {
-        console.error('Check reminders error:', error);
+      if (subscriptions.length > 0) {
+        const html = generateReminderEmail(subscriptions);
+        await sendEmail(
+          user.resend_api_key!,
+          user.resend_domain || '',
+          {
+            to: user.email,
+            subject: `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`,
+            html
+          }
+        );
+      }
     }
+  } catch (error) {
+    console.error('Check reminders error:', error);
+  }
 }

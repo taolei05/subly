@@ -1,5 +1,5 @@
-import type { Env, Subscription } from './types';
-import { verifyToken, successResponse, errorResponse } from './utils';
+import type { Env, Subscription } from '../types';
+import { verifyToken, successResponse, errorResponse } from '../utils';
 
 // 获取认证用户 ID
 async function getUserId(request: Request): Promise<number | null> {

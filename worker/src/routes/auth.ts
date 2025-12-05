@@ -1,5 +1,5 @@
-import type { Env, User } from './types';
-import { hashPassword, verifyPassword, generateToken, verifyToken, successResponse, errorResponse } from './utils';
+import type { Env, User } from '../types';
+import { hashPassword, verifyPassword, generateToken, verifyToken, successResponse, errorResponse } from '../utils';
 
 // 用户注册
 export async function register(request: Request, env: Env): Promise<Response> {
