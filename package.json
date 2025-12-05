@@ -4,14 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "rsbuild dev",
     "build": "rsbuild build",
-    "preview": "rsbuild preview",
     "check": "biome check --write",
+    "dev": "rsbuild dev",
     "format": "biome format --write",
-    "db:init": "wrangler d1 execute subly --local --file=./worker/schema.sql --yes",
-    "db:init:remote": "wrangler d1 execute subly --remote --file=./worker/schema.sql --yes",
-    "deploy": "pnpm run build && wrangler deploy && pnpm run db:init:remote"
+    "preview": "rsbuild preview",
+    "deploy": "pnpm run build && cd worker && pnpm install && pnpm run deploy"
   },
   "dependencies": {
     "@vicons/ionicons5": "^0.13.0",
@@ -23,10 +21,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
-    "@cloudflare/workers-types": "^4.20251205.0",
     "@rsbuild/core": "^1.6.12",
     "@rsbuild/plugin-vue": "^1.2.0",
-    "typescript": "^5.9.3",
-    "wrangler": "^3.114.15"
+    "typescript": "^5.9.3"
   }
 }
