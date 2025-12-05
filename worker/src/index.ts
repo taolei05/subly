@@ -175,8 +175,16 @@ export default {
                 return errorResponse('API 路由不存在', 404);
             }
 
-            // 静态文件服务 - 返回 index.html 用于 SPA 路由
-            return env.ASSETS?.fetch(request) || new Response('Not Found', { status: 404 });
+            // 静态文件服务
+            let response = await env.ASSETS?.fetch(request);
+
+            // SPA 路由回退：如果资源未找到 (404) 且是 GET 请求，返回 index.html
+            // 这确保了像 /settings 这样的前端路由在刷新时也能正常工作
+            if ((!response || response.status === 404) && request.method === 'GET') {
+                response = await env.ASSETS?.fetch(new URL('/', request.url));
+            }
+
+            return response || new Response('Not Found', { status: 404 });
         } catch (error) {
             console.error('Worker global error:', error);
             return new Response('Internal Server Error', { status: 500 });
