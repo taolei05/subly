@@ -5,12 +5,16 @@
     :row-key="(row: Subscription) => row.id"
     :bordered="false"
     striped
-  />
+  >
+    <template #empty>
+      <n-empty description="暂无订阅数据" />
+    </template>
+  </n-data-table>
 </template>
 
 <script setup lang="ts">
 import { h } from 'vue';
-import { NButton, NIcon, NTag, NSpace, NPopconfirm } from 'naive-ui';
+import { NButton, NIcon, NTag, NSpace, NPopconfirm, NEmpty } from 'naive-ui';
 import type { DataTableColumns } from 'naive-ui';
 import type { Subscription } from '../../types';
 import EditIcon from '../../assets/icons/EditIcon.vue';
