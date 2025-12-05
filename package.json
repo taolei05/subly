@@ -9,11 +9,7 @@
     "preview": "rsbuild preview",
     "check": "biome check --write",
     "format": "biome format --write",
-    "worker:dev": "wrangler dev --local",
-    "worker:deploy": "wrangler deploy",
-    "db:create": "wrangler d1 create subly",
-    "db:migrate": "wrangler d1 execute subly --file=./worker/schema.sql",
-    "deploy": "pnpm build && wrangler deploy"
+    "deploy": "pnpm run build && cd worker && pnpm install && pnpm run deploy"
   },
   "dependencies": {
     "@vicons/ionicons5": "^0.13.0",

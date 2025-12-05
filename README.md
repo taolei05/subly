@@ -43,30 +43,13 @@ pnpm worker:dev
 
 ## 部署到 Cloudflare
 
-### 1. 创建 D1 数据库
-
-```bash
-pnpm db:create
-```
-
-### 2. 配置数据库 ID
-
-将创建返回的 `database_id` 填入 `worker/wrangler.toml`：
-
-```toml
-[[d1_databases]]
-binding = "DB"
-database_name = "subly"
-database_id = "你的数据库ID"
-```
-
-### 3. 初始化数据库
+### 1. 初始化数据库
 
 ```bash
 pnpm db:migrate
 ```
 
-### 4. 构建并部署
+### 2. 构建并部署
 
 ```bash
 pnpm build

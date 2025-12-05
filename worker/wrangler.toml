@@ -1,16 +1,16 @@
 name = "subly-worker"
-main = "worker/src/index.ts"
+main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 # 静态资源目录 - 构建后的前端文件
 [assets]
-directory = "./dist"
+directory = "../dist"
 
-# D1 数据库绑定 - 部署后自动填充 database_id
+# D1 数据库绑定
 [[d1_databases]]
 binding = "DB"
 database_name = "subly"
-database_id = ""
+database_id = "92571f48-4924-48f6-a6fc-b8a72f6706c0"
 
 # 定时任务 - 每天检查即将到期的订阅
 [triggers]
