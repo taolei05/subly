@@ -1,0 +1,211 @@
+<template>
+  <div class="subscription-grid">
+    <n-card 
+      v-for="sub in subscriptions" 
+      :key="sub.id"
+      :bordered="false"
+      class="subscription-card"
+    >
+      <div class="card-header">
+        <div class="card-title">{{ sub.name }}</div>
+        <n-tag 
+          :type="getStatusType(sub)" 
+          size="small" 
+          round
+          style="cursor: pointer;"
+          @click="$emit('toggle-status', sub)"
+        >
+          {{ getStatusText(sub) }}
+        </n-tag>
+      </div>
+      
+      <div class="card-meta">
+        <div class="meta-item">
+          <span class="meta-label">类型</span>
+          <span class="meta-value">{{ typeLabels[sub.type] }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">价格</span>
+          <span class="meta-value">{{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">到期日期</span>
+          <span class="meta-value">{{ formatDate(sub.end_date) }}</span>
+        </div>
+        <div v-if="sub.type_detail" class="meta-item">
+          <span class="meta-label">详情</span>
+          <span class="meta-value">{{ sub.type_detail }}</span>
+        </div>
+      </div>
+      
+      <div class="card-tags">
+        <n-tag v-if="sub.auto_renew" size="small" type="info">自动续订</n-tag>
+        <n-tag v-if="sub.one_time" size="small" type="success">一次性</n-tag>
+        <n-tag v-if="sub.remind_days > 0" size="small">提前{{ sub.remind_days }}天提醒</n-tag>
+      </div>
+      
+      <div v-if="sub.notes" class="card-notes">
+        {{ sub.notes }}
+      </div>
+      
+      <div class="card-actions">
+        <n-button size="small" quaternary @click="$emit('edit', sub)">
+          <template #icon>
+            <n-icon><EditIcon /></n-icon>
+          </template>
+          编辑
+        </n-button>
+        <n-popconfirm @positive-click="$emit('delete', sub)">
+          <template #trigger>
+            <n-button size="small" quaternary type="error">
+              <template #icon>
+                <n-icon><DeleteIcon /></n-icon>
+              </template>
+              删除
+            </n-button>
+          </template>
+          确定删除此订阅吗？
+        </n-popconfirm>
+      </div>
+    </n-card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { Subscription } from '../../types';
+import EditIcon from '../../assets/icons/EditIcon.vue';
+import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
+
+defineProps<{
+  subscriptions: Subscription[];
+}>();
+
+defineEmits<{
+  edit: [subscription: Subscription];
+  delete: [subscription: Subscription];
+  'toggle-status': [subscription: Subscription];
+}>();
+
+const typeLabels: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他'
+};
+
+const currencySymbols: Record<string, string> = {
+  CNY: '¥',
+  HKD: 'HK$',
+  USD: '$',
+  EUR: '€',
+  GBP: '£'
+};
+
+function getStatusType(subscription: Subscription): 'success' | 'warning' | 'error' | 'default' {
+  if (subscription.status === 'inactive') return 'default';
+  
+  const now = new Date();
+  const endDate = new Date(subscription.end_date);
+  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysLeft < 0) return 'error';
+  if (daysLeft <= 7) return 'warning';
+  return 'success';
+}
+
+function getStatusText(subscription: Subscription): string {
+  if (subscription.status === 'inactive') return '已停用';
+  
+  const now = new Date();
+  const endDate = new Date(subscription.end_date);
+  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysLeft < 0) return '已过期';
+  if (daysLeft <= 7) return '即将到期';
+  return '正常';
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('zh-CN');
+}
+</script>
+
+<style scoped>
+.subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.subscription-card {
+  border-radius: 12px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #999;
+}
+
+.meta-value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.card-notes {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+  .subscription-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

@@ -1,0 +1,110 @@
+:root {
+  --bg-color: #f5f7fa;
+  --text-color: #333;
+  --card-bg: #fff;
+  --border-color: #e0e0e0;
+}
+
+body.dark {
+  --bg-color: #18181c;
+  --text-color: #fff;
+  --card-bg: #1e1e22;
+  --border-color: #3a3a3f;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#root {
+  height: 100%;
+}
+
+.n-card {
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* 统计卡片网格 - 始终 2x2 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* 订阅卡片网格 */
+.subscription-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    gap: 12px;
+  }
+
+  .subscription-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 布局样式 */
+.page-container {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 16px;
+  }
+}
+
+/* 表单样式 */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-color);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 16px;
+}
+
+/* 状态标签颜色 */
+.status-active {
+  color: #18a058;
+}
+
+.status-expiring {
+  color: #f0a020;
+}
+
+.status-expired {
+  color: #d03050;
+}
+
+.status-inactive {
+  color: #909399;
+}
