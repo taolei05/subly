@@ -86,7 +86,7 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '类型',
     key: 'type',
-    width: 100,
+    minWidth: 100,
     render(row) {
       return typeLabels[row.type] || row.type;
     }
@@ -94,7 +94,7 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '价格',
     key: 'price',
-    width: 120,
+    minWidth: 120,
     render(row) {
       return `${currencySymbols[row.currency]}${row.price.toFixed(2)}`;
     }
@@ -102,7 +102,7 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '到期日期',
     key: 'end_date',
-    width: 120,
+    minWidth: 120,
     render(row) {
       return formatDate(row.end_date);
     }
@@ -110,7 +110,7 @@ const columns: DataTableColumns<Subscription> = [
   {
     title: '状态',
     key: 'status',
-    width: 100,
+    minWidth: 100,
     render(row) {
       return h(
         NTag,
