@@ -22,7 +22,7 @@ export async function getSubscriptions(request: Request, env: Env): Promise<Resp
         ).bind(userId).all<Subscription>();
 
         // 转换布尔值
-        const subscriptions = results.map(sub => ({
+        const subscriptions = results.map((sub: Subscription) => ({
             ...sub,
             auto_renew: Boolean(sub.auto_renew),
             one_time: Boolean(sub.one_time)
@@ -102,7 +102,20 @@ export async function createSubscription(request: Request, env: Env): Promise<Re
             data.notes || null
         ).run();
 
-        return successResponse({ id: result.meta.last_row_id }, '订阅创建成功');
+        const newId = result.meta.last_row_id;
+        const newSubscription = await env.DB.prepare(
+            'SELECT * FROM subscriptions WHERE id = ?'
+        ).bind(newId).first<Subscription>();
+
+        if (!newSubscription) {
+            return errorResponse('创建后获取订阅失败', 500);
+        }
+
+        return successResponse({
+            ...newSubscription,
+            auto_renew: Boolean(newSubscription.auto_renew),
+            one_time: Boolean(newSubscription.one_time)
+        }, '订阅创建成功');
     } catch (error) {
         console.error('CreateSubscription error:', error);
         return errorResponse('创建订阅失败', 500);
@@ -163,7 +176,19 @@ export async function updateSubscription(request: Request, env: Env, id: string)
             userId
         ).run();
 
-        return successResponse(null, '订阅更新成功');
+        const updatedSubscription = await env.DB.prepare(
+            'SELECT * FROM subscriptions WHERE id = ?'
+        ).bind(id).first<Subscription>();
+
+        if (!updatedSubscription) {
+            return errorResponse('更新后获取订阅失败', 500);
+        }
+
+        return successResponse({
+            ...updatedSubscription,
+            auto_renew: Boolean(updatedSubscription.auto_renew),
+            one_time: Boolean(updatedSubscription.one_time)
+        }, '订阅更新成功');
     } catch (error) {
         console.error('UpdateSubscription error:', error);
         return errorResponse('更新订阅失败', 500);

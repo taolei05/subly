@@ -75,8 +75,14 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         try {
             const response = await subscriptionApi.create(data);
             if (response.success && response.data) {
-                // 直接添加到本地列表
-                subscriptions.value.push(response.data);
+                // 检查返回的数据是否完整 (是否存在 name 字段)
+                if (response.data.name) {
+                    // 完整数据，直接添加到本地列表
+                    subscriptions.value.push(response.data);
+                } else {
+                    // 数据不完整 (可能是旧版后端只返回了 ID)，重新拉取列表
+                    await fetchSubscriptions();
+                }
             }
             return response;
         } catch (error) {
@@ -87,11 +93,16 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     async function updateSubscription(id: number, data: SubscriptionFormData): Promise<ApiResponse> {
         try {
             const response = await subscriptionApi.update(id, data);
-            if (response.success && response.data) {
-                // 本地更新列表中的项目
-                const index = subscriptions.value.findIndex(s => s.id === id);
-                if (index !== -1) {
-                    subscriptions.value[index] = response.data;
+            if (response.success) {
+                if (response.data && response.data.name) {
+                    // 本地更新列表中的项目
+                    const index = subscriptions.value.findIndex(s => s.id === id);
+                    if (index !== -1) {
+                        subscriptions.value[index] = response.data;
+                    }
+                } else {
+                    // 数据不完整，重新拉取
+                    await fetchSubscriptions();
                 }
             }
             return response;
