@@ -222,7 +222,7 @@ const hourOptions = Array.from({ length: 24 }, (_, i) => ({
 
 function showApiKeyHelp() {
   dialog.info({
-    title: '如何获取 Resend API Key',
+    title: 'Resend API Key',
     content: () => {
       return h('div', [
         h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 Resend？'),
@@ -241,7 +241,7 @@ function showApiKeyHelp() {
 
 function showExchangeRateHelp() {
   dialog.info({
-    title: '如何获取 ExchangeRate API Key',
+    title: 'ExchangeRate API Key',
     content: () => {
       return h('div', [
         h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 ExchangeRate-API？'),
