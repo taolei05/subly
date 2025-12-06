@@ -85,7 +85,15 @@
              </n-button>
           </n-form-item>
           
-          <n-form-item path="exchangerate_api_key" label="ExchangeRate API Key">
+          <n-form-item path="exchangerate_api_key">
+            <template #label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                ExchangeRate API Key
+                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
+                  <InfoIcon />
+                </n-icon>
+              </div>
+            </template>
             <n-input 
               v-model:value="formData.exchangerate_api_key" 
               type="password"
@@ -217,11 +225,32 @@ function showApiKeyHelp() {
     title: '如何获取 Resend API Key',
     content: () => {
       return h('div', [
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 Resend？'),
+        h('p', { style: 'margin-bottom: 12px;' }, 'Resend 是一个现代化的电子邮件发送服务，Subly 使用它来发送订阅到期提醒邮件。'),
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 Key：'),
         h('p', '1. 访问 resend.com 并登录您的账户。'),
         h('p', '2. 在左侧菜单中点击 "API Keys"。'),
         h('p', '3. 点击右上角的 "Create API Key" 按钮。'),
         h('p', '4. 输入名称并设置权限（Sending access 即可），创建后复制生成的 Key（以 re_ 开头）。'),
         h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：如果没有自定义域名，Resend只能发送测试邮件到您注册Resend账户的邮箱。')
+      ]);
+    },
+    positiveText: '知道了'
+  });
+}
+
+function showExchangeRateHelp() {
+  dialog.info({
+    title: '如何获取 ExchangeRate API Key',
+    content: () => {
+      return h('div', [
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 ExchangeRate-API？'),
+        h('p', { style: 'margin-bottom: 12px;' }, 'ExchangeRate-API 是一个汇率转换服务，Subly 使用它来自动更新不同货币之间的汇率，以便准确统计总支出。'),
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 Key：'),
+        h('p', '1. 访问 exchangerate-api.com 并注册账号。'),
+        h('p', '2. 登录后在 Dashboard 页面即可看到您的 API Key。'),
+        h('p', '3. 免费版每月提供 1500 次请求，足够个人使用。'),
+        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：API Key 通常是一串 24 位的字符。')
       ]);
     },
     positiveText: '知道了'
