@@ -26,5 +26,8 @@ export const authApi = {
         http.put<ApiResponse<User>>('/auth/profile', profile),
 
     sendTestEmail: (data: { resend_api_key: string; resend_domain: string }) =>
-        http.post<ApiResponse>('/email/test', data)
+        http.post<ApiResponse>('/email/test', data),
+
+    sendTestServerChan: (data: { serverchan_token: string }) =>
+        http.post<ApiResponse>('/auth/test-serverchan', data)
 };

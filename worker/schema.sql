@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
     resend_api_key TEXT,
     exchangerate_api_key TEXT,
     resend_domain TEXT,
-    notify_time INTEGER DEFAULT 8
+    notify_time INTEGER DEFAULT 8,
+    serverchan_token TEXT
 );
 
 -- 订阅表

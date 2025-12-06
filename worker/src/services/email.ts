@@ -1,7 +1,10 @@
 import type { Env, User, Subscription } from '../types';
 import { verifyToken } from '../utils';
+import { sendServerChanMessage } from './serverchan';
 
-interface EmailData {
+// ... (existing imports and interface)
+
+export interface EmailData {
   to: string;
   subject: string;
   html: string;
@@ -9,6 +12,7 @@ interface EmailData {
 
 // 发送邮件 (使用 Resend API)
 export async function sendEmail(apiKey: string, domain: string, data: EmailData): Promise<boolean> {
+  // ... (existing implementation)
   try {
     const fromEmail = domain ? `Subly <noreply@${domain}>` : 'Subly <onboarding@resend.dev>';
 
@@ -35,6 +39,7 @@ export async function sendEmail(apiKey: string, domain: string, data: EmailData)
 
 // 生成提醒邮件 HTML
 function generateReminderEmail(subscriptions: Subscription[]): string {
+  // ... (existing implementation)
   const items = subscriptions.map(sub => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
@@ -88,12 +93,13 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
 
     console.log(`Checking reminders for hour: ${beijingHour} (Beijing Time)`);
 
-    // 获取所有配置了 API Key 且设定通知时间为当前小时的用户
+    // 获取所有配置了通知方式且设定通知时间为当前小时的用户
     // 如果 notify_time 为空，默认为 8 点
+    // 必须配置 Resend API Key 或 ServerChan Token 且 notify_time 匹配
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE resend_api_key IS NOT NULL 
-       AND resend_api_key != ''
+       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '') 
+          OR (serverchan_token IS NOT NULL AND serverchan_token != '')
        AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`
     ).bind(beijingHour, beijingHour).all<User>();
 
@@ -110,16 +116,30 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
       `).bind(user.id).all<Subscription>();
 
       if (subscriptions.length > 0) {
-        const html = generateReminderEmail(subscriptions);
-        await sendEmail(
-          user.resend_api_key!,
-          user.resend_domain || '',
-          {
-            to: user.email,
-            subject: `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`,
-            html
-          }
-        );
+        const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
+
+        // 1. 发送邮件
+        if (user.resend_api_key) {
+          const html = generateReminderEmail(subscriptions);
+          await sendEmail(
+            user.resend_api_key,
+            user.resend_domain || '',
+            {
+              to: user.email,
+              subject: title,
+              html
+            }
+          );
+        }
+
+        // 2. 发送 Server酱通知
+        if (user.serverchan_token) {
+          const content = subscriptions.map(sub =>
+            `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`
+          ).join('\n\n') + '\n\n请及时处理。';
+
+          await sendServerChanMessage(user.serverchan_token, title, content);
+        }
       }
     }
   } catch (error) {

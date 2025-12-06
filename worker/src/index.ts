@@ -1,6 +1,7 @@
 import type { Env } from './types';
 import { corsHeaders, jsonResponse, errorResponse, verifyToken } from './utils';
-import { register, login, getMe, updateSettings } from './routes/auth';
+import { register, login, getMe, updateSettings, updateProfile, sendTestServerChan } from './routes/auth';
+import { sendTestEmail } from './routes/email';
 import {
     getSubscriptions,
     getSubscription,
@@ -30,6 +31,12 @@ export default {
                 // 认证路由
                 if (apiPath === '/auth/register' && method === 'POST') {
                     return await register(request, env);
+                }
+                if (apiPath === '/auth/test-email' && method === 'POST') {
+                    return await sendTestEmail(request, env);
+                }
+                if (apiPath === '/auth/test-serverchan' && method === 'POST') {
+                    return await sendTestServerChan(request, env);
                 }
                 if (apiPath === '/auth/login' && method === 'POST') {
                     return await login(request, env);

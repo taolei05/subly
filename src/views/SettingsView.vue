@@ -109,6 +109,46 @@
           </n-form-item>
         </n-form>
       </n-card>
+
+      <n-card title="Server酱配置 (微信通知)" :bordered="false" style="margin-top: 24px;">
+        <n-form ref="serverChanFormRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
+          <n-form-item path="serverchan_token">
+            <template #label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                Server酱 SendKey
+                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp">
+                  <InfoIcon />
+                </n-icon>
+              </div>
+            </template>
+            <n-input 
+              v-model:value="formData.serverchan_token" 
+              type="password"
+              placeholder="用于微信通知"
+              show-password-on="click"
+            />
+          </n-form-item>
+
+          <n-form-item>
+             <n-button 
+               size="small" 
+               secondary 
+               type="primary" 
+               :loading="testingServerChan"
+               :disabled="!formData.serverchan_token"
+               @click="handleTestServerChan"
+             >
+               发送测试消息
+             </n-button>
+          </n-form-item>
+
+           <n-form-item>
+            <n-button type="primary" :loading="saving" @click="handleSave">
+              保存设置
+            </n-button>
+          </n-form-item>
+        </n-form>
+      </n-card>
       
       <n-card title="账户信息" :bordered="false" style="margin-top: 24px;">
         <template #header-extra>
@@ -195,21 +235,25 @@ const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
+const serverChanFormRef = ref<FormInst | null>(null);
 const saving = ref(false);
 const testingEmail = ref(false);
+const testingServerChan = ref(false);
 
 const formData = reactive<UserSettings>({
   resend_api_key: '',
   resend_domain: '',
   exchangerate_api_key: '',
-  notify_time: 8
+  notify_time: 8,
+  serverchan_token: ''
 });
 
 const rules: FormRules = {
   resend_api_key: [],
   resend_domain: [],
   exchangerate_api_key: [],
-  notify_time: []
+  notify_time: [],
+  serverchan_token: []
 };
 
 const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -254,6 +298,24 @@ function showExchangeRateHelp() {
   });
 }
 
+function showServerChanHelp() {
+  dialog.info({
+    title: 'Server酱 SendKey',
+    content: () => {
+      return h('div', [
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 Server酱？'),
+        h('p', { style: 'margin-bottom: 12px;' }, 'Server酱是一个消息推送服务，可以将通知直接发送到您的微信。'),
+        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 SendKey：'),
+        h('p', '1. 访问 sct.ftqq.com 并使用微信扫码登录。'),
+        h('p', '2. 点击顶部菜单的 "SendKey"。'),
+        h('p', '3. 复制您的 SendKey（以 SCT 开头）。'),
+        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：请确保已关注 "方糖" 公众号以接收消息。')
+      ]);
+    },
+    positiveText: '知道了'
+  });
+}
+
 // 个人信息修改相关状态
 const showProfileModal = ref(false);
 const profileFormRef = ref<FormInst | null>(null);
@@ -285,6 +347,7 @@ onMounted(async () => {
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
     formData.notify_time = authStore.user.notify_time ?? 8;
+    formData.serverchan_token = authStore.user.serverchan_token || '';
   }
 });
 
@@ -322,6 +385,28 @@ async function handleTestEmail() {
     }
   } finally {
     testingEmail.value = false;
+  }
+}
+
+async function handleTestServerChan() {
+  if (!formData.serverchan_token) {
+    message.warning('请先输入 Server酱 SendKey');
+    return;
+  }
+
+  testingServerChan.value = true;
+  try {
+    const result = await authStore.sendTestServerChan({
+      serverchan_token: formData.serverchan_token
+    });
+    
+    if (result.success) {
+      message.success(result.message || '测试消息已发送，请在微信查看');
+    } else {
+      message.error(result.message || '发送失败，请检查 SendKey');
+    }
+  } finally {
+    testingServerChan.value = false;
   }
 }
 

@@ -82,6 +82,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    async function sendTestServerChan(data: { serverchan_token: string }): Promise<ApiResponse> {
+        try {
+            return await authApi.sendTestServerChan(data);
+        } catch (error) {
+            return { success: false, message: '发送 Server酱测试消息失败' };
+        }
+    }
+
     return {
         user,
         token,
@@ -92,6 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
         fetchUser,
         updateSettings,
         updateProfile,
-        sendTestEmail
+        sendTestEmail,
+        sendTestServerChan
     };
 });
