@@ -45,6 +45,7 @@
               type="password"
               placeholder="用于发送邮件通知"
               show-password-on="click"
+              :input-props="{ autocomplete: 'new-password' }"
             />
           </n-form-item>
           
@@ -99,6 +100,7 @@
               type="password"
               placeholder="用于货币汇率转换"
               show-password-on="click"
+              :input-props="{ autocomplete: 'new-password' }"
             />
           </n-form-item>
           
@@ -126,6 +128,7 @@
               type="password"
               placeholder="用于微信通知"
               show-password-on="click"
+              :input-props="{ autocomplete: 'new-password' }"
             />
           </n-form-item>
 
