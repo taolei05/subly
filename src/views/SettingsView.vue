@@ -40,7 +40,13 @@
             />
           </n-form-item>
           
-          <n-form-item path="resend_domain" label="Resend邮件域名（可选）">
+          <n-form-item path="resend_domain">
+            <template #label>
+              Resend邮件域名（可选）
+              <n-icon size="18" style="margin-left: 4px; vertical-align: text-bottom; cursor: pointer" @click="handleConfirm">
+                <AlertCircleOutline />
+              </n-icon>
+            </template>
             <n-input 
               v-model:value="formData.resend_domain" 
               placeholder="该域名必须通过Resend完成配置才可填入，留空使用默认域名resend.dev"
@@ -148,7 +154,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage, type FormInst, type FormRules } from 'naive-ui';
+import { useMessage, useDialog, type FormInst, type FormRules } from 'naive-ui';
+import { AlertCircleOutline } from '@vicons/ionicons5';
 import { useThemeStore } from '../stores/theme';
 import { useAuthStore } from '../stores/auth';
 import type { UserSettings, UserProfileUpdate } from '../types';
@@ -158,6 +165,7 @@ import MoonIcon from '../assets/icons/MoonIcon.vue';
 
 const router = useRouter();
 const message = useMessage();
+const dialog = useDialog();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
@@ -212,6 +220,14 @@ onMounted(async () => {
 
 function goBack() {
   router.push('/');
+}
+
+function handleConfirm() {
+  dialog.warning({
+    title: '提示',
+    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入',
+    positiveText: '我知道了'
+  });
 }
 
 function formatDate(dateStr?: string): string {
