@@ -29,144 +29,155 @@
     </n-layout-header>
     
     <n-layout-content class="content-wrapper">
-      <n-card title="API 配置" :bordered="false">
+      <n-card title="系统配置" :bordered="false">
         <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
-          <n-form-item path="resend_api_key">
-            <template #label>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                Resend API Key
-                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
-                  <InfoIcon />
-                </n-icon>
-              </div>
-            </template>
-            <n-input 
-              v-model:value="formData.resend_api_key" 
-              type="password"
-              placeholder="用于发送邮件通知"
-              show-password-on="click"
-              :input-props="{ autocomplete: 'new-password' }"
-            />
-          </n-form-item>
-          
-          <n-form-item path="resend_domain">
-            <template #label>
-              Resend邮件域名（可选）
-              <n-icon size="18" style="margin-left: 4px; vertical-align: text-bottom; cursor: pointer" @click="handleConfirm">
-                <AlertCircleOutline />
-              </n-icon>
-            </template>
-            <n-input 
-              v-model:value="formData.resend_domain" 
-              placeholder="留空使用默认域名resend.dev"
-            />
-          </n-form-item>
+          <n-collapse default-expanded-names="resend" accordion>
+            <!-- Resend 配置 -->
+            <n-collapse-item title="Resend 邮件配置" name="resend">
+              <div style="padding: 16px 0;">
+                <n-form-item label="通知邮箱">
+                   <n-input :value="authStore.user?.email || '-'" disabled placeholder="当前账户邮箱" />
+                   <div style="margin-left: 12px; font-size: 12px; color: #999;">
+                     (如需修改请点击页面底部的"修改信息")
+                   </div>
+                </n-form-item>
 
-          <n-form-item path="notify_time" label="自动邮件发送时间 (每早 8 点检查)">
-            <template #label>
-              自动邮件发送时间 (北京时间)
-            </template>
-            <n-select
-              v-model:value="formData.notify_time"
-              :options="hourOptions"
-              placeholder="请选择时间"
-            />
-          </n-form-item>
+                <n-form-item path="resend_api_key">
+                  <template #label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      Resend API Key
+                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
+                        <InfoIcon />
+                      </n-icon>
+                    </div>
+                  </template>
+                  <n-input 
+                    v-model:value="formData.resend_api_key" 
+                    type="password"
+                    placeholder="用于发送邮件通知"
+                    show-password-on="click"
+                    :input-props="{ autocomplete: 'new-password' }"
+                  />
+                </n-form-item>
+                
+                <n-form-item path="resend_domain">
+                  <template #label>
+                    Resend邮件域名（可选）
+                    <n-icon size="18" style="margin-left: 4px; vertical-align: text-bottom; cursor: pointer" @click="handleConfirm">
+                      <AlertCircleOutline />
+                    </n-icon>
+                  </template>
+                  <n-input 
+                    v-model:value="formData.resend_domain" 
+                    placeholder="留空使用默认域名resend.dev"
+                  />
+                </n-form-item>
 
-          <n-form-item>
-             <n-button 
-               size="small" 
-               secondary 
-               type="primary" 
-               :loading="testingEmail"
-               :disabled="!formData.resend_api_key"
-               @click="handleTestEmail"
-             >
-               发送测试邮件
-             </n-button>
-          </n-form-item>
-          
-          <n-form-item path="exchangerate_api_key">
-            <template #label>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                ExchangeRate API Key
-                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
-                  <InfoIcon />
-                </n-icon>
+                <n-form-item path="notify_time">
+                  <template #label>
+                    自动发送时间 (北京时间)
+                  </template>
+                  <n-select
+                    v-model:value="formData.notify_time"
+                    :options="hourOptions"
+                    placeholder="请选择时间 (默认 8 点)"
+                  />
+                </n-form-item>
+
+                <n-form-item>
+                   <n-button 
+                     size="small" 
+                     secondary 
+                     type="primary" 
+                     :loading="testingEmail"
+                     :disabled="!formData.resend_api_key"
+                     @click="handleTestEmail"
+                   >
+                     发送测试邮件
+                   </n-button>
+                </n-form-item>
               </div>
-            </template>
-            <n-input 
-              v-model:value="formData.exchangerate_api_key" 
-              type="password"
-              placeholder="用于货币汇率转换"
-              show-password-on="click"
-              :input-props="{ autocomplete: 'new-password' }"
-            />
-          </n-form-item>
-          
-          <n-form-item>
-            <n-button type="primary" :loading="saving" @click="handleSave">
-              保存设置
+            </n-collapse-item>
+
+            <!-- ExchangeRate 配置 -->
+            <n-collapse-item title="ExchangeRate 汇率配置" name="exchangerate">
+              <div style="padding: 16px 0;">
+                <n-form-item path="exchangerate_api_key">
+                  <template #label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      ExchangeRate API Key
+                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
+                        <InfoIcon />
+                      </n-icon>
+                    </div>
+                  </template>
+                  <n-input 
+                    v-model:value="formData.exchangerate_api_key" 
+                    type="password"
+                    placeholder="用于货币汇率转换"
+                    show-password-on="click"
+                    :input-props="{ autocomplete: 'new-password' }"
+                  />
+                </n-form-item>
+              </div>
+            </n-collapse-item>
+
+            <!-- Server酱 配置 -->
+            <n-collapse-item title="Server酱 (微信通知)" name="serverchan">
+              <div style="padding: 16px 0;">
+                <n-form-item path="serverchan_token">
+                  <template #label>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                      Server酱 SendKey
+                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp">
+                        <InfoIcon />
+                      </n-icon>
+                    </div>
+                  </template>
+                  <n-input 
+                    v-model:value="formData.serverchan_token" 
+                    type="password"
+                    placeholder="用于微信通知"
+                    show-password-on="click"
+                    :input-props="{ autocomplete: 'new-password' }"
+                  />
+                </n-form-item>
+
+                <n-form-item>
+                   <n-button 
+                     size="small" 
+                     secondary 
+                     type="primary" 
+                     :loading="testingServerChan"
+                     :disabled="!formData.serverchan_token"
+                     @click="handleTestServerChan"
+                   >
+                     发送测试消息
+                   </n-button>
+                </n-form-item>
+              </div>
+            </n-collapse-item>
+          </n-collapse>
+
+          <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+            <n-button type="primary" :loading="saving" @click="handleSave" size="large" style="width: 100%;">
+              保存所有设置
             </n-button>
-          </n-form-item>
-        </n-form>
-      </n-card>
-
-      <n-card title="Server酱配置 (微信通知)" :bordered="false" style="margin-top: 24px;">
-        <n-form ref="serverChanFormRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
-          <n-form-item path="serverchan_token">
-            <template #label>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                Server酱 SendKey
-                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp">
-                  <InfoIcon />
-                </n-icon>
-              </div>
-            </template>
-            <n-input 
-              v-model:value="formData.serverchan_token" 
-              type="password"
-              placeholder="用于微信通知"
-              show-password-on="click"
-              :input-props="{ autocomplete: 'new-password' }"
-            />
-          </n-form-item>
-
-          <n-form-item>
-             <n-button 
-               size="small" 
-               secondary 
-               type="primary" 
-               :loading="testingServerChan"
-               :disabled="!formData.serverchan_token"
-               @click="handleTestServerChan"
-             >
-               发送测试消息
-             </n-button>
-          </n-form-item>
-
-           <n-form-item>
-            <n-button type="primary" :loading="saving" @click="handleSave">
-              保存设置
-            </n-button>
-          </n-form-item>
+          </div>
         </n-form>
       </n-card>
       
-      <n-card title="账户信息" :bordered="false" style="margin-top: 24px;">
-        <template #header-extra>
-          <n-button size="small" secondary type="primary" @click="openProfileModal">
-            修改信息
-          </n-button>
-        </template>
+      <n-card title="账户管理" :bordered="false" style="margin-top: 24px;">
         <n-descriptions label-placement="left" :column="1">
           <n-descriptions-item label="用户名">
             {{ authStore.user?.username || '-' }}
           </n-descriptions-item>
-          <n-descriptions-item label="通知邮箱">
-            {{ authStore.user?.email || '-' }}
-          </n-descriptions-item>
         </n-descriptions>
+        <template #action>
+          <n-button block secondary type="primary" @click="openProfileModal">
+             修改账户信息 (用户名/邮箱/密码)
+          </n-button>
+        </template>
       </n-card>
 
       <!-- 修改个人信息弹窗 -->
