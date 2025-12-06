@@ -82,7 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    async function sendTestServerChan(data: { serverchan_token: string }): Promise<ApiResponse> {
+    async function sendTestServerChan(data: { serverchan_api_key: string }): Promise<ApiResponse> {
         try {
             return await authApi.sendTestServerChan(data);
         } catch (error) {

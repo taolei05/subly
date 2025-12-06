@@ -99,7 +99,7 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
        WHERE (resend_api_key IS NOT NULL AND resend_api_key != '') 
-          OR (serverchan_token IS NOT NULL AND serverchan_token != '')
+          OR (serverchan_api_key IS NOT NULL AND serverchan_api_key != '')
        AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`
     ).bind(beijingHour, beijingHour).all<User>();
 
@@ -133,12 +133,12 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
         }
 
         // 2. 发送 Server酱通知
-        if (user.serverchan_token) {
+        if (user.serverchan_api_key) {
           const content = subscriptions.map(sub =>
             `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`
           ).join('\n\n') + '\n\n请及时处理。';
 
-          await sendServerChanMessage(user.serverchan_token, title, content);
+          await sendServerChanMessage(user.serverchan_api_key, title, content);
         }
       }
     }

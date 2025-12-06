@@ -125,7 +125,7 @@
             <!-- Server酱 配置 -->
             <n-collapse-item title="Server酱 (微信通知)" name="serverchan">
               <div style="padding: 16px 0;">
-                <n-form-item path="serverchan_token">
+                <n-form-item path="serverchan_api_key">
                   <template #label>
                     <div style="display: flex; align-items: center; gap: 4px;">
                       Server酱 SendKey
@@ -135,7 +135,7 @@
                     </div>
                   </template>
                   <n-input 
-                    v-model:value="formData.serverchan_token" 
+                    v-model:value="formData.serverchan_api_key" 
                     type="password"
                     placeholder="用于微信通知"
                     show-password-on="click"
@@ -149,7 +149,7 @@
                      secondary 
                      type="primary" 
                      :loading="testingServerChan"
-                     :disabled="!formData.serverchan_token"
+                     :disabled="!formData.serverchan_api_key"
                      @click="handleTestServerChan"
                    >
                      发送测试消息
@@ -259,7 +259,7 @@ const formData = reactive<UserSettings>({
   resend_domain: '',
   exchangerate_api_key: '',
   notify_time: 8,
-  serverchan_token: ''
+  serverchan_api_key: ''
 });
 
 const rules: FormRules = {
@@ -267,7 +267,7 @@ const rules: FormRules = {
   resend_domain: [],
   exchangerate_api_key: [],
   notify_time: [],
-  serverchan_token: []
+  serverchan_api_key: []
 };
 
 const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -403,7 +403,7 @@ async function handleTestEmail() {
 }
 
 async function handleTestServerChan() {
-  if (!formData.serverchan_token) {
+  if (!formData.serverchan_api_key) {
     message.warning('请先输入 Server酱 SendKey');
     return;
   }
@@ -411,7 +411,7 @@ async function handleTestServerChan() {
   testingServerChan.value = true;
   try {
     const result = await authStore.sendTestServerChan({
-      serverchan_token: formData.serverchan_token
+      serverchan_api_key: formData.serverchan_api_key
     });
     
     if (result.success) {

@@ -107,7 +107,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
         }
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_token FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         if (!user) {
@@ -135,33 +135,33 @@ export async function updateSettings(request: Request, env: Env): Promise<Respon
             return errorResponse('Token 无效或已过期', 401);
         }
 
-        const { resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_token } = await request.json() as {
+        const { resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key } = await request.json() as {
             resend_api_key?: string;
             exchangerate_api_key?: string;
             resend_domain?: string;
             notify_time?: number;
-            serverchan_token?: string;
+            serverchan_api_key?: string;
         };
 
         const currentSettings = await env.DB.prepare(
-            'SELECT resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_token FROM users WHERE id = ?'
+            'SELECT resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key FROM users WHERE id = ?'
         ).bind(payload.userId).first<User>();
 
         const newNotifyTime = notify_time !== undefined ? notify_time : (currentSettings?.notify_time || 8);
 
         await env.DB.prepare(
-            'UPDATE users SET resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, notify_time = ?, serverchan_token = ? WHERE id = ?'
+            'UPDATE users SET resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, notify_time = ?, serverchan_api_key = ? WHERE id = ?'
         ).bind(
             resend_api_key !== undefined ? resend_api_key : (currentSettings?.resend_api_key || ''),
             exchangerate_api_key !== undefined ? exchangerate_api_key : (currentSettings?.exchangerate_api_key || ''),
             resend_domain !== undefined ? resend_domain : (currentSettings?.resend_domain || ''),
             newNotifyTime,
-            serverchan_token !== undefined ? serverchan_token : (currentSettings?.serverchan_token || ''),
+            serverchan_api_key !== undefined ? serverchan_api_key : (currentSettings?.serverchan_api_key || ''),
             payload.userId
         ).run();
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_token FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         return successResponse(user, '设置已更新');
@@ -185,14 +185,14 @@ export async function sendTestServerChan(request: Request, env: Env): Promise<Re
             return errorResponse('Token 无效或已过期', 401);
         }
 
-        const { serverchan_token } = await request.json() as { serverchan_token: string };
+        const { serverchan_api_key } = await request.json() as { serverchan_api_key: string };
 
-        if (!serverchan_token) {
+        if (!serverchan_api_key) {
             return errorResponse('请输入 Server酱 SendKey');
         }
 
         const success = await sendServerChanMessage(
-            serverchan_token,
+            serverchan_api_key,
             'Subly 测试消息',
             '这是一条来自 Subly 的测试推送，恭喜您配置成功！\n\n- 发送时间：' + new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })
         );
