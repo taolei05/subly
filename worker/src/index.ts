@@ -158,7 +158,7 @@ export default {
                             html: `
                                 <div style="font-family: sans-serif; padding: 20px;">
                                     <h1>邮件配置测试成功</h1>
-                                    <p>恭喜！这封邮件证明您的 Resend API Key 和域名配置正确。</p>
+                                    <p>恭喜！这封邮件证明您的 Resend API Key 或域名配置正确。</p>
                                     <p>时间：${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</p>
                                 </div>
                             `
