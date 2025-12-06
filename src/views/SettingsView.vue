@@ -49,7 +49,7 @@
             </template>
             <n-input 
               v-model:value="formData.resend_domain" 
-              placeholder="该域名必须通过Resend完成配置才可填入，留空使用默认域名resend.dev"
+              placeholder="留空使用默认域名resend.dev"
             />
           </n-form-item>
 
@@ -225,7 +225,7 @@ function goBack() {
 function handleConfirm() {
   dialog.warning({
     title: '提示',
-    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入',
+    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入,留空使用默认域名resend.dev',
     positiveText: '我知道了'
   });
 }
