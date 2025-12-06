@@ -45,7 +45,7 @@
                 <n-form-item path="resend_api_key">
                   <template #label>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      Resend API Key
+                      API Key
                       <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
                         <InfoIcon />
                       </n-icon>
@@ -62,7 +62,7 @@
                 
                 <n-form-item path="resend_domain">
                   <template #label>
-                    Resend邮件域名（可选）
+                    邮件域名（可选）
                     <n-icon size="18" style="margin-left: 4px; vertical-align: text-bottom; cursor: pointer" @click="handleConfirm">
                       <AlertCircleOutline />
                     </n-icon>
@@ -105,7 +105,7 @@
                 <n-form-item path="exchangerate_api_key">
                   <template #label>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      ExchangeRate API Key
+                      API Key
                       <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
                         <InfoIcon />
                       </n-icon>
@@ -128,7 +128,7 @@
                 <n-form-item path="serverchan_api_key">
                   <template #label>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                      Server酱 SendKey
+                      SendKey
                       <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp">
                         <InfoIcon />
                       </n-icon>
