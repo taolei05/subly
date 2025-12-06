@@ -14,6 +14,7 @@ export interface User {
     resend_api_key?: string;
     exchangerate_api_key?: string;
     resend_domain?: string;
+    notify_time?: number;
     created_at: string;
 }
 

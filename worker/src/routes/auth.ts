@@ -104,7 +104,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
         }
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, created_at FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         if (!user) {
@@ -132,18 +132,31 @@ export async function updateSettings(request: Request, env: Env): Promise<Respon
             return errorResponse('Token 无效或已过期', 401);
         }
 
-        const { resend_api_key, exchangerate_api_key, resend_domain } = await request.json() as {
+        const { resend_api_key, exchangerate_api_key, resend_domain, notify_time } = await request.json() as {
             resend_api_key?: string;
             exchangerate_api_key?: string;
             resend_domain?: string;
+            notify_time?: number;
         };
 
+        const currentSettings = await env.DB.prepare(
+            'SELECT resend_api_key, exchangerate_api_key, resend_domain, notify_time FROM users WHERE id = ?'
+        ).bind(payload.userId).first<User>();
+
+        const newNotifyTime = notify_time !== undefined ? notify_time : (currentSettings?.notify_time || 8);
+
         await env.DB.prepare(
-            'UPDATE users SET resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ? WHERE id = ?'
-        ).bind(resend_api_key || '', exchangerate_api_key || '', resend_domain || '', payload.userId).run();
+            'UPDATE users SET resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, notify_time = ? WHERE id = ?'
+        ).bind(
+            resend_api_key !== undefined ? resend_api_key : (currentSettings?.resend_api_key || ''),
+            exchangerate_api_key !== undefined ? exchangerate_api_key : (currentSettings?.exchangerate_api_key || ''),
+            resend_domain !== undefined ? resend_domain : (currentSettings?.resend_domain || ''),
+            newNotifyTime,
+            payload.userId
+        ).run();
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, created_at FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         return successResponse(user, '设置已更新');

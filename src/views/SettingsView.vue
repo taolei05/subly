@@ -53,6 +53,17 @@
             />
           </n-form-item>
 
+          <n-form-item path="notify_time" label="自动邮件发送时间 (每早 8 点检查)">
+            <template #label>
+              自动邮件发送时间 (北京时间)
+            </template>
+            <n-select
+              v-model:value="formData.notify_time"
+              :options="hourOptions"
+              placeholder="请选择时间"
+            />
+          </n-form-item>
+
           <n-form-item>
              <n-button 
                size="small" 
@@ -176,14 +187,21 @@ const testingEmail = ref(false);
 const formData = reactive<UserSettings>({
   resend_api_key: '',
   resend_domain: '',
-  exchangerate_api_key: ''
+  exchangerate_api_key: '',
+  notify_time: 8
 });
 
 const rules: FormRules = {
   resend_api_key: [],
   resend_domain: [],
-  exchangerate_api_key: []
+  exchangerate_api_key: [],
+  notify_time: []
 };
+
+const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+  label: `${String(i).padStart(2, '0')}:00`,
+  value: i
+}));
 
 // 个人信息修改相关状态
 const showProfileModal = ref(false);
@@ -215,6 +233,7 @@ onMounted(async () => {
     formData.resend_api_key = authStore.user.resend_api_key || '';
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
+    formData.notify_time = authStore.user.notify_time ?? 8;
   }
 });
 

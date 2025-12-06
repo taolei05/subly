@@ -77,13 +77,27 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
   `;
 }
 
-// 检查并发送到期提醒 (由 Cron 触发)
+// 检查并发送到期提醒 (由 Cron 触发，每小时执行一次)
 export async function checkAndSendReminders(env: Env): Promise<void> {
   try {
-    // 获取所有用户
+    // 获取当前北京时间的小时 (0-23)
+    // 假设服务器时区为 UTC，需要加 8 小时
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const beijingHour = (utcHour + 8) % 24;
+
+    console.log(`Checking reminders for hour: ${beijingHour} (Beijing Time)`);
+
+    // 获取所有配置了 API Key 且设定通知时间为当前小时的用户
+    // 如果 notify_time 为空，默认为 8 点
     const { results: users } = await env.DB.prepare(
-      'SELECT * FROM users WHERE resend_api_key IS NOT NULL AND resend_api_key != \'\''
-    ).all<User>();
+      `SELECT * FROM users 
+       WHERE resend_api_key IS NOT NULL 
+       AND resend_api_key != ''
+       AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`
+    ).bind(beijingHour, beijingHour).all<User>();
+
+    console.log(`Found ${users.length} users to check`);
 
     for (const user of users) {
       // 获取该用户即将到期的订阅（非一次性，非停用）

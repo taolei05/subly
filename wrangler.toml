@@ -11,9 +11,9 @@ binding = "DB"
 database_name = "subly"
 database_id = "92571f48-4924-48f6-a6fc-b8a72f6706c0"
 
-# 每天早上 8 点检查到期订阅并发送提醒邮件
+# 每小时触发一次检查
 [triggers]
-crons = ["0 8 * * *"]
+crons = ["0 * * * *"]
 
 [vars]
 ENVIRONMENT = "production"
