@@ -79,8 +79,7 @@ export async function login(request: Request, env: Env): Promise<Response> {
                 email: user.email,
                 resend_api_key: user.resend_api_key,
                 exchangerate_api_key: user.exchangerate_api_key,
-                resend_domain: user.resend_domain,
-                created_at: user.created_at
+                resend_domain: user.resend_domain
             }
         });
     } catch (error) {
@@ -104,7 +103,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
         }
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         if (!user) {
@@ -156,7 +155,7 @@ export async function updateSettings(request: Request, env: Env): Promise<Respon
         ).run();
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         return successResponse(user, '设置已更新');
@@ -219,7 +218,7 @@ export async function updateProfile(request: Request, env: Env): Promise<Respons
         await env.DB.prepare(query).bind(...params).run();
 
         const user = await env.DB.prepare(
-            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain FROM users WHERE id = ?'
         ).bind(payload.userId).first<Omit<User, 'password'>>();
 
         return successResponse(user, '个人信息已更新');

@@ -15,7 +15,6 @@ export interface User {
     exchangerate_api_key?: string;
     resend_domain?: string;
     notify_time?: number;
-    created_at: string;
 }
 
 export interface Subscription {

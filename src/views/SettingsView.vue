@@ -123,9 +123,6 @@
           <n-descriptions-item label="通知邮箱">
             {{ authStore.user?.email || '-' }}
           </n-descriptions-item>
-          <n-descriptions-item label="注册时间">
-            {{ formatDate(authStore.user?.created_at) }}
-          </n-descriptions-item>
         </n-descriptions>
       </n-card>
 
@@ -303,10 +300,7 @@ function handleConfirm() {
   });
 }
 
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('zh-CN');
-}
+
 
 async function handleTestEmail() {
   if (!formData.resend_api_key) {
