@@ -45,6 +45,11 @@ export interface SubscriptionFormData {
     notes?: string;
 }
 
+export interface SubscriptionPayload extends Omit<SubscriptionFormData, 'start_date' | 'end_date'> {
+    start_date: string;
+    end_date: string;
+}
+
 export interface SubscriptionStats {
     total: number;
     expiring: number;

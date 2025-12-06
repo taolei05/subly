@@ -72,16 +72,17 @@ export async function createSubscription(request: Request, env: Env): Promise<Re
             type_detail?: string;
             price: number;
             currency: string;
-            start_date: number;
-            end_date: number;
+            start_date: string;
+            end_date: string;
             remind_days: number;
             auto_renew: boolean;
             one_time: boolean;
             notes?: string;
         };
 
-        const startDate = new Date(data.start_date).toISOString().split('T')[0];
-        const endDate = new Date(data.end_date).toISOString().split('T')[0];
+        // 直接使用前端传来的 YYYY-MM-DD 字符串
+        const startDate = data.start_date;
+        const endDate = data.end_date;
 
         const result = await env.DB.prepare(`
       INSERT INTO subscriptions 
@@ -143,16 +144,17 @@ export async function updateSubscription(request: Request, env: Env, id: string)
             type_detail?: string;
             price: number;
             currency: string;
-            start_date: number;
-            end_date: number;
+            start_date: string;
+            end_date: string;
             remind_days: number;
             auto_renew: boolean;
             one_time: boolean;
             notes?: string;
         };
 
-        const startDate = new Date(data.start_date).toISOString().split('T')[0];
-        const endDate = new Date(data.end_date).toISOString().split('T')[0];
+        // 直接使用前端传来的 YYYY-MM-DD 字符串
+        const startDate = data.start_date;
+        const endDate = data.end_date;
 
         await env.DB.prepare(`
       UPDATE subscriptions SET

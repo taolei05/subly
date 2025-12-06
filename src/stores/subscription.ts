@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { Subscription, SubscriptionFormData, SubscriptionStats, Currency, ApiResponse } from '../types';
+import type { Subscription, SubscriptionFormData, SubscriptionPayload, SubscriptionStats, Currency, ApiResponse } from '../types';
 import { subscriptionApi } from '../api/subscription';
 
 export const useSubscriptionStore = defineStore('subscription', () => {
@@ -71,9 +71,22 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         }
     }
 
-    async function createSubscription(data: SubscriptionFormData): Promise<ApiResponse> {
+    function formatDate(timestamp: number): string {
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    async function createSubscription(formData: SubscriptionFormData): Promise<ApiResponse> {
         try {
-            const response = await subscriptionApi.create(data);
+            const payload: SubscriptionPayload = {
+                ...formData,
+                start_date: formatDate(formData.start_date || Date.now()),
+                end_date: formatDate(formData.end_date || Date.now())
+            };
+            const response = await subscriptionApi.create(payload);
             if (response.success && response.data) {
                 // 检查返回的数据是否完整 (是否存在 name 字段)
                 if (response.data.name) {
@@ -90,9 +103,14 @@ export const useSubscriptionStore = defineStore('subscription', () => {
         }
     }
 
-    async function updateSubscription(id: number, data: SubscriptionFormData): Promise<ApiResponse> {
+    async function updateSubscription(id: number, formData: SubscriptionFormData): Promise<ApiResponse> {
         try {
-            const response = await subscriptionApi.update(id, data);
+            const payload: SubscriptionPayload = {
+                ...formData,
+                start_date: formatDate(formData.start_date || Date.now()),
+                end_date: formatDate(formData.end_date || Date.now())
+            };
+            const response = await subscriptionApi.update(id, payload);
             if (response.success) {
                 if (response.data && response.data.name) {
                     // 本地更新列表中的项目

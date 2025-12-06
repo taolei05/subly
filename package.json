@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "rsbuild build && cd worker && pnpm install && pnpm run db:init:remote",
+    "build": "rsbuild build && cd worker && pnpm install",
     "check": "biome check --write",
     "dev": "rsbuild dev",
     "format": "biome format --write",

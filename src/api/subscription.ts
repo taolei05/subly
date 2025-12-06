@@ -1,5 +1,5 @@
 import { http } from './http';
-import type { Subscription, SubscriptionFormData, ExchangeRates, ApiResponse, SubscriptionStatus } from '../types';
+import type { Subscription, SubscriptionPayload, ExchangeRates, ApiResponse, SubscriptionStatus } from '../types';
 
 export const subscriptionApi = {
     getAll: () =>
@@ -8,10 +8,10 @@ export const subscriptionApi = {
     getById: (id: number) =>
         http.get<ApiResponse<Subscription>>(`/subscriptions/${id}`),
 
-    create: (data: SubscriptionFormData) =>
+    create: (data: SubscriptionPayload) =>
         http.post<ApiResponse<Subscription>>('/subscriptions', data),
 
-    update: (id: number, data: SubscriptionFormData) =>
+    update: (id: number, data: SubscriptionPayload) =>
         http.put<ApiResponse<Subscription>>(`/subscriptions/${id}`, data),
 
     delete: (id: number) =>
