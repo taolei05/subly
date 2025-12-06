@@ -31,7 +31,15 @@
     <n-layout-content class="content-wrapper">
       <n-card title="API 配置" :bordered="false">
         <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
-          <n-form-item path="resend_api_key" label="Resend API Key">
+          <n-form-item path="resend_api_key">
+            <template #label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                Resend API Key
+                <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
+                  <InfoIcon />
+                </n-icon>
+              </div>
+            </template>
             <n-input 
               v-model:value="formData.resend_api_key" 
               type="password"
@@ -163,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, h } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMessage, useDialog, type FormInst, type FormRules } from 'naive-ui';
 import { AlertCircleOutline } from '@vicons/ionicons5';
@@ -173,6 +181,7 @@ import type { UserSettings, UserProfileUpdate } from '../types';
 
 import SunIcon from '../assets/icons/SunIcon.vue';
 import MoonIcon from '../assets/icons/MoonIcon.vue';
+import InfoIcon from '../assets/icons/InfoIcon.vue';
 
 const router = useRouter();
 const message = useMessage();
@@ -202,6 +211,22 @@ const hourOptions = Array.from({ length: 24 }, (_, i) => ({
   label: `${String(i).padStart(2, '0')}:00`,
   value: i
 }));
+
+function showApiKeyHelp() {
+  dialog.info({
+    title: '如何获取 Resend API Key',
+    content: () => {
+      return h('div', [
+        h('p', '1. 访问 resend.com 并登录您的账户。'),
+        h('p', '2. 在左侧菜单中点击 "API Keys"。'),
+        h('p', '3. 点击右上角的 "Create API Key" 按钮。'),
+        h('p', '4. 输入名称并设置权限（Sending access 即可），创建后复制生成的 Key（以 re_ 开头）。'),
+        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：如果没有自定义域名，Resend只能发送测试邮件到您注册Resend账户的邮箱。')
+      ]);
+    },
+    positiveText: '知道了'
+  });
+}
 
 // 个人信息修改相关状态
 const showProfileModal = ref(false);
@@ -244,7 +269,7 @@ function goBack() {
 function handleConfirm() {
   dialog.warning({
     title: '提示',
-    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入,留空使用默认域名resend.dev',
+    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入，留空使用默认域名resend.dev',
     positiveText: '我知道了'
   });
 }
