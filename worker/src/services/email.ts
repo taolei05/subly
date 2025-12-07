@@ -1,6 +1,4 @@
 import type { Env, Subscription, User } from '../types';
-import { verifyToken } from '../utils';
-import { sendServerChanMessage } from './serverchan';
 
 // ... (existing imports and interface)
 
@@ -93,7 +91,7 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
 }
 
 // 检查并发送到期提醒 (由 Cron 触发，每小时执行一次)
-export async function checkAndSendReminders(env: Env): Promise<void> {
+export async function checkAndSendEmailReminders(env: Env): Promise<void> {
   try {
     // 获取当前北京时间的小时 (0-23)
     // 假设服务器时区为 UTC，需要加 8 小时
@@ -108,18 +106,10 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
     // 必须配置 Resend API Key 或 ServerChan Token 且对应通知时间匹配
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE 
-       (
-         (resend_api_key IS NOT NULL AND resend_api_key != '') AND 
-         (resend_notify_time = ? OR (resend_notify_time IS NULL AND ? = 8))
-       )
-       OR 
-       (
-         (serverchan_api_key IS NOT NULL AND serverchan_api_key != '') AND 
-         (serverchan_notify_time = ? OR (serverchan_notify_time IS NULL AND ? = 8))
-       )`,
+       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '')
+       AND (resend_notify_time = ? OR (resend_notify_time IS NULL AND ? = 8))`,
     )
-      .bind(beijingHour, beijingHour, beijingHour, beijingHour)
+      .bind(beijingHour, beijingHour)
       .all<User>();
 
     console.log(`Found ${users.length} users to check`);
@@ -139,7 +129,6 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
 
-        // 1. 发送邮件
         const isEmailTime =
           user.resend_notify_time === beijingHour ||
           (user.resend_notify_time == null && beijingHour === 8);
@@ -150,22 +139,6 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
             subject: title,
             html,
           });
-        }
-
-        // 2. 发送 Server酱通知
-        const isServerChanTime =
-          user.serverchan_notify_time === beijingHour ||
-          (user.serverchan_notify_time == null && beijingHour === 8);
-        if (user.serverchan_api_key && isServerChanTime) {
-          const content =
-            subscriptions
-              .map(
-                (sub) =>
-                  `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`,
-              )
-              .join('\n\n') + '\n\n请及时处理。';
-
-          await sendServerChanMessage(user.serverchan_api_key, title, content);
         }
       }
     }

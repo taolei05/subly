@@ -15,7 +15,8 @@ import {
   updateSubscription,
   updateSubscriptionStatus,
 } from './routes/subscriptions';
-import { checkAndSendReminders, sendEmail } from './services/email';
+import { checkAndSendEmailReminders, sendEmail } from './services/email';
+import { checkAndSendServerChanReminders } from './services/serverchan';
 import type { Env } from './types';
 import { corsHeaders, errorResponse, jsonResponse, verifyToken } from './utils';
 
@@ -154,8 +155,9 @@ export default {
 
         // 测试邮件发送（手动触发提醒检查）
         if (apiPath === '/test-reminder' && method === 'POST') {
-          await checkAndSendReminders(env);
-          return jsonResponse({ success: true, message: '提醒邮件检查已触发' });
+          await checkAndSendEmailReminders(env);
+          await checkAndSendServerChanReminders(env);
+          return jsonResponse({ success: true, message: '提醒检查已触发' });
         }
 
         // 发送测试邮件（系统设置页）
@@ -244,6 +246,7 @@ export default {
     env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    await checkAndSendReminders(env);
+    await checkAndSendEmailReminders(env);
+    await checkAndSendServerChanReminders(env);
   },
 };
