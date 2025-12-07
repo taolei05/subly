@@ -79,6 +79,7 @@ export interface UserSettings {
   resend_api_key: string;
   exchangerate_api_key: string;
   resend_domain: string;
+  email?: string;
   resend_notify_time?: number;
   serverchan_api_key: string;
   serverchan_notify_time?: number;

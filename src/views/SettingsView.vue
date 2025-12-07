@@ -38,16 +38,12 @@
             <!-- Resend 配置 -->
             <n-collapse-item title="Resend 邮件配置" name="resend">
               <div style="padding: 16px 0;">
-                <n-form-item label="通知邮箱">
-                   <n-input 
-                     :value="authStore.user?.email || '-'" 
-                     disabled 
-                     placeholder="当前账户邮箱" 
-                     :input-props="{ autocomplete: 'username' }"
-                   />
-                   <div style="margin-left: 12px; font-size: 12px; color: #999;">
-                     (如需修改请点击页面底部的"修改信息")
-                   </div>
+                <n-form-item path="email" label="通知邮箱">
+                  <n-input 
+                    v-model:value="formData.email"
+                    placeholder="用于接收订阅提醒"
+                    :input-props="{ autocomplete: 'email' }"
+                  />
                 </n-form-item>
 
                 <n-form-item path="resend_api_key">
@@ -217,9 +213,7 @@
             <n-input v-model:value="profileFormData.username" placeholder="请输入用户名" />
           </n-form-item>
           
-          <n-form-item path="email" label="邮箱">
-            <n-input v-model:value="profileFormData.email" placeholder="请输入邮箱" />
-          </n-form-item>
+          
           
           <n-form-item path="password" label="新密码">
             <n-input
@@ -276,6 +270,7 @@ const formData = reactive<UserSettings>({
   resend_api_key: '',
   resend_domain: '',
   exchangerate_api_key: '',
+  email: '',
   resend_notify_time: 8,
   serverchan_api_key: '',
   serverchan_notify_time: 8,
@@ -285,6 +280,7 @@ const rules: FormRules = {
   resend_api_key: [],
   resend_domain: [],
   exchangerate_api_key: [],
+  email: [{ type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }],
   resend_notify_time: [],
   serverchan_api_key: [],
   serverchan_notify_time: [],
@@ -416,10 +412,6 @@ const profileRules: FormRules = {
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, message: '用户名至少3个字符', trigger: 'blur' },
   ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
-  ],
   password: [{ min: 6, message: '密码至少6个字符', trigger: 'blur' }],
 };
 
@@ -429,6 +421,7 @@ onMounted(async () => {
     formData.resend_api_key = authStore.user.resend_api_key || '';
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
+    formData.email = authStore.user.email || '';
     formData.resend_notify_time = authStore.user.resend_notify_time ?? 8;
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
     formData.serverchan_notify_time = authStore.user.serverchan_notify_time ?? 8;

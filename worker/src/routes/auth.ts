@@ -155,6 +155,7 @@ export async function updateSettings(
       resend_api_key,
       exchangerate_api_key,
       resend_domain,
+      email,
       resend_notify_time,
       serverchan_api_key,
       serverchan_notify_time,
@@ -162,13 +163,14 @@ export async function updateSettings(
       resend_api_key?: string;
       exchangerate_api_key?: string;
       resend_domain?: string;
+      email?: string;
       resend_notify_time?: number;
       serverchan_api_key?: string;
       serverchan_notify_time?: number;
     };
 
     const currentSettings = await env.DB.prepare(
-      'SELECT resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, serverchan_api_key, serverchan_notify_time FROM users WHERE id = ?',
+      'SELECT email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, serverchan_api_key, serverchan_notify_time FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<User>();
@@ -184,9 +186,10 @@ export async function updateSettings(
         : currentSettings?.serverchan_notify_time || 8;
 
     await env.DB.prepare(
-      'UPDATE users SET resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, serverchan_api_key = ?, serverchan_notify_time = ? WHERE id = ?',
+      'UPDATE users SET email = ?, resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, serverchan_api_key = ?, serverchan_notify_time = ? WHERE id = ?',
     )
       .bind(
+        email !== undefined ? email : currentSettings?.email || '',
         resend_api_key !== undefined
           ? resend_api_key
           : currentSettings?.resend_api_key || '',
