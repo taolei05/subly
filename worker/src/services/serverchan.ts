@@ -44,7 +44,11 @@ export async function sendServerChanMessage(
     const legacyResult = (await legacyResponse.json()) as ServerChanResponse;
     return legacyResult;
   } catch (error) {
-    return { code: -1, message: String(error), data: { error: 'FETCH_ERROR', errno: -1 } };
+    return {
+      code: -1,
+      message: String(error),
+      data: { error: 'FETCH_ERROR', errno: -1 },
+    };
   }
 }
 
@@ -77,12 +81,17 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
         const content =
           subscriptions
-            .map((sub) => `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`)
+            .map(
+              (sub) => `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`,
+            )
             .join('\n\n') + '\n\n请及时处理。';
 
-        await sendServerChanMessage(user.serverchan_api_key as string, title, content);
+        await sendServerChanMessage(
+          user.serverchan_api_key as string,
+          title,
+          content,
+        );
       }
     }
   } catch {}
 }
-

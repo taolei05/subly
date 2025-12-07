@@ -100,7 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       return await authApi.sendTestServerChan(data);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : '发送 Server酱测试消息失败';
+      const msg =
+        error instanceof Error ? error.message : '发送 Server酱测试消息失败';
       return { success: false, message: msg };
     }
   }

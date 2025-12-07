@@ -272,7 +272,10 @@ export async function sendTestServerChan(
     if (result.code === 0) {
       return successResponse(null, '测试推送已发送');
     } else {
-      const msg = result.data?.error || result.message || '测试推送发送失败，请检查 SendKey 是否正确';
+      const msg =
+        result.data?.error ||
+        result.message ||
+        '测试推送发送失败，请检查 SendKey 是否正确';
       return errorResponse(msg);
     }
   } catch (error) {

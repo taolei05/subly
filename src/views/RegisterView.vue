@@ -95,7 +95,6 @@ const rules: FormRules = {
       trigger: 'blur',
     },
   ],
-  
 };
 
 async function handleRegister() {

@@ -35,143 +35,9 @@
           <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
           
           <n-collapse accordion>
-            <!-- Resend 配置 -->
-            <n-collapse-item title="Resend 邮件配置" name="resend">
-              <div style="padding: 16px 0;">
-                <n-form-item path="email" label="通知邮箱">
-                  <n-input 
-                    v-model:value="formData.email"
-                    placeholder="用于接收订阅提醒"
-                    :input-props="{ autocomplete: 'email' }"
-                  />
-                </n-form-item>
-
-                <n-form-item path="resend_api_key">
-                  <template #label>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                      API Key
-                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
-                        <InfoIcon />
-                      </n-icon>
-                    </div>
-                  </template>
-                  <n-input 
-                    v-model:value="formData.resend_api_key" 
-                    type="password"
-                    placeholder="用于发送邮件通知"
-                    show-password-on="click"
-                    :input-props="{ autocomplete: 'new-password' }"
-                  />
-                </n-form-item>
-                
-                <n-form-item path="resend_domain">
-                  <template #label>
-                    邮件域名（可选）
-                    <n-icon size="18" style="margin-left: 4px; vertical-align: text-bottom; cursor: pointer" @click="handleConfirm">
-                      <AlertCircleOutline />
-                    </n-icon>
-                  </template>
-                  <n-input 
-                    v-model:value="formData.resend_domain" 
-                    placeholder="留空使用默认域名resend.dev"
-                  />
-                </n-form-item>
-
-                <n-form-item path="resend_notify_time">
-                  <template #label>
-                    自动发送时间 (北京时间)
-                  </template>
-                  <n-select
-                    v-model:value="formData.resend_notify_time"
-                    :options="hourOptions"
-                    placeholder="请选择时间 (默认 8 点)"
-                  />
-                </n-form-item>
-
-                <n-form-item>
-                   <n-button 
-                     size="small" 
-                     secondary 
-                     type="primary" 
-                     :loading="testingEmail"
-                     :disabled="!formData.resend_api_key"
-                     @click="handleTestEmail"
-                   >
-                     发送测试邮件
-                   </n-button>
-                </n-form-item>
-              </div>
-            </n-collapse-item>
-
-            <!-- ExchangeRate 配置 -->
-            <n-collapse-item title="ExchangeRate 汇率配置" name="exchangerate">
-              <div style="padding: 16px 0;">
-                <n-form-item path="exchangerate_api_key">
-                  <template #label>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                      API Key
-                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
-                        <InfoIcon />
-                      </n-icon>
-                    </div>
-                  </template>
-                  <n-input 
-                    v-model:value="formData.exchangerate_api_key" 
-                    type="password"
-                    placeholder="用于货币汇率转换"
-                    show-password-on="click"
-                    :input-props="{ autocomplete: 'new-password' }"
-                  />
-                </n-form-item>
-              </div>
-            </n-collapse-item>
-
-            <!-- Server酱 配置 -->
-            <n-collapse-item title="Server酱 (微信通知)" name="serverchan">
-              <div style="padding: 16px 0;">
-                <n-form-item path="serverchan_api_key">
-                  <template #label>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                      SendKey
-                      <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp">
-                        <InfoIcon />
-                      </n-icon>
-                    </div>
-                  </template>
-                  <n-input 
-                    v-model:value="formData.serverchan_api_key" 
-                    type="password"
-                    placeholder="用于微信通知"
-                    show-password-on="click"
-                    :input-props="{ autocomplete: 'new-password' }"
-                  />
-                </n-form-item>
-
-                <n-form-item path="serverchan_notify_time">
-                  <template #label>
-                    自动发送时间 (北京时间)
-                  </template>
-                  <n-select
-                    v-model:value="formData.serverchan_notify_time"
-                    :options="hourOptions"
-                    placeholder="请选择时间 (默认 8 点)"
-                  />
-                </n-form-item>
-
-                <n-form-item>
-                   <n-button 
-                     size="small" 
-                     secondary 
-                     type="primary" 
-                     :loading="testingServerChan"
-                     :disabled="!formData.serverchan_api_key"
-                     @click="handleTestServerChan"
-                   >
-                     发送测试消息
-                   </n-button>
-                </n-form-item>
-              </div>
-            </n-collapse-item>
+            <ResendSettingsPanel :formData="formData" />
+            <ExchangeRateSettingsPanel :formData="formData" />
+            <ServerChanSettingsPanel :formData="formData" />
           </n-collapse>
 
           <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
@@ -243,28 +109,26 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleOutline } from '@vicons/ionicons5';
-import { type FormInst, type FormRules, useDialog, useMessage } from 'naive-ui';
+import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { h, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import InfoIcon from '../assets/icons/InfoIcon.vue';
 import MoonIcon from '../assets/icons/MoonIcon.vue';
 import SunIcon from '../assets/icons/SunIcon.vue';
+import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
+import ResendSettingsPanel from '../components/settings/ResendSettingsPanel.vue';
+import ServerChanSettingsPanel from '../components/settings/ServerChanSettingsPanel.vue';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import type { UserProfileUpdate, UserSettings } from '../types';
 
 const router = useRouter();
 const message = useMessage();
-const dialog = useDialog();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
 const serverChanFormRef = ref<FormInst | null>(null);
 const saving = ref(false);
-const testingEmail = ref(false);
-const testingServerChan = ref(false);
 
 const formData = reactive<UserSettings>({
   resend_api_key: '',
@@ -285,117 +149,6 @@ const rules: FormRules = {
   serverchan_api_key: [],
   serverchan_notify_time: [],
 };
-
-const hourOptions = Array.from({ length: 24 }, (_, i) => ({
-  label: `${String(i).padStart(2, '0')}:00`,
-  value: i,
-}));
-
-function showApiKeyHelp() {
-  dialog.info({
-    title: 'Resend API Key',
-    content: () => {
-      return h('div', [
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '什么是 Resend？',
-        ),
-        h(
-          'p',
-          { style: 'margin-bottom: 12px;' },
-          'Resend 是一个现代化的电子邮件发送服务，Subly 使用它来发送订阅到期提醒邮件。',
-        ),
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '如何获取 Key：',
-        ),
-        h('p', '1. 访问 resend.com 并登录您的账户。'),
-        h('p', '2. 在左侧菜单中点击 "API Keys"。'),
-        h('p', '3. 点击右上角的 "Create API Key" 按钮。'),
-        h(
-          'p',
-          '4. 输入名称并设置权限（Sending access 即可），创建后复制生成的 Key（以 re_ 开头）。',
-        ),
-        h(
-          'p',
-          { style: 'margin-top: 12px; color: #666;' },
-          '提示：如果没有自定义域名，Resend只能发送测试邮件到您注册Resend账户的邮箱。',
-        ),
-      ]);
-    },
-    positiveText: '知道了',
-  });
-}
-
-function showExchangeRateHelp() {
-  dialog.info({
-    title: 'ExchangeRate API Key',
-    content: () => {
-      return h('div', [
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '什么是 ExchangeRate-API？',
-        ),
-        h(
-          'p',
-          { style: 'margin-bottom: 12px;' },
-          'ExchangeRate-API 是一个汇率转换服务，Subly 使用它来自动更新不同货币之间的汇率，以便准确统计总支出。',
-        ),
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '如何获取 Key：',
-        ),
-        h('p', '1. 访问 exchangerate-api.com 并注册账号。'),
-        h('p', '2. 登录后在 Dashboard 页面即可看到您的 API Key。'),
-        h('p', '3. 免费版每月提供 1500 次请求，足够个人使用。'),
-        h(
-          'p',
-          { style: 'margin-top: 12px; color: #666;' },
-          '提示：API Key 通常是一串 24 位的字符。',
-        ),
-      ]);
-    },
-    positiveText: '知道了',
-  });
-}
-
-function showServerChanHelp() {
-  dialog.info({
-    title: 'Server酱 SendKey',
-    content: () => {
-      return h('div', [
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '什么是 Server酱？',
-        ),
-        h(
-          'p',
-          { style: 'margin-bottom: 12px;' },
-          'Server酱是一个消息推送服务，可以将通知直接发送到您的微信。',
-        ),
-        h(
-          'p',
-          { style: 'font-weight: 600; margin-bottom: 8px;' },
-          '如何获取 SendKey：',
-        ),
-        h('p', '1. 访问 sct.ftqq.com 并使用微信扫码登录。'),
-        h('p', '2. 点击顶部菜单的 "SendKey"。'),
-        h('p', '3. 复制您的 SendKey（以 SCT 开头）。'),
-        h(
-          'p',
-          { style: 'margin-top: 12px; color: #666;' },
-          '提示：请确保已关注 "方糖" 公众号以接收消息。',
-        ),
-      ]);
-    },
-    positiveText: '知道了',
-  });
-}
 
 // 个人信息修改相关状态
 const showProfileModal = ref(false);
@@ -424,66 +177,13 @@ onMounted(async () => {
     formData.email = authStore.user.email || '';
     formData.resend_notify_time = authStore.user.resend_notify_time ?? 8;
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
-    formData.serverchan_notify_time = authStore.user.serverchan_notify_time ?? 8;
+    formData.serverchan_notify_time =
+      authStore.user.serverchan_notify_time ?? 8;
   }
 });
 
 function goBack() {
   router.push('/');
-}
-
-function handleConfirm() {
-  dialog.warning({
-    title: '提示',
-    content:
-      '该域名必须通过Resend手动添加并完成DNS配置才可填入，留空使用默认域名resend.dev',
-    positiveText: '我知道了',
-  });
-}
-
-async function handleTestEmail() {
-  if (!formData.resend_api_key) {
-    message.warning('请先输入 Resend API Key');
-    return;
-  }
-
-  testingEmail.value = true;
-  try {
-    const result = await authStore.sendTestEmail({
-      resend_api_key: formData.resend_api_key,
-      resend_domain: formData.resend_domain,
-    });
-
-    if (result.success) {
-      message.success(result.message || '测试邮件已发送，请查收');
-    } else {
-      message.error(result.message || '发送失败，请检查配置');
-    }
-  } finally {
-    testingEmail.value = false;
-  }
-}
-
-async function handleTestServerChan() {
-  if (!formData.serverchan_api_key) {
-    message.warning('请先输入 Server酱 SendKey');
-    return;
-  }
-
-  testingServerChan.value = true;
-  try {
-    const result = await authStore.sendTestServerChan({
-      serverchan_api_key: formData.serverchan_api_key,
-    });
-
-    if (result.success) {
-      message.success(result.message || '测试消息已发送，请在微信查看');
-    } else {
-      message.error(result.message || '发送失败，请检查 SendKey');
-    }
-  } finally {
-    testingServerChan.value = false;
-  }
 }
 
 async function handleSave() {
