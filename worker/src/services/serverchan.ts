@@ -15,25 +15,18 @@ export async function sendServerChanMessage(
   content: string,
 ): Promise<boolean> {
   try {
-    const url = `https://sctapi.ftqq.com/${token}.send`;
-    
-    // 使用 x-www-form-urlencoded 格式
-    const params = new URLSearchParams();
-    params.append('title', title);
-    params.append('desp', content);
+    const params = new URLSearchParams({
+      title: title,
+      desp: content,
+    });
 
-    console.log(`Sending ServerChan message to ${url}`);
+    const url = `https://sctapi.ftqq.com/${token}.send?${params.toString()}`;
 
     const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
+      method: 'POST', // Server酱其实支持 GET 和 POST
     });
 
     const result = (await response.json()) as ServerChanResponse;
-    console.log('ServerChan response:', result);
 
     if (result.code === 0) {
       return true;
