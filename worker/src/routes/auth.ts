@@ -235,18 +235,28 @@ export async function sendTestServerChan(
       return errorResponse('Token 无效或已过期', 401);
     }
 
-    let body: { serverchan_api_key: string };
+    let serverchan_api_key = '';
     try {
-      body = await request.json();
-    } catch (e) {
-      console.error('JSON parse error in sendTestServerChan:', e);
-      return errorResponse('无效的 JSON 请求体');
-    }
-
-    const { serverchan_api_key } = body;
+      const body = (await request.json()) as { serverchan_api_key?: string };
+      serverchan_api_key = body.serverchan_api_key || '';
+    } catch {}
 
     if (!serverchan_api_key) {
-      return errorResponse('请输入 Server酱 SendKey');
+      const url = new URL(request.url);
+      serverchan_api_key = url.searchParams.get('serverchan_api_key') || '';
+    }
+
+    if (!serverchan_api_key) {
+      const row = await env.DB.prepare(
+        'SELECT serverchan_api_key FROM users WHERE id = ?',
+      )
+        .bind(payload.userId)
+        .first<{ serverchan_api_key: string }>();
+      serverchan_api_key = row?.serverchan_api_key || '';
+    }
+
+    if (!serverchan_api_key) {
+      return errorResponse('请输入或先保存 Server酱 SendKey');
     }
 
     const result = await sendServerChanMessage(

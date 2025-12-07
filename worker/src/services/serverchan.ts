@@ -32,7 +32,15 @@ export async function sendServerChanMessage(
     const getUrl = `${baseUrl}?${params.toString()}`;
     const getResponse = await fetch(getUrl, { method: 'GET' });
     const getResult = (await getResponse.json()) as ServerChanResponse;
-    return getResult;
+    if (getResult.code === 0) return getResult;
+
+    const legacyParams = new URLSearchParams();
+    legacyParams.append('text', title);
+    legacyParams.append('desp', content);
+    const legacyUrl = `https://sc.ftqq.com/${token}.send?${legacyParams.toString()}`;
+    const legacyResponse = await fetch(legacyUrl, { method: 'GET' });
+    const legacyResult = (await legacyResponse.json()) as ServerChanResponse;
+    return legacyResult;
   } catch (error) {
     return { code: -1, message: String(error), data: { error: 'FETCH_ERROR', errno: -1 } };
   }
