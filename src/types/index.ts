@@ -92,7 +92,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   username: string;
   password: string;
-  email: string;
+  email?: string;
 }
 
 export interface ApiResponse<T = unknown> {

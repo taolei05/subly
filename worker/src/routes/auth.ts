@@ -14,11 +14,11 @@ export async function register(request: Request, env: Env): Promise<Response> {
     const { username, password, email } = (await request.json()) as {
       username: string;
       password: string;
-      email: string;
+      email?: string;
     };
 
-    if (!username || !password || !email) {
-      return errorResponse('用户名、密码和邮箱都是必填项');
+    if (!username || !password) {
+      return errorResponse('用户名和密码都是必填项');
     }
 
     if (username.length < 3) {
@@ -45,7 +45,7 @@ export async function register(request: Request, env: Env): Promise<Response> {
     await env.DB.prepare(
       'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
     )
-      .bind(username, hashedPassword, email)
+      .bind(username, hashedPassword, email ?? '')
       .run();
 
     return successResponse(null, '注册成功');

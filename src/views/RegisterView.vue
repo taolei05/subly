@@ -37,13 +37,7 @@
           />
         </n-form-item>
         
-        <n-form-item path="email" label="通知邮箱">
-          <n-input 
-            v-model:value="formData.email" 
-            placeholder="用于接收订阅提醒"
-            :input-props="{ autocomplete: 'email' }"
-          />
-        </n-form-item>
+        
         
         <n-button 
           type="primary" 
@@ -80,7 +74,6 @@ const formData = reactive({
   username: '',
   password: '',
   confirmPassword: '',
-  email: '',
 });
 
 const rules: FormRules = {
@@ -102,10 +95,7 @@ const rules: FormRules = {
       trigger: 'blur',
     },
   ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
-  ],
+  
 };
 
 async function handleRegister() {
@@ -116,7 +106,6 @@ async function handleRegister() {
     const result = await authStore.register({
       username: formData.username,
       password: formData.password,
-      email: formData.email,
     });
 
     if (result.success) {
