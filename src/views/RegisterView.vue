@@ -109,8 +109,17 @@ async function handleRegister() {
     });
 
     if (result.success) {
-      message.success('注册成功，请登录');
-      router.push('/login');
+      const loginRes = await authStore.login({
+        username: formData.username,
+        password: formData.password,
+      });
+      if (loginRes.success) {
+        message.success('注册成功，已自动登录');
+        router.push('/');
+      } else {
+        message.warning('注册成功，但自动登录失败，请手动登录');
+        router.push('/login');
+      }
     } else {
       message.error(result.message || '注册失败');
     }
