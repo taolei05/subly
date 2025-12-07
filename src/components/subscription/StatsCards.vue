@@ -64,10 +64,10 @@
 </template>
 
 <script setup lang="ts">
-import type { SubscriptionStats, Currency } from '../../types';
-import SubscriptionIcon from '../../assets/icons/SubscriptionIcon.vue';
 import ClockIcon from '../../assets/icons/ClockIcon.vue';
 import MoneyIcon from '../../assets/icons/MoneyIcon.vue';
+import SubscriptionIcon from '../../assets/icons/SubscriptionIcon.vue';
+import type { Currency, SubscriptionStats } from '../../types';
 
 defineProps<{
   stats: SubscriptionStats;
@@ -83,7 +83,7 @@ const currencySymbols: Record<Currency, string> = {
   HKD: 'HK$',
   USD: '$',
   EUR: '€',
-  GBP: '£'
+  GBP: '£',
 };
 
 const currencyOptions = [
@@ -91,7 +91,7 @@ const currencyOptions = [
   { label: '港币', value: 'HKD' },
   { label: '美元', value: 'USD' },
   { label: '欧元', value: 'EUR' },
-  { label: '英镑', value: 'GBP' }
+  { label: '英镑', value: 'GBP' },
 ];
 </script>
 

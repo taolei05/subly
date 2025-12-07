@@ -14,12 +14,12 @@
 </template>
 
 <script setup lang="ts">
-import { h } from 'vue';
-import { NButton, NIcon, NTag, NSpace, NPopconfirm, NEmpty } from 'naive-ui';
 import type { DataTableColumns } from 'naive-ui';
-import type { Subscription } from '../../types';
-import EditIcon from '../../assets/icons/EditIcon.vue';
+import { NButton, NEmpty, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui';
+import { h } from 'vue';
 import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
+import EditIcon from '../../assets/icons/EditIcon.vue';
+import type { Subscription } from '../../types';
 
 const props = defineProps<{
   subscriptions: Subscription[];
@@ -36,7 +36,7 @@ const typeLabels: Record<string, string> = {
   server: '服务器',
   membership: '会员',
   software: '软件',
-  other: '其他'
+  other: '其他',
 };
 
 const currencySymbols: Record<string, string> = {
@@ -44,16 +44,20 @@ const currencySymbols: Record<string, string> = {
   HKD: 'HK$',
   USD: '$',
   EUR: '€',
-  GBP: '£'
+  GBP: '£',
 };
 
-function getStatusType(subscription: Subscription): 'success' | 'warning' | 'error' | 'default' {
+function getStatusType(
+  subscription: Subscription,
+): 'success' | 'warning' | 'error' | 'default' {
   if (subscription.status === 'inactive') return 'default';
-  
+
   const now = new Date();
   const endDate = new Date(subscription.end_date);
-  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysLeft = Math.ceil(
+    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysLeft < 0) return 'error';
   if (daysLeft <= 7) return 'warning';
   return 'success';
@@ -61,11 +65,13 @@ function getStatusType(subscription: Subscription): 'success' | 'warning' | 'err
 
 function getStatusText(subscription: Subscription): string {
   if (subscription.status === 'inactive') return '已停用';
-  
+
   const now = new Date();
   const endDate = new Date(subscription.end_date);
-  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysLeft = Math.ceil(
+    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysLeft < 0) return '已过期';
   if (daysLeft <= 7) return '即将到期';
   return '正常';
@@ -81,7 +87,7 @@ const columns: DataTableColumns<Subscription> = [
     key: 'name',
     // 移除宽度和固定，使其自适应填充剩余空间
     minWidth: 150,
-    ellipsis: { tooltip: true }
+    ellipsis: { tooltip: true },
   },
   {
     title: '类型',
@@ -89,7 +95,7 @@ const columns: DataTableColumns<Subscription> = [
     minWidth: 100,
     render(row) {
       return typeLabels[row.type] || row.type;
-    }
+    },
   },
   {
     title: '详情',
@@ -97,7 +103,7 @@ const columns: DataTableColumns<Subscription> = [
     minWidth: 120,
     render(row) {
       return row.type_detail || '-';
-    }
+    },
   },
   {
     title: '价格',
@@ -105,7 +111,7 @@ const columns: DataTableColumns<Subscription> = [
     minWidth: 120,
     render(row) {
       return `${currencySymbols[row.currency]}${row.price.toFixed(2)}`;
-    }
+    },
   },
   {
     title: '到期日期',
@@ -113,7 +119,7 @@ const columns: DataTableColumns<Subscription> = [
     minWidth: 120,
     render(row) {
       return formatDate(row.end_date);
-    }
+    },
   },
   {
     title: '状态',
@@ -127,11 +133,11 @@ const columns: DataTableColumns<Subscription> = [
           size: 'small',
           round: true,
           style: { cursor: 'pointer' },
-          onClick: () => emit('toggle-status', row)
+          onClick: () => emit('toggle-status', row),
         },
-        { default: () => getStatusText(row) }
+        { default: () => getStatusText(row) },
       );
-    }
+    },
   },
   {
     title: '操作',
@@ -139,43 +145,51 @@ const columns: DataTableColumns<Subscription> = [
     width: 100, // 增加宽度
     fixed: 'right',
     render(row) {
-      return h(NSpace, { 
-        size: 'small', 
-        wrap: false, // 禁止换行
-        style: { flexWrap: 'nowrap' } 
-      }, {
-        default: () => [
-          h(
-            NButton,
-            {
-              size: 'small',
-              quaternary: true,
-              onClick: () => emit('edit', row)
-            },
-            { icon: () => h(NIcon, null, { default: () => h(EditIcon) }) }
-          ),
-          h(
-            NPopconfirm,
-            {
-              onPositiveClick: () => emit('delete', row)
-            },
-            {
-              trigger: () => h(
-                NButton,
-                {
-                  size: 'small',
-                  quaternary: true,
-                  type: 'error'
-                },
-                { icon: () => h(NIcon, null, { default: () => h(DeleteIcon) }) }
-              ),
-              default: () => '确定删除此订阅吗？'
-            }
-          )
-        ]
-      });
-    }
-  }
+      return h(
+        NSpace,
+        {
+          size: 'small',
+          wrap: false, // 禁止换行
+          style: { flexWrap: 'nowrap' },
+        },
+        {
+          default: () => [
+            h(
+              NButton,
+              {
+                size: 'small',
+                quaternary: true,
+                onClick: () => emit('edit', row),
+              },
+              { icon: () => h(NIcon, null, { default: () => h(EditIcon) }) },
+            ),
+            h(
+              NPopconfirm,
+              {
+                onPositiveClick: () => emit('delete', row),
+              },
+              {
+                trigger: () =>
+                  h(
+                    NButton,
+                    {
+                      size: 'small',
+                      quaternary: true,
+                      type: 'error',
+                    },
+                    {
+                      icon: () =>
+                        h(NIcon, null, { default: () => h(DeleteIcon) }),
+                    },
+                  ),
+                default: () => '确定删除此订阅吗？',
+              },
+            ),
+          ],
+        },
+      );
+    },
+  },
 ];
 </script>
 

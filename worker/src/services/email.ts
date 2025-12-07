@@ -1,4 +1,4 @@
-import type { Env, User, Subscription } from '../types';
+import type { Env, Subscription, User } from '../types';
 import { verifyToken } from '../utils';
 import { sendServerChanMessage } from './serverchan';
 
@@ -11,23 +11,29 @@ export interface EmailData {
 }
 
 // 发送邮件 (使用 Resend API)
-export async function sendEmail(apiKey: string, domain: string, data: EmailData): Promise<boolean> {
+export async function sendEmail(
+  apiKey: string,
+  domain: string,
+  data: EmailData,
+): Promise<boolean> {
   // ... (existing implementation)
   try {
-    const fromEmail = domain ? `Subly <noreply@${domain}>` : 'Subly <onboarding@resend.dev>';
+    const fromEmail = domain
+      ? `Subly <noreply@${domain}>`
+      : 'Subly <onboarding@resend.dev>';
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: fromEmail,
         to: data.to,
         subject: data.subject,
-        html: data.html
-      })
+        html: data.html,
+      }),
     });
 
     return response.ok;
@@ -40,13 +46,17 @@ export async function sendEmail(apiKey: string, domain: string, data: EmailData)
 // 生成提醒邮件 HTML
 function generateReminderEmail(subscriptions: Subscription[]): string {
   // ... (existing implementation)
-  const items = subscriptions.map(sub => `
+  const items = subscriptions
+    .map(
+      (sub) => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.type}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.end_date}</td>
     </tr>
-  `).join('');
+  `,
+    )
+    .join('');
 
   return `
     <!DOCTYPE html>
@@ -100,8 +110,10 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
       `SELECT * FROM users 
        WHERE (resend_api_key IS NOT NULL AND resend_api_key != '') 
           OR (serverchan_api_key IS NOT NULL AND serverchan_api_key != '')
-       AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`
-    ).bind(beijingHour, beijingHour).all<User>();
+       AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`,
+    )
+      .bind(beijingHour, beijingHour)
+      .all<User>();
 
     console.log(`Found ${users.length} users to check`);
 
@@ -113,7 +125,9 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
           AND status = 'active' 
           AND one_time = 0
           AND date(end_date) BETWEEN date('now') AND date('now', '+' || remind_days || ' days')
-      `).bind(user.id).all<Subscription>();
+      `)
+        .bind(user.id)
+        .all<Subscription>();
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
@@ -121,22 +135,22 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
         // 1. 发送邮件
         if (user.resend_api_key) {
           const html = generateReminderEmail(subscriptions);
-          await sendEmail(
-            user.resend_api_key,
-            user.resend_domain || '',
-            {
-              to: user.email,
-              subject: title,
-              html
-            }
-          );
+          await sendEmail(user.resend_api_key, user.resend_domain || '', {
+            to: user.email,
+            subject: title,
+            html,
+          });
         }
 
         // 2. 发送 Server酱通知
         if (user.serverchan_api_key) {
-          const content = subscriptions.map(sub =>
-            `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`
-          ).join('\n\n') + '\n\n请及时处理。';
+          const content =
+            subscriptions
+              .map(
+                (sub) =>
+                  `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`,
+              )
+              .join('\n\n') + '\n\n请及时处理。';
 
           await sendServerChanMessage(user.serverchan_api_key, title, content);
         }

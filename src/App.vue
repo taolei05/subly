@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { zhCN, dateZhCN } from 'naive-ui';
+import { dateZhCN, zhCN } from 'naive-ui';
 import { useThemeStore } from './stores/theme';
 
 const themeStore = useThemeStore();

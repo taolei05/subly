@@ -72,9 +72,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Subscription } from '../../types';
-import EditIcon from '../../assets/icons/EditIcon.vue';
 import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
+import EditIcon from '../../assets/icons/EditIcon.vue';
+import type { Subscription } from '../../types';
 
 defineProps<{
   subscriptions: Subscription[];
@@ -91,7 +91,7 @@ const typeLabels: Record<string, string> = {
   server: '服务器',
   membership: '会员',
   software: '软件',
-  other: '其他'
+  other: '其他',
 };
 
 const currencySymbols: Record<string, string> = {
@@ -99,16 +99,20 @@ const currencySymbols: Record<string, string> = {
   HKD: 'HK$',
   USD: '$',
   EUR: '€',
-  GBP: '£'
+  GBP: '£',
 };
 
-function getStatusType(subscription: Subscription): 'success' | 'warning' | 'error' | 'default' {
+function getStatusType(
+  subscription: Subscription,
+): 'success' | 'warning' | 'error' | 'default' {
   if (subscription.status === 'inactive') return 'default';
-  
+
   const now = new Date();
   const endDate = new Date(subscription.end_date);
-  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysLeft = Math.ceil(
+    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysLeft < 0) return 'error';
   if (daysLeft <= 7) return 'warning';
   return 'success';
@@ -116,11 +120,13 @@ function getStatusType(subscription: Subscription): 'success' | 'warning' | 'err
 
 function getStatusText(subscription: Subscription): string {
   if (subscription.status === 'inactive') return '已停用';
-  
+
   const now = new Date();
   const endDate = new Date(subscription.end_date);
-  const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysLeft = Math.ceil(
+    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysLeft < 0) return '已过期';
   if (daysLeft <= 7) return '即将到期';
   return '正常';

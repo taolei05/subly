@@ -107,9 +107,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue';
 import type { FormInst, FormRules } from 'naive-ui';
-import type { Subscription, SubscriptionFormData, SubscriptionType, Currency } from '../../types';
+import { computed, reactive, ref, watch } from 'vue';
+import type {
+  Currency,
+  Subscription,
+  SubscriptionFormData,
+  SubscriptionType,
+} from '../../types';
 
 const props = defineProps<{
   show: boolean;
@@ -136,28 +141,38 @@ const defaultFormData = (): SubscriptionFormData => ({
   remind_days: 7,
   auto_renew: false,
   one_time: false,
-  notes: ''
+  notes: '',
 });
 
 const formData = reactive<SubscriptionFormData>(defaultFormData());
 
 const typeDetailLabel = computed(() => {
   switch (formData.type) {
-    case 'domain': return '域名';
-    case 'server': return '服务器规格';
-    case 'membership': return '会员详情';
-    case 'software': return '软件版本/授权';
-    default: return '详情备注';
+    case 'domain':
+      return '域名';
+    case 'server':
+      return '服务器规格';
+    case 'membership':
+      return '会员详情';
+    case 'software':
+      return '软件版本/授权';
+    default:
+      return '详情备注';
   }
 });
 
 const typeDetailPlaceholder = computed(() => {
   switch (formData.type) {
-    case 'domain': return '例如: example.com';
-    case 'server': return '例如: 2核4G';
-    case 'membership': return '例如: 高级会员、年费';
-    case 'software': return '例如: v2.0、Pro版';
-    default: return '请输入相关详情信息';
+    case 'domain':
+      return '例如: example.com';
+    case 'server':
+      return '例如: 2核4G';
+    case 'membership':
+      return '例如: 高级会员、年费';
+    case 'software':
+      return '例如: v2.0、Pro版';
+    default:
+      return '请输入相关详情信息';
   }
 });
 
@@ -166,7 +181,7 @@ const typeOptions = [
   { label: '服务器', value: 'server' },
   { label: '会员', value: 'membership' },
   { label: '软件', value: 'software' },
-  { label: '其他', value: 'other' }
+  { label: '其他', value: 'other' },
 ];
 
 const currencyOptions = [
@@ -174,50 +189,59 @@ const currencyOptions = [
   { label: '港币 (HKD)', value: 'HKD' },
   { label: '美元 (USD)', value: 'USD' },
   { label: '欧元 (EUR)', value: 'EUR' },
-  { label: '英镑 (GBP)', value: 'GBP' }
+  { label: '英镑 (GBP)', value: 'GBP' },
 ];
 
 const rules: FormRules = {
-  name: [
-    { required: true, message: '请输入服务名称', trigger: 'blur' }
-  ],
-  type: [
-    { required: true, message: '请选择订阅类型', trigger: 'change' }
-  ],
+  name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择订阅类型', trigger: 'change' }],
   price: [
-    { required: true, type: 'number', message: '请输入价格', trigger: 'blur' }
+    { required: true, type: 'number', message: '请输入价格', trigger: 'blur' },
   ],
   start_date: [
-    { required: true, type: 'number', message: '请选择开始日期', trigger: 'change' }
+    {
+      required: true,
+      type: 'number',
+      message: '请选择开始日期',
+      trigger: 'change',
+    },
   ],
   end_date: [
-    { required: true, type: 'number', message: '请选择到期日期', trigger: 'change' }
-  ]
+    {
+      required: true,
+      type: 'number',
+      message: '请选择到期日期',
+      trigger: 'change',
+    },
+  ],
 };
 
-watch(() => props.show, (newVal) => {
-  if (newVal) {
-    if (props.subscription) {
-      // 编辑模式 - 填充数据
-      Object.assign(formData, {
-        name: props.subscription.name,
-        type: props.subscription.type,
-        type_detail: props.subscription.type_detail || '',
-        price: props.subscription.price,
-        currency: props.subscription.currency,
-        start_date: new Date(props.subscription.start_date).getTime(),
-        end_date: new Date(props.subscription.end_date).getTime(),
-        remind_days: props.subscription.remind_days,
-        auto_renew: props.subscription.auto_renew,
-        one_time: props.subscription.one_time,
-        notes: props.subscription.notes || ''
-      });
-    } else {
-      // 添加模式 - 重置表单
-      Object.assign(formData, defaultFormData());
+watch(
+  () => props.show,
+  (newVal) => {
+    if (newVal) {
+      if (props.subscription) {
+        // 编辑模式 - 填充数据
+        Object.assign(formData, {
+          name: props.subscription.name,
+          type: props.subscription.type,
+          type_detail: props.subscription.type_detail || '',
+          price: props.subscription.price,
+          currency: props.subscription.currency,
+          start_date: new Date(props.subscription.start_date).getTime(),
+          end_date: new Date(props.subscription.end_date).getTime(),
+          remind_days: props.subscription.remind_days,
+          auto_renew: props.subscription.auto_renew,
+          one_time: props.subscription.one_time,
+          notes: props.subscription.notes || '',
+        });
+      } else {
+        // 添加模式 - 重置表单
+        Object.assign(formData, defaultFormData());
+      }
     }
-  }
-});
+  },
+);
 
 function handleCancel() {
   emit('update:show', false);

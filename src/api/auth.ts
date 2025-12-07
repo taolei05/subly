@@ -1,33 +1,38 @@
+import type {
+  ApiResponse,
+  LoginCredentials,
+  RegisterData,
+  User,
+  UserProfileUpdate,
+  UserSettings,
+} from '../types';
 import { http } from './http';
-import type { LoginCredentials, RegisterData, User, UserSettings, UserProfileUpdate, ApiResponse } from '../types';
 
 interface LoginResponse {
-    token: string;
-    user: User;
+  token: string;
+  user: User;
 }
 
 export const authApi = {
-    login: (credentials: LoginCredentials) =>
-        http.post<ApiResponse<LoginResponse>>('/auth/login', credentials),
+  login: (credentials: LoginCredentials) =>
+    http.post<ApiResponse<LoginResponse>>('/auth/login', credentials),
 
-    register: (data: RegisterData) =>
-        http.post<ApiResponse>('/auth/register', data),
+  register: (data: RegisterData) =>
+    http.post<ApiResponse>('/auth/register', data),
 
-    logout: () =>
-        http.post<ApiResponse>('/auth/logout'),
+  logout: () => http.post<ApiResponse>('/auth/logout'),
 
-    getMe: () =>
-        http.get<ApiResponse<User>>('/auth/me'),
+  getMe: () => http.get<ApiResponse<User>>('/auth/me'),
 
-    updateSettings: (settings: UserSettings) =>
-        http.put<ApiResponse<User>>('/settings', settings),
+  updateSettings: (settings: UserSettings) =>
+    http.put<ApiResponse<User>>('/settings', settings),
 
-    updateProfile: (profile: UserProfileUpdate) =>
-        http.put<ApiResponse<User>>('/auth/profile', profile),
+  updateProfile: (profile: UserProfileUpdate) =>
+    http.put<ApiResponse<User>>('/auth/profile', profile),
 
-    sendTestEmail: (data: { resend_api_key: string; resend_domain: string }) =>
-        http.post<ApiResponse>('/email/test', data),
+  sendTestEmail: (data: { resend_api_key: string; resend_domain: string }) =>
+    http.post<ApiResponse>('/email/test', data),
 
-    sendTestServerChan: (data: { serverchan_api_key: string }) =>
-        http.post<ApiResponse>('/auth/test-serverchan', data)
+  sendTestServerChan: (data: { serverchan_api_key: string }) =>
+    http.post<ApiResponse>('/auth/test-serverchan', data),
 };

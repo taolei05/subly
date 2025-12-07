@@ -136,27 +136,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useMessage } from 'naive-ui';
-import { useThemeStore } from '../stores/theme';
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import AddIcon from '../assets/icons/AddIcon.vue';
+import GridIcon from '../assets/icons/GridIcon.vue';
+import ListIcon from '../assets/icons/ListIcon.vue';
+import LogoutIcon from '../assets/icons/LogoutIcon.vue';
+import MoonIcon from '../assets/icons/MoonIcon.vue';
+import SearchIcon from '../assets/icons/SearchIcon.vue';
+import SettingsIcon from '../assets/icons/SettingsIcon.vue';
+import SunIcon from '../assets/icons/SunIcon.vue';
+import StatsCards from '../components/subscription/StatsCards.vue';
+import SubscriptionForm from '../components/subscription/SubscriptionForm.vue';
+import SubscriptionGrid from '../components/subscription/SubscriptionGrid.vue';
+import SubscriptionList from '../components/subscription/SubscriptionList.vue';
 import { useAuthStore } from '../stores/auth';
 import { useSubscriptionStore } from '../stores/subscription';
-import type { Subscription, SubscriptionFormData, SubscriptionType } from '../types';
-
-import StatsCards from '../components/subscription/StatsCards.vue';
-import SubscriptionList from '../components/subscription/SubscriptionList.vue';
-import SubscriptionGrid from '../components/subscription/SubscriptionGrid.vue';
-import SubscriptionForm from '../components/subscription/SubscriptionForm.vue';
-
-import SunIcon from '../assets/icons/SunIcon.vue';
-import MoonIcon from '../assets/icons/MoonIcon.vue';
-import SettingsIcon from '../assets/icons/SettingsIcon.vue';
-import LogoutIcon from '../assets/icons/LogoutIcon.vue';
-import SearchIcon from '../assets/icons/SearchIcon.vue';
-import ListIcon from '../assets/icons/ListIcon.vue';
-import GridIcon from '../assets/icons/GridIcon.vue';
-import AddIcon from '../assets/icons/AddIcon.vue';
+import { useThemeStore } from '../stores/theme';
+import type {
+  Subscription,
+  SubscriptionFormData,
+  SubscriptionType,
+} from '../types';
 
 const router = useRouter();
 const message = useMessage();
@@ -176,32 +178,33 @@ const typeOptions = [
   { label: '服务器', value: 'server' },
   { label: '会员', value: 'membership' },
   { label: '软件', value: 'software' },
-  { label: '其他', value: 'other' }
+  { label: '其他', value: 'other' },
 ];
 
 const sortOptions = [
   { label: '到期时间', value: 'end_date' },
   { label: '价格', value: 'price' },
-  { label: '名称', value: 'name' }
+  { label: '名称', value: 'name' },
 ];
 
 const filteredSubscriptions = computed(() => {
   let result = [...subscriptionStore.subscriptions];
-  
+
   // 搜索过滤
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter(sub => 
-      sub.name.toLowerCase().includes(query) ||
-      sub.notes?.toLowerCase().includes(query)
+    result = result.filter(
+      (sub) =>
+        sub.name.toLowerCase().includes(query) ||
+        sub.notes?.toLowerCase().includes(query),
     );
   }
-  
+
   // 类型过滤
   if (filterType.value) {
-    result = result.filter(sub => sub.type === filterType.value);
+    result = result.filter((sub) => sub.type === filterType.value);
   }
-  
+
   // 排序
   result.sort((a, b) => {
     switch (sortBy.value) {
@@ -215,7 +218,7 @@ const filteredSubscriptions = computed(() => {
         return 0;
     }
   });
-  
+
   return result;
 });
 
@@ -260,7 +263,10 @@ async function handleToggleStatus(subscription: Subscription) {
 async function handleFormSubmit(data: SubscriptionFormData) {
   let result;
   if (editingSubscription.value) {
-    result = await subscriptionStore.updateSubscription(editingSubscription.value.id, data);
+    result = await subscriptionStore.updateSubscription(
+      editingSubscription.value.id,
+      data,
+    );
     if (result.success) {
       message.success('更新成功');
     }
@@ -270,7 +276,7 @@ async function handleFormSubmit(data: SubscriptionFormData) {
       message.success('添加成功');
     }
   }
-  
+
   if (!result.success) {
     message.error(result.message || '操作失败');
   } else {

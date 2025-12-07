@@ -64,9 +64,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { type FormInst, type FormRules, useMessage } from 'naive-ui';
+import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -80,17 +80,17 @@ const formData = reactive({
   username: '',
   password: '',
   confirmPassword: '',
-  email: ''
+  email: '',
 });
 
 const rules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名至少3个字符', trigger: 'blur' }
+    { min: 3, message: '用户名至少3个字符', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
+    { min: 6, message: '密码至少6个字符', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -99,26 +99,26 @@ const rules: FormRules = {
         return value === formData.password;
       },
       message: '两次输入的密码不一致',
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
-  ]
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
+  ],
 };
 
 async function handleRegister() {
   try {
     await formRef.value?.validate();
     loading.value = true;
-    
+
     const result = await authStore.register({
       username: formData.username,
       password: formData.password,
-      email: formData.email
+      email: formData.email,
     });
-    
+
     if (result.success) {
       message.success('注册成功，请登录');
       router.push('/login');

@@ -230,17 +230,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, h } from 'vue';
-import { useRouter } from 'vue-router';
-import { useMessage, useDialog, type FormInst, type FormRules } from 'naive-ui';
 import { AlertCircleOutline } from '@vicons/ionicons5';
-import { useThemeStore } from '../stores/theme';
-import { useAuthStore } from '../stores/auth';
-import type { UserSettings, UserProfileUpdate } from '../types';
-
-import SunIcon from '../assets/icons/SunIcon.vue';
-import MoonIcon from '../assets/icons/MoonIcon.vue';
+import { type FormInst, type FormRules, useDialog, useMessage } from 'naive-ui';
+import { h, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import InfoIcon from '../assets/icons/InfoIcon.vue';
+import MoonIcon from '../assets/icons/MoonIcon.vue';
+import SunIcon from '../assets/icons/SunIcon.vue';
+import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
+import type { UserProfileUpdate, UserSettings } from '../types';
 
 const router = useRouter();
 const message = useMessage();
@@ -259,7 +258,7 @@ const formData = reactive<UserSettings>({
   resend_domain: '',
   exchangerate_api_key: '',
   notify_time: 8,
-  serverchan_api_key: ''
+  serverchan_api_key: '',
 });
 
 const rules: FormRules = {
@@ -267,12 +266,12 @@ const rules: FormRules = {
   resend_domain: [],
   exchangerate_api_key: [],
   notify_time: [],
-  serverchan_api_key: []
+  serverchan_api_key: [],
 };
 
 const hourOptions = Array.from({ length: 24 }, (_, i) => ({
   label: `${String(i).padStart(2, '0')}:00`,
-  value: i
+  value: i,
 }));
 
 function showApiKeyHelp() {
@@ -280,17 +279,36 @@ function showApiKeyHelp() {
     title: 'Resend API Key',
     content: () => {
       return h('div', [
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 Resend？'),
-        h('p', { style: 'margin-bottom: 12px;' }, 'Resend 是一个现代化的电子邮件发送服务，Subly 使用它来发送订阅到期提醒邮件。'),
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 Key：'),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '什么是 Resend？',
+        ),
+        h(
+          'p',
+          { style: 'margin-bottom: 12px;' },
+          'Resend 是一个现代化的电子邮件发送服务，Subly 使用它来发送订阅到期提醒邮件。',
+        ),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '如何获取 Key：',
+        ),
         h('p', '1. 访问 resend.com 并登录您的账户。'),
         h('p', '2. 在左侧菜单中点击 "API Keys"。'),
         h('p', '3. 点击右上角的 "Create API Key" 按钮。'),
-        h('p', '4. 输入名称并设置权限（Sending access 即可），创建后复制生成的 Key（以 re_ 开头）。'),
-        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：如果没有自定义域名，Resend只能发送测试邮件到您注册Resend账户的邮箱。')
+        h(
+          'p',
+          '4. 输入名称并设置权限（Sending access 即可），创建后复制生成的 Key（以 re_ 开头）。',
+        ),
+        h(
+          'p',
+          { style: 'margin-top: 12px; color: #666;' },
+          '提示：如果没有自定义域名，Resend只能发送测试邮件到您注册Resend账户的邮箱。',
+        ),
       ]);
     },
-    positiveText: '知道了'
+    positiveText: '知道了',
   });
 }
 
@@ -299,16 +317,32 @@ function showExchangeRateHelp() {
     title: 'ExchangeRate API Key',
     content: () => {
       return h('div', [
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 ExchangeRate-API？'),
-        h('p', { style: 'margin-bottom: 12px;' }, 'ExchangeRate-API 是一个汇率转换服务，Subly 使用它来自动更新不同货币之间的汇率，以便准确统计总支出。'),
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 Key：'),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '什么是 ExchangeRate-API？',
+        ),
+        h(
+          'p',
+          { style: 'margin-bottom: 12px;' },
+          'ExchangeRate-API 是一个汇率转换服务，Subly 使用它来自动更新不同货币之间的汇率，以便准确统计总支出。',
+        ),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '如何获取 Key：',
+        ),
         h('p', '1. 访问 exchangerate-api.com 并注册账号。'),
         h('p', '2. 登录后在 Dashboard 页面即可看到您的 API Key。'),
         h('p', '3. 免费版每月提供 1500 次请求，足够个人使用。'),
-        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：API Key 通常是一串 24 位的字符。')
+        h(
+          'p',
+          { style: 'margin-top: 12px; color: #666;' },
+          '提示：API Key 通常是一串 24 位的字符。',
+        ),
       ]);
     },
-    positiveText: '知道了'
+    positiveText: '知道了',
   });
 }
 
@@ -317,16 +351,32 @@ function showServerChanHelp() {
     title: 'Server酱 SendKey',
     content: () => {
       return h('div', [
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '什么是 Server酱？'),
-        h('p', { style: 'margin-bottom: 12px;' }, 'Server酱是一个消息推送服务，可以将通知直接发送到您的微信。'),
-        h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '如何获取 SendKey：'),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '什么是 Server酱？',
+        ),
+        h(
+          'p',
+          { style: 'margin-bottom: 12px;' },
+          'Server酱是一个消息推送服务，可以将通知直接发送到您的微信。',
+        ),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '如何获取 SendKey：',
+        ),
         h('p', '1. 访问 sct.ftqq.com 并使用微信扫码登录。'),
         h('p', '2. 点击顶部菜单的 "SendKey"。'),
         h('p', '3. 复制您的 SendKey（以 SCT 开头）。'),
-        h('p', { style: 'margin-top: 12px; color: #666;' }, '提示：请确保已关注 "方糖" 公众号以接收消息。')
+        h(
+          'p',
+          { style: 'margin-top: 12px; color: #666;' },
+          '提示：请确保已关注 "方糖" 公众号以接收消息。',
+        ),
       ]);
     },
-    positiveText: '知道了'
+    positiveText: '知道了',
   });
 }
 
@@ -337,21 +387,19 @@ const updatingProfile = ref(false);
 const profileFormData = reactive<UserProfileUpdate>({
   username: '',
   email: '',
-  password: ''
+  password: '',
 });
 
 const profileRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名至少3个字符', trigger: 'blur' }
+    { min: 3, message: '用户名至少3个字符', trigger: 'blur' },
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
   ],
-  password: [
-    { min: 6, message: '密码至少6个字符', trigger: 'blur' }
-  ]
+  password: [{ min: 6, message: '密码至少6个字符', trigger: 'blur' }],
 };
 
 onMounted(async () => {
@@ -372,12 +420,11 @@ function goBack() {
 function handleConfirm() {
   dialog.warning({
     title: '提示',
-    content: '该域名必须通过Resend手动添加并完成DNS配置才可填入，留空使用默认域名resend.dev',
-    positiveText: '我知道了'
+    content:
+      '该域名必须通过Resend手动添加并完成DNS配置才可填入，留空使用默认域名resend.dev',
+    positiveText: '我知道了',
   });
 }
-
-
 
 async function handleTestEmail() {
   if (!formData.resend_api_key) {
@@ -389,9 +436,9 @@ async function handleTestEmail() {
   try {
     const result = await authStore.sendTestEmail({
       resend_api_key: formData.resend_api_key,
-      resend_domain: formData.resend_domain
+      resend_domain: formData.resend_domain,
     });
-    
+
     if (result.success) {
       message.success(result.message || '测试邮件已发送，请查收');
     } else {
@@ -411,9 +458,9 @@ async function handleTestServerChan() {
   testingServerChan.value = true;
   try {
     const result = await authStore.sendTestServerChan({
-      serverchan_api_key: formData.serverchan_api_key
+      serverchan_api_key: formData.serverchan_api_key,
     });
-    
+
     if (result.success) {
       message.success(result.message || '测试消息已发送，请在微信查看');
     } else {
@@ -449,7 +496,7 @@ function openProfileModal() {
 
 async function handleUpdateProfile() {
   if (!profileFormRef.value) return;
-  
+
   await profileFormRef.value.validate(async (errors) => {
     if (!errors) {
       updatingProfile.value = true;

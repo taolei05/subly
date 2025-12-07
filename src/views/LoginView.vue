@@ -46,9 +46,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { type FormInst, type FormRules, useMessage } from 'naive-ui';
+import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMessage, type FormInst, type FormRules } from 'naive-ui';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -60,25 +60,21 @@ const loading = ref(false);
 
 const formData = reactive({
   username: '',
-  password: ''
+  password: '',
 });
 
 const rules: FormRules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
-  ]
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 };
 
 async function handleLogin() {
   try {
     await formRef.value?.validate();
     loading.value = true;
-    
+
     const result = await authStore.login(formData);
-    
+
     if (result.success) {
       message.success('登录成功');
       router.push('/');
