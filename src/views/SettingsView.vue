@@ -361,7 +361,7 @@ onMounted(async () => {
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
     formData.notify_time = authStore.user.notify_time ?? 8;
-    formData.serverchan_token = authStore.user.serverchan_token || '';
+    formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
   }
 });
 

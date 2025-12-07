@@ -65,7 +65,7 @@ export interface User {
     exchangerate_api_key?: string;
     resend_domain?: string;
     notify_time?: number;
-    serverchan_token?: string;
+    serverchan_api_key?: string;
 }
 
 export interface UserSettings {
@@ -73,7 +73,7 @@ export interface UserSettings {
     exchangerate_api_key: string;
     resend_domain: string;
     notify_time?: number;
-    serverchan_token?: string;
+    serverchan_api_key?: string;
 }
 
 export interface LoginCredentials {
