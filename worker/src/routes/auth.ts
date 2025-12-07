@@ -206,7 +206,7 @@ export async function updateSettings(
       .run();
 
     const user = await env.DB.prepare(
-      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key FROM users WHERE id = ?',
+      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, serverchan_api_key, serverchan_notify_time FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();
@@ -235,9 +235,15 @@ export async function sendTestServerChan(
       return errorResponse('Token 无效或已过期', 401);
     }
 
-    const { serverchan_api_key } = (await request.json()) as {
-      serverchan_api_key: string;
-    };
+    let body: { serverchan_api_key: string };
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error('JSON parse error in sendTestServerChan:', e);
+      return errorResponse('无效的 JSON 请求体');
+    }
+
+    const { serverchan_api_key } = body;
 
     if (!serverchan_api_key) {
       return errorResponse('请输入 Server酱 SendKey');
@@ -321,7 +327,7 @@ export async function updateProfile(
       .run();
 
     const user = await env.DB.prepare(
-      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, notify_time, serverchan_api_key FROM users WHERE id = ?',
+      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, serverchan_api_key, serverchan_notify_time FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();

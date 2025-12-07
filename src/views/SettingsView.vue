@@ -31,12 +31,20 @@
     <n-layout-content class="content-wrapper">
       <n-card title="系统配置" :bordered="false">
         <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
+          <!-- 辅助功能：隐藏的用户名输入框，消除浏览器关于密码表单缺少用户名的警告 -->
+          <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
+          
           <n-collapse default-expanded-names="resend" accordion>
             <!-- Resend 配置 -->
             <n-collapse-item title="Resend 邮件配置" name="resend">
               <div style="padding: 16px 0;">
                 <n-form-item label="通知邮箱">
-                   <n-input :value="authStore.user?.email || '-'" disabled placeholder="当前账户邮箱" />
+                   <n-input 
+                     :value="authStore.user?.email || '-'" 
+                     disabled 
+                     placeholder="当前账户邮箱" 
+                     :input-props="{ autocomplete: 'username' }"
+                   />
                    <div style="margin-left: 12px; font-size: 12px; color: #999;">
                      (如需修改请点击页面底部的"修改信息")
                    </div>
