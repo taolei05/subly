@@ -104,15 +104,22 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
     console.log(`Checking reminders for hour: ${beijingHour} (Beijing Time)`);
 
     // 获取所有配置了通知方式且设定通知时间为当前小时的用户
-    // 如果 notify_time 为空，默认为 8 点
-    // 必须配置 Resend API Key 或 ServerChan Token 且 notify_time 匹配
+    // 如果通知时间为空，默认为 8 点
+    // 必须配置 Resend API Key 或 ServerChan Token 且对应通知时间匹配
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '') 
-          OR (serverchan_api_key IS NOT NULL AND serverchan_api_key != '')
-       AND (notify_time = ? OR (notify_time IS NULL AND ? = 8))`,
+       WHERE 
+       (
+         (resend_api_key IS NOT NULL AND resend_api_key != '') AND 
+         (resend_notify_time = ? OR (resend_notify_time IS NULL AND ? = 8))
+       )
+       OR 
+       (
+         (serverchan_api_key IS NOT NULL AND serverchan_api_key != '') AND 
+         (serverchan_notify_time = ? OR (serverchan_notify_time IS NULL AND ? = 8))
+       )`,
     )
-      .bind(beijingHour, beijingHour)
+      .bind(beijingHour, beijingHour, beijingHour, beijingHour)
       .all<User>();
 
     console.log(`Found ${users.length} users to check`);
@@ -133,7 +140,10 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
 
         // 1. 发送邮件
-        if (user.resend_api_key) {
+        const isEmailTime =
+          user.resend_notify_time === beijingHour ||
+          (user.resend_notify_time == null && beijingHour === 8);
+        if (user.resend_api_key && isEmailTime) {
           const html = generateReminderEmail(subscriptions);
           await sendEmail(user.resend_api_key, user.resend_domain || '', {
             to: user.email,
@@ -143,7 +153,10 @@ export async function checkAndSendReminders(env: Env): Promise<void> {
         }
 
         // 2. 发送 Server酱通知
-        if (user.serverchan_api_key) {
+        const isServerChanTime =
+          user.serverchan_notify_time === beijingHour ||
+          (user.serverchan_notify_time == null && beijingHour === 8);
+        if (user.serverchan_api_key && isServerChanTime) {
           const content =
             subscriptions
               .map(

@@ -14,8 +14,9 @@ export interface User {
   resend_api_key?: string;
   exchangerate_api_key?: string;
   resend_domain?: string;
-  notify_time?: number;
+  resend_notify_time?: number;
   serverchan_api_key?: string;
+  serverchan_notify_time?: number;
 }
 
 export interface Subscription {

@@ -73,12 +73,12 @@
                   />
                 </n-form-item>
 
-                <n-form-item path="notify_time">
+                <n-form-item path="resend_notify_time">
                   <template #label>
                     自动发送时间 (北京时间)
                   </template>
                   <n-select
-                    v-model:value="formData.notify_time"
+                    v-model:value="formData.resend_notify_time"
                     :options="hourOptions"
                     placeholder="请选择时间 (默认 8 点)"
                   />
@@ -140,6 +140,17 @@
                     placeholder="用于微信通知"
                     show-password-on="click"
                     :input-props="{ autocomplete: 'new-password' }"
+                  />
+                </n-form-item>
+
+                <n-form-item path="serverchan_notify_time">
+                  <template #label>
+                    自动发送时间 (北京时间)
+                  </template>
+                  <n-select
+                    v-model:value="formData.serverchan_notify_time"
+                    :options="hourOptions"
+                    placeholder="请选择时间 (默认 8 点)"
                   />
                 </n-form-item>
 
@@ -257,16 +268,18 @@ const formData = reactive<UserSettings>({
   resend_api_key: '',
   resend_domain: '',
   exchangerate_api_key: '',
-  notify_time: 8,
+  resend_notify_time: 8,
   serverchan_api_key: '',
+  serverchan_notify_time: 8,
 });
 
 const rules: FormRules = {
   resend_api_key: [],
   resend_domain: [],
   exchangerate_api_key: [],
-  notify_time: [],
+  resend_notify_time: [],
   serverchan_api_key: [],
+  serverchan_notify_time: [],
 };
 
 const hourOptions = Array.from({ length: 24 }, (_, i) => ({
@@ -408,8 +421,9 @@ onMounted(async () => {
     formData.resend_api_key = authStore.user.resend_api_key || '';
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
-    formData.notify_time = authStore.user.notify_time ?? 8;
+    formData.resend_notify_time = authStore.user.resend_notify_time ?? 8;
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
+    formData.serverchan_notify_time = authStore.user.serverchan_notify_time ?? 8;
   }
 });
 
