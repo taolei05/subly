@@ -249,17 +249,18 @@ export async function sendTestServerChan(
       return errorResponse('请输入 Server酱 SendKey');
     }
 
-    const success = await sendServerChanMessage(
+    const result = await sendServerChanMessage(
       serverchan_api_key,
       'Subly 测试消息',
       '这是一条来自 Subly 的测试推送，恭喜您配置成功！\n\n- 发送时间：' +
         new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
     );
 
-    if (success) {
+    if (result.code === 0) {
       return successResponse(null, '测试推送已发送');
     } else {
-      return errorResponse('测试推送发送失败，请检查 SendKey 是否正确');
+      const msg = result.data?.error || result.message || '测试推送发送失败，请检查 SendKey 是否正确';
+      return errorResponse(msg);
     }
   } catch (error) {
     console.error('SendTestServerChan error:', error);

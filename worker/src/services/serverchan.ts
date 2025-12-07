@@ -13,29 +13,27 @@ export async function sendServerChanMessage(
   token: string,
   title: string,
   content: string,
-): Promise<boolean> {
+): Promise<ServerChanResponse> {
   try {
-    const params = new URLSearchParams({
-      title: title,
-      desp: content,
+    const baseUrl = `https://sctapi.ftqq.com/${token}.send`;
+
+    const params = new URLSearchParams();
+    params.append('title', title);
+    params.append('desp', content);
+
+    const postResponse = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
     });
+    const postResult = (await postResponse.json()) as ServerChanResponse;
+    if (postResult.code === 0) return postResult;
 
-    const url = `https://sctapi.ftqq.com/${token}.send?${params.toString()}`;
-
-    const response = await fetch(url, {
-      method: 'POST', // Server酱其实支持 GET 和 POST
-    });
-
-    const result = (await response.json()) as ServerChanResponse;
-
-    if (result.code === 0) {
-      return true;
-    } else {
-      console.error('ServerChan error:', result);
-      return false;
-    }
+    const getUrl = `${baseUrl}?${params.toString()}`;
+    const getResponse = await fetch(getUrl, { method: 'GET' });
+    const getResult = (await getResponse.json()) as ServerChanResponse;
+    return getResult;
   } catch (error) {
-    console.error('ServerChan fetch error:', error);
-    return false;
+    return { code: -1, message: String(error), data: { error: 'FETCH_ERROR', errno: -1 } };
   }
 }
