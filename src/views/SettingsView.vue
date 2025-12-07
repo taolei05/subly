@@ -34,7 +34,7 @@
           <!-- 辅助功能：隐藏的用户名输入框，消除浏览器关于密码表单缺少用户名的警告 -->
           <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
           
-          <n-collapse default-expanded-names="resend" accordion>
+          <n-collapse accordion>
             <!-- Resend 配置 -->
             <n-collapse-item title="Resend 邮件配置" name="resend">
               <div style="padding: 16px 0;">
