@@ -1,7 +1,7 @@
 <template>
   <n-collapse-item title="Server酱 (微信通知)" name="serverchan">
     <div style="padding: 16px 0;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <span>启用微信提醒</span>
         <n-switch v-model:value="formData.serverchan_enabled" />
       </div>
