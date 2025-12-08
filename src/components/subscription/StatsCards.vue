@@ -72,8 +72,6 @@ const currencySymbols: Record<Currency, string> = {
   EUR: '€',
   GBP: '£',
 };
-
-
 </script>
 
 <style scoped>

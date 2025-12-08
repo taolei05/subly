@@ -258,12 +258,12 @@ export default {
           const payload = await verifyToken(token);
           if (!payload) return errorResponse('无效的 Token', 401);
 
-          const body = (await request.json()) as { type?: 'email' | 'serverchan' | 'all' };
+          const body = (await request.json()) as {
+            type?: 'email' | 'serverchan' | 'all';
+          };
           const type = body.type || 'all';
 
-          const user = await env.DB.prepare(
-            `SELECT * FROM users WHERE id = ?`,
-          )
+          const user = await env.DB.prepare(`SELECT * FROM users WHERE id = ?`)
             .bind(payload.userId)
             .first();
 
@@ -346,8 +346,13 @@ export default {
           }
 
           // 发送 ServerChan
-          if ((type === 'all' || type === 'serverchan') && user.serverchan_api_key) {
-            const { sendServerChanMessage } = await import('./services/serverchan');
+          if (
+            (type === 'all' || type === 'serverchan') &&
+            user.serverchan_api_key
+          ) {
+            const { sendServerChanMessage } = await import(
+              './services/serverchan'
+            );
             const content =
               subscriptions
                 .map(
@@ -392,7 +397,9 @@ export default {
           const payload = await verifyToken(token);
           if (!payload) return errorResponse('无效的 Token', 401);
 
-          const body = (await request.json()) as { type?: 'email' | 'serverchan' | 'all' };
+          const body = (await request.json()) as {
+            type?: 'email' | 'serverchan' | 'all';
+          };
           const type = body.type || 'all';
 
           if (type === 'all' || type === 'email') {

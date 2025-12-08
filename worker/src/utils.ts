@@ -123,3 +123,11 @@ export function errorResponse(message: string, status = 400): Response {
 export function successResponse<T>(data?: T, message?: string): Response {
   return jsonResponse({ success: true, data, message });
 }
+
+// 验证站点 URL 格式
+export function isValidSiteUrl(url: string): boolean {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+  return url.startsWith('http://') || url.startsWith('https://');
+}

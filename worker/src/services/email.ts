@@ -54,7 +54,10 @@ const typeLabels: Record<string, string> = {
 };
 
 // 生成提醒邮件 HTML
-function generateReminderEmail(subscriptions: Subscription[]): string {
+export function generateReminderEmail(
+  subscriptions: Subscription[],
+  siteUrl?: string,
+): string {
   const items = subscriptions
     .map(
       (sub) => `
@@ -66,6 +69,15 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
   `,
     )
     .join('');
+
+  // Conditionally render "查看详情" button when siteUrl is provided
+  const viewDetailsButton = siteUrl
+    ? `
+        <div style="margin-top: 20px; text-align: center;">
+          <a href="${siteUrl}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
+        </div>
+      `
+    : '';
 
   return `
     <!DOCTYPE html>
@@ -92,6 +104,7 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
             ${items}
           </tbody>
         </table>
+        ${viewDetailsButton}
         <p style="margin-top: 20px; color: #666; font-size: 14px;">
           这是一封自动发送的邮件，请勿直接回复。
         </p>
@@ -176,7 +189,10 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
-        const html = generateReminderEmail(subscriptions);
+        const html = generateReminderEmail(
+          subscriptions,
+          user.site_url || undefined,
+        );
 
         console.log(
           `[Email] Sending reminder to user ${user.id} (${user.email})`,

@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     serverchan_api_key TEXT,
     serverchan_notify_time INTEGER DEFAULT 8,
     serverchan_notify_interval INTEGER DEFAULT 24,
-    serverchan_last_sent_at TEXT
+    serverchan_last_sent_at TEXT,
+    site_url TEXT
 );
 
 -- 订阅表

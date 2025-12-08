@@ -77,6 +77,7 @@ export interface User {
   serverchan_api_key?: string;
   serverchan_notify_time?: number;
   serverchan_notify_interval?: number;
+  site_url?: string;
 }
 
 export interface UserSettings {
@@ -89,6 +90,7 @@ export interface UserSettings {
   serverchan_api_key: string;
   serverchan_notify_time?: number;
   serverchan_notify_interval?: number;
+  site_url?: string;
 }
 
 export interface LoginCredentials {

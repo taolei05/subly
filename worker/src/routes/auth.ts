@@ -3,6 +3,7 @@ import {
   errorResponse,
   generateToken,
   hashPassword,
+  isValidSiteUrl,
   successResponse,
   verifyPassword,
   verifyToken,
@@ -118,7 +119,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
     }
 
     const user = await env.DB.prepare(
-      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval FROM users WHERE id = ?',
+      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, site_url FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();
@@ -161,6 +162,7 @@ export async function updateSettings(
       serverchan_api_key,
       serverchan_notify_time,
       serverchan_notify_interval,
+      site_url,
     } = (await request.json()) as {
       resend_api_key?: string;
       exchangerate_api_key?: string;
@@ -171,13 +173,23 @@ export async function updateSettings(
       serverchan_api_key?: string;
       serverchan_notify_time?: number;
       serverchan_notify_interval?: number;
+      site_url?: string;
     };
 
     const currentSettings = await env.DB.prepare(
-      'SELECT email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval FROM users WHERE id = ?',
+      'SELECT email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, site_url FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<User>();
+
+    // Validate site_url if provided - reject invalid URLs per Requirements 4.1, 4.2
+    if (
+      site_url !== undefined &&
+      site_url !== '' &&
+      !isValidSiteUrl(site_url)
+    ) {
+      return errorResponse('站点链接格式无效，必须以 http:// 或 https:// 开头');
+    }
 
     const newResendNotifyTime =
       resend_notify_time !== undefined
@@ -199,8 +211,12 @@ export async function updateSettings(
         ? serverchan_notify_interval
         : (currentSettings?.serverchan_notify_interval ?? 24);
 
+    // Determine new site_url value - only update if valid URL provided
+    const newSiteUrl =
+      site_url !== undefined ? site_url : currentSettings?.site_url || '';
+
     await env.DB.prepare(
-      'UPDATE users SET email = ?, resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, resend_notify_interval = ?, serverchan_api_key = ?, serverchan_notify_time = ?, serverchan_notify_interval = ? WHERE id = ?',
+      'UPDATE users SET email = ?, resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, resend_notify_interval = ?, serverchan_api_key = ?, serverchan_notify_time = ?, serverchan_notify_interval = ?, site_url = ? WHERE id = ?',
     )
       .bind(
         email !== undefined ? email : currentSettings?.email || '',
@@ -220,12 +236,13 @@ export async function updateSettings(
           : currentSettings?.serverchan_api_key || '',
         newServerChanNotifyTime,
         newServerChanNotifyInterval,
+        newSiteUrl,
         payload.userId,
       )
       .run();
 
     const user = await env.DB.prepare(
-      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval FROM users WHERE id = ?',
+      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, site_url FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();
@@ -360,7 +377,7 @@ export async function updateProfile(
       .run();
 
     const user = await env.DB.prepare(
-      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval FROM users WHERE id = ?',
+      'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, site_url FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();
