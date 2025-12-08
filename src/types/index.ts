@@ -22,7 +22,7 @@ export interface Subscription {
   start_date: string;
   end_date: string;
   remind_days: number;
-  auto_renew: boolean;
+  renew_type: RenewType;
   one_time: boolean;
   status: SubscriptionStatus;
   notes?: string;
@@ -48,7 +48,6 @@ export interface SubscriptionFormData {
   end_date: number | null;
   remind_days: number;
   renew_type: RenewType;
-  auto_renew: boolean;
   one_time: boolean;
   notes?: string;
 }

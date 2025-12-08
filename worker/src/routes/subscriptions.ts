@@ -29,7 +29,6 @@ export async function getSubscriptions(
     // 转换布尔值
     const subscriptions = results.map((sub: Subscription) => ({
       ...sub,
-      auto_renew: Boolean(sub.auto_renew),
       one_time: Boolean(sub.one_time),
     }));
 
@@ -62,7 +61,6 @@ export async function getSubscription(
 
     return successResponse({
       ...subscription,
-      auto_renew: Boolean(subscription.auto_renew),
       one_time: Boolean(subscription.one_time),
     });
   } catch (error) {
@@ -89,7 +87,7 @@ export async function createSubscription(
       start_date: string;
       end_date: string;
       remind_days: number;
-      auto_renew: boolean;
+      renew_type?: 'none' | 'auto' | 'manual';
       one_time: boolean;
       notes?: string;
     };
@@ -97,10 +95,11 @@ export async function createSubscription(
     // 直接使用前端传来的 YYYY-MM-DD 字符串
     const startDate = data.start_date;
     const endDate = data.end_date;
+    const renewType = data.renew_type || 'none';
 
     const result = await env.DB.prepare(`
       INSERT INTO subscriptions 
-      (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, auto_renew, one_time, notes)
+      (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, notes)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
       .bind(
@@ -113,7 +112,7 @@ export async function createSubscription(
         startDate,
         endDate,
         data.remind_days,
-        data.auto_renew ? 1 : 0,
+        renewType,
         data.one_time ? 1 : 0,
         data.notes || null,
       )
@@ -133,7 +132,6 @@ export async function createSubscription(
     return successResponse(
       {
         ...newSubscription,
-        auto_renew: Boolean(newSubscription.auto_renew),
         one_time: Boolean(newSubscription.one_time),
       },
       '订阅创建成功',
@@ -174,7 +172,7 @@ export async function updateSubscription(
       start_date: string;
       end_date: string;
       remind_days: number;
-      auto_renew: boolean;
+      renew_type?: 'none' | 'auto' | 'manual';
       one_time: boolean;
       notes?: string;
     };
@@ -182,11 +180,12 @@ export async function updateSubscription(
     // 直接使用前端传来的 YYYY-MM-DD 字符串
     const startDate = data.start_date;
     const endDate = data.end_date;
+    const renewType = data.renew_type || 'none';
 
     await env.DB.prepare(`
       UPDATE subscriptions SET
         name = ?, type = ?, type_detail = ?, price = ?, currency = ?,
-        start_date = ?, end_date = ?, remind_days = ?, auto_renew = ?,
+        start_date = ?, end_date = ?, remind_days = ?, renew_type = ?,
         one_time = ?, notes = ?, updated_at = datetime('now')
       WHERE id = ? AND user_id = ?
     `)
@@ -199,7 +198,7 @@ export async function updateSubscription(
         startDate,
         endDate,
         data.remind_days,
-        data.auto_renew ? 1 : 0,
+        renewType,
         data.one_time ? 1 : 0,
         data.notes || null,
         id,
@@ -220,7 +219,6 @@ export async function updateSubscription(
     return successResponse(
       {
         ...updatedSubscription,
-        auto_renew: Boolean(updatedSubscription.auto_renew),
         one_time: Boolean(updatedSubscription.one_time),
       },
       '订阅更新成功',

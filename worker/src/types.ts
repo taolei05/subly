@@ -34,7 +34,7 @@ export interface Subscription {
   start_date: string;
   end_date: string;
   remind_days: number;
-  auto_renew: boolean;
+  renew_type: 'none' | 'auto' | 'manual';
   one_time: boolean;
   status: 'active' | 'inactive' | 'expiring' | 'expired';
   notes?: string;

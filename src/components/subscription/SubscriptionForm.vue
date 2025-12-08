@@ -149,7 +149,6 @@ const defaultFormData = (): SubscriptionFormData => ({
   end_date: Date.now() + 365 * 24 * 60 * 60 * 1000,
   remind_days: 7,
   renew_type: 'none' as 'none' | 'auto' | 'manual',
-  auto_renew: false,
   one_time: false,
   notes: '',
 });
@@ -232,11 +231,10 @@ const rules: FormRules = {
   ],
 };
 
-// 监听 renew_type 变化，同步 auto_renew
+// 监听 renew_type 变化
 watch(
   () => formData.renew_type,
   (newVal) => {
-    formData.auto_renew = newVal === 'auto';
     // 如果选择了续订类型，禁用一次性买断
     if (newVal !== 'none') {
       formData.one_time = false;
@@ -248,7 +246,6 @@ watch(
 function handleOneTimeChange(value: boolean) {
   if (value) {
     formData.renew_type = 'none';
-    formData.auto_renew = false;
   }
 }
 
@@ -258,7 +255,7 @@ watch(
     if (newVal) {
       if (props.subscription) {
         // 编辑模式 - 填充数据
-        const renewType = props.subscription.auto_renew ? 'auto' : 'none';
+        const renewType = props.subscription.renew_type || 'none';
         Object.assign(formData, {
           name: props.subscription.name,
           type: props.subscription.type,
@@ -269,7 +266,6 @@ watch(
           end_date: new Date(props.subscription.end_date).getTime(),
           remind_days: props.subscription.remind_days,
           renew_type: renewType,
-          auto_renew: props.subscription.auto_renew,
           one_time: props.subscription.one_time,
           notes: props.subscription.notes || '',
         });

@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     start_date TEXT NOT NULL,
     end_date TEXT NOT NULL,
     remind_days INTEGER NOT NULL DEFAULT 7,
-    auto_renew INTEGER NOT NULL DEFAULT 0,
+    renew_type TEXT NOT NULL DEFAULT 'none' CHECK (renew_type IN ('none', 'auto', 'manual')),
     one_time INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'expiring', 'expired')),
     notes TEXT,
