@@ -31,7 +31,7 @@
         </div>
         <div class="meta-item">
           <span class="meta-label">到期日期</span>
-          <span class="meta-value">{{ formatDate(sub.end_date) }}</span>
+          <span class="meta-value">{{ sub.one_time ? '永久' : formatDate(sub.end_date) }}</span>
         </div>
         <div v-if="sub.type_detail" class="meta-item">
           <span class="meta-label">详情</span>
@@ -109,6 +109,7 @@ function getStatusType(
   subscription: Subscription,
 ): 'success' | 'warning' | 'error' | 'default' {
   if (subscription.status === 'inactive') return 'default';
+  if (subscription.one_time) return 'success';
 
   const now = new Date();
   const endDate = new Date(subscription.end_date);
@@ -123,6 +124,7 @@ function getStatusType(
 
 function getStatusText(subscription: Subscription): string {
   if (subscription.status === 'inactive') return '已停用';
+  if (subscription.one_time) return '永久有效';
 
   const now = new Date();
   const endDate = new Date(subscription.end_date);

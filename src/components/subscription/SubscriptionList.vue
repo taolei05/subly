@@ -60,6 +60,7 @@ function getStatusType(
   subscription: Subscription,
 ): 'success' | 'warning' | 'error' | 'default' {
   if (subscription.status === 'inactive') return 'default';
+  if (subscription.one_time) return 'success';
 
   const now = new Date();
   const endDate = new Date(subscription.end_date);
@@ -74,6 +75,7 @@ function getStatusType(
 
 function getStatusText(subscription: Subscription): string {
   if (subscription.status === 'inactive') return '已停用';
+  if (subscription.one_time) return '永久有效';
 
   const now = new Date();
   const endDate = new Date(subscription.end_date);
@@ -127,7 +129,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     key: 'end_date',
     minWidth: 120,
     render(row) {
-      return formatDate(row.end_date);
+      return row.one_time ? '永久' : formatDate(row.end_date);
     },
   },
   {
