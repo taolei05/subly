@@ -33,16 +33,7 @@
           <div class="stat-value">
             {{ currencySymbols[currency] }}{{ stats.oneTimeTotal.toFixed(2) }}
           </div>
-          <div class="stat-label">
-            一次性买断支出
-            <n-select
-              :value="currency"
-              :options="currencyOptions"
-              size="tiny"
-              style="width: 80px; margin-left: 8px;"
-              @update:value="$emit('update:currency', $event)"
-            />
-          </div>
+          <div class="stat-label">一次性买断支出</div>
         </div>
       </div>
     </n-card>
@@ -74,10 +65,6 @@ defineProps<{
   currency: Currency;
 }>();
 
-defineEmits<{
-  'update:currency': [currency: Currency];
-}>();
-
 const currencySymbols: Record<Currency, string> = {
   CNY: '¥',
   HKD: 'HK$',
@@ -86,13 +73,7 @@ const currencySymbols: Record<Currency, string> = {
   GBP: '£',
 };
 
-const currencyOptions = [
-  { label: '人民币', value: 'CNY' },
-  { label: '港币', value: 'HKD' },
-  { label: '美元', value: 'USD' },
-  { label: '欧元', value: 'EUR' },
-  { label: '英镑', value: 'GBP' },
-];
+
 </script>
 
 <style scoped>

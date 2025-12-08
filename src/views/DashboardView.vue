@@ -7,6 +7,12 @@
           <h1 class="logo">Subly</h1>
         </div>
         <div class="header-right">
+          <n-select
+            v-model:value="subscriptionStore.selectedCurrency"
+            :options="currencyOptions"
+            size="small"
+            style="width: 100px;"
+          />
           <n-button quaternary circle @click="themeStore.toggleTheme">
             <template #icon>
               <n-icon size="20">
@@ -38,7 +44,6 @@
       <StatsCards 
         :stats="subscriptionStore.stats"
         :currency="subscriptionStore.selectedCurrency"
-        @update:currency="subscriptionStore.selectedCurrency = $event"
       />
       
       <!-- 工具栏 -->
@@ -186,6 +191,14 @@ const sortOptions = [
   { label: '到期时间', value: 'end_date' },
   { label: '价格', value: 'price' },
   { label: '名称', value: 'name' },
+];
+
+const currencyOptions = [
+  { label: '¥ CNY', value: 'CNY' },
+  { label: 'HK$ HKD', value: 'HKD' },
+  { label: '$ USD', value: 'USD' },
+  { label: '€ EUR', value: 'EUR' },
+  { label: '£ GBP', value: 'GBP' },
 ];
 
 const filteredSubscriptions = computed(() => {
