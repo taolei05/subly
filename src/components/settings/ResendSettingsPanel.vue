@@ -1,12 +1,10 @@
 <template>
   <n-collapse-item title="Resend 邮件配置" name="resend">
     <div style="padding: 16px 0;">
-      <n-form-item>
-        <template #label>
-          启用邮件提醒
-        </template>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <span>启用邮件提醒</span>
         <n-switch v-model:value="formData.resend_enabled" />
-      </n-form-item>
+      </div>
 
       <n-form-item path="email" label="通知邮箱">
         <n-input

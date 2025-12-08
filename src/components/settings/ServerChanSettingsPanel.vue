@@ -1,12 +1,10 @@
 <template>
   <n-collapse-item title="Server酱 (微信通知)" name="serverchan">
     <div style="padding: 16px 0;">
-      <n-form-item>
-        <template #label>
-          启用微信提醒
-        </template>
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <span>启用微信提醒</span>
         <n-switch v-model:value="formData.serverchan_enabled" />
-      </n-form-item>
+      </div>
 
       <n-form-item path="serverchan_api_key">
         <template #label>
