@@ -9,7 +9,17 @@
           </n-icon>
         </template>
       </n-button>
-      <span class="calendar-title">{{ currentYear }}年{{ currentMonth + 1 }}月</span>
+      <n-date-picker
+        v-model:value="currentMonthTimestamp"
+        type="month"
+        format="y年 M月"
+        year-format="y年"
+        month-format="M月"
+        clearable
+        size="small"
+        style="width: 130px;"
+        @update:value="handleMonthChange"
+      />
       <n-button quaternary circle size="small" @click="nextMonth">
         <template #icon>
           <n-icon size="16">
@@ -72,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Subscription, SubscriptionType } from '../../types';
 
 const props = defineProps<{
@@ -89,6 +99,28 @@ const currentMonth = ref(new Date().getMonth());
 const selectedDate = ref<string | null>(null);
 const showDetailModal = ref(false);
 const selectedDaySubscriptions = ref<Subscription[]>([]);
+
+// 用于日期选择器的时间戳
+const currentMonthTimestamp = ref<number | null>(
+  new Date(currentYear.value, currentMonth.value, 1).getTime()
+);
+
+// 监听年月变化，更新时间戳
+watch([currentYear, currentMonth], () => {
+  currentMonthTimestamp.value = new Date(currentYear.value, currentMonth.value, 1).getTime();
+});
+
+// 处理月份选择器变化
+function handleMonthChange(timestamp: number | null) {
+  if (timestamp) {
+    const date = new Date(timestamp);
+    currentYear.value = date.getFullYear();
+    currentMonth.value = date.getMonth();
+  } else {
+    // 清除时回到当前月
+    goToToday();
+  }
+}
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -268,13 +300,6 @@ function handleDayClick(day: CalendarDay) {
   gap: 4px;
 }
 
-.calendar-title {
-  font-size: 15px;
-  font-weight: 600;
-  min-width: 100px;
-  text-align: center;
-}
-
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -397,10 +422,6 @@ function handleDayClick(day: CalendarDay) {
   
   .day-number {
     font-size: 12px;
-  }
-  
-  .calendar-title {
-    font-size: 14px;
   }
   
   .subscription-indicator {
