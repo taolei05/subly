@@ -39,7 +39,8 @@
       </div>
       
       <div class="card-tags">
-        <n-tag v-if="sub.auto_renew" size="small" type="info">自动续订</n-tag>
+        <n-tag v-if="sub.renew_type === 'auto'" size="small" type="info">自动续订</n-tag>
+        <n-tag v-if="sub.renew_type === 'manual'" size="small" type="warning">手动续订</n-tag>
         <n-tag v-if="sub.one_time" size="small" type="success">一次性</n-tag>
         <n-tag v-if="sub.remind_days > 0" size="small">提前{{ sub.remind_days }}天提醒</n-tag>
       </div>
