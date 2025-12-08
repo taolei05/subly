@@ -30,7 +30,7 @@
     
     <n-layout-content class="content-wrapper">
       <n-card title="系统配置" :bordered="false">
-        <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="140px">
+        <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
           <!-- 辅助功能：隐藏的用户名输入框，消除浏览器关于密码表单缺少用户名的警告 -->
           <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
           
@@ -72,8 +72,7 @@
           ref="profileFormRef"
           :model="profileFormData"
           :rules="profileRules"
-          label-placement="left"
-          label-width="80px"
+          label-placement="top"
         >
           <n-form-item path="username" label="用户名">
             <n-input v-model:value="profileFormData.username" placeholder="请输入用户名" />

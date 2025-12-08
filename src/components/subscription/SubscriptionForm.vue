@@ -7,7 +7,7 @@
     :mask-closable="false"
     @update:show="$emit('update:show', $event)"
   >
-    <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="100px">
+    <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
       <n-form-item path="name" label="服务名称">
         <n-input v-model:value="formData.name" placeholder="请输入服务名称" />
       </n-form-item>
