@@ -22,6 +22,8 @@ export interface User {
   serverchan_notify_interval?: number;
   serverchan_last_sent_at?: string;
   site_url?: string;
+  resend_enabled?: number;
+  serverchan_enabled?: number;
 }
 
 export interface Subscription {

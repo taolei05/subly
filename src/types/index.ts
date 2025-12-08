@@ -78,6 +78,8 @@ export interface User {
   serverchan_notify_time?: number;
   serverchan_notify_interval?: number;
   site_url?: string;
+  resend_enabled?: boolean;
+  serverchan_enabled?: boolean;
 }
 
 export interface UserSettings {
@@ -91,6 +93,8 @@ export interface UserSettings {
   serverchan_notify_time?: number;
   serverchan_notify_interval?: number;
   site_url?: string;
+  resend_enabled?: boolean;
+  serverchan_enabled?: boolean;
 }
 
 export interface LoginCredentials {

@@ -155,13 +155,14 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 
     console.log(`[Email] Checking reminders at Beijing hour: ${beijingHour}`);
 
-    // 获取所有配置了 Resend API Key 的用户
+    // 获取所有配置了 Resend API Key 且启用了邮件提醒的用户
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE resend_api_key IS NOT NULL AND resend_api_key != ''`,
+       WHERE resend_api_key IS NOT NULL AND resend_api_key != ''
+       AND (resend_enabled IS NULL OR resend_enabled = 1)`,
     ).all<User>();
 
-    console.log(`[Email] Found ${users.length} users with Resend configured`);
+    console.log(`[Email] Found ${users.length} users with Resend enabled`);
 
     for (const user of users) {
       // 检查是否应该发送通知

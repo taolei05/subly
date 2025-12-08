@@ -97,14 +97,15 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
       `[ServerChan] Checking reminders at Beijing hour: ${beijingHour}`,
     );
 
-    // 获取所有配置了 ServerChan 的用户
+    // 获取所有配置了 ServerChan 且启用了微信提醒的用户
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE serverchan_api_key IS NOT NULL AND serverchan_api_key != ''`,
+       WHERE serverchan_api_key IS NOT NULL AND serverchan_api_key != ''
+       AND (serverchan_enabled IS NULL OR serverchan_enabled = 1)`,
     ).all<User>();
 
     console.log(
-      `[ServerChan] Found ${users.length} users with ServerChan configured`,
+      `[ServerChan] Found ${users.length} users with ServerChan enabled`,
     );
 
     for (const user of users) {

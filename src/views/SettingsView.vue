@@ -140,6 +140,8 @@ const formData = reactive<UserSettings>({
   serverchan_notify_time: 8,
   serverchan_notify_interval: 24,
   site_url: '',
+  resend_enabled: true,
+  serverchan_enabled: true,
 });
 
 const rules: FormRules = {
@@ -186,6 +188,8 @@ onMounted(async () => {
     formData.serverchan_notify_interval =
       authStore.user.serverchan_notify_interval ?? 24;
     formData.site_url = authStore.user.site_url || '';
+    formData.resend_enabled = authStore.user.resend_enabled ?? true;
+    formData.serverchan_enabled = authStore.user.serverchan_enabled ?? true;
   }
 
   // Auto-capture site URL from current browser origin and update if different
