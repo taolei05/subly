@@ -67,7 +67,8 @@
           v-model:value="formData.remind_days" 
           :min="0"
           :max="365"
-          placeholder="提前几天提醒"
+          :placeholder="formData.one_time ? '永久无需提醒' : '提前几天提醒'"
+          :disabled="formData.one_time"
           style="width: 100%;"
         >
           <template #suffix>天</template>
@@ -249,9 +250,11 @@ function handleOneTimeChange(value: boolean) {
   if (value) {
     formData.renew_type = 'none';
     formData.end_date = null as unknown as number; // 清空到期日期
+    formData.remind_days = 0; // 清空提醒天数
   } else {
-    // 恢复默认到期日期（一年后）
+    // 恢复默认到期日期（一年后）和提醒天数
     formData.end_date = Date.now() + 365 * 24 * 60 * 60 * 1000;
+    formData.remind_days = 7;
   }
 }
 
@@ -262,6 +265,7 @@ watch(
       if (props.subscription) {
         // 编辑模式 - 填充数据
         const renewType = props.subscription.renew_type || 'none';
+        const isOneTime = props.subscription.one_time;
         Object.assign(formData, {
           name: props.subscription.name,
           type: props.subscription.type,
@@ -269,10 +273,11 @@ watch(
           price: props.subscription.price,
           currency: props.subscription.currency,
           start_date: new Date(props.subscription.start_date).getTime(),
-          end_date: new Date(props.subscription.end_date).getTime(),
+          // 一次性买断时，end_date 设为 null（不显示日期）
+          end_date: isOneTime ? null : new Date(props.subscription.end_date).getTime(),
           remind_days: props.subscription.remind_days,
           renew_type: renewType,
-          one_time: props.subscription.one_time,
+          one_time: isOneTime,
           notes: props.subscription.notes || '',
         });
       } else {
