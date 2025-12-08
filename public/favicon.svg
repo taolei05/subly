@@ -27,12 +27,4 @@
     <circle cx="0" cy="30" r="4" fill="#18a058"/>
     <circle cx="15" cy="30" r="4" fill="#18a058"/>
   </g>
-  
-  <!-- 文字 -->
-  <text x="100" y="175" 
-        font-family="system-ui, -apple-system, sans-serif" 
-        font-size="28" 
-        font-weight="700" 
-        fill="#18a058" 
-        text-anchor="middle">Subly</text>
 </svg>
