@@ -1,5 +1,6 @@
 <template>
   <div class="subscription-grid">
+    <n-empty v-if="subscriptions.length === 0" description="暂无订阅数据" style="grid-column: 1 / -1; padding: 40px 0;" />
     <n-card 
       v-for="sub in subscriptions" 
       :key="sub.id"

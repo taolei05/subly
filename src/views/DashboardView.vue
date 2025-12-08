@@ -191,8 +191,6 @@
           @edit="handleEdit"
         />
       </template>
-      
-      <n-empty v-if="!subscriptionStore.loading && filteredSubscriptions.length === 0 && (viewMode === 'grid' || viewMode === 'list')" description="暂无订阅数据" />
     </n-layout-content>
     
     <!-- 添加/编辑订阅模态框 -->

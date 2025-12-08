@@ -2,22 +2,22 @@
   <div class="calendar-container">
     <!-- 日历头部 -->
     <div class="calendar-header">
-      <n-button quaternary circle @click="prevMonth">
+      <n-button quaternary circle size="small" @click="prevMonth">
         <template #icon>
-          <n-icon size="20">
+          <n-icon size="16">
             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
           </n-icon>
         </template>
       </n-button>
       <span class="calendar-title">{{ currentYear }}年{{ currentMonth + 1 }}月</span>
-      <n-button quaternary circle @click="nextMonth">
+      <n-button quaternary circle size="small" @click="nextMonth">
         <template #icon>
-          <n-icon size="20">
+          <n-icon size="16">
             <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
           </n-icon>
         </template>
       </n-button>
-      <n-button size="small" @click="goToToday" style="margin-left: 12px;">
+      <n-button size="tiny" @click="goToToday" style="margin-left: 8px;">
         今天
       </n-button>
     </div>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- 选中日期的订阅详情 -->
-    <n-modal v-model:show="showDetailModal" preset="card" :title="detailTitle" style="width: 500px; max-width: 90vw;">
+    <n-modal v-model:show="showDetailModal" preset="card" :title="detailTitle" style="width: 420px; max-width: 90vw;">
       <div v-if="selectedDaySubscriptions.length > 0" class="detail-list">
         <div
           v-for="sub in selectedDaySubscriptions"
@@ -255,43 +255,45 @@ function handleDayClick(day: CalendarDay) {
   background: var(--n-color);
   border-radius: 8px;
   border: 1px solid var(--n-border-color);
-  padding: 16px;
+  padding: 12px;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
-  gap: 8px;
+  margin-bottom: 12px;
+  gap: 4px;
 }
 
 .calendar-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  min-width: 120px;
+  min-width: 100px;
   text-align: center;
 }
 
 .calendar-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 2px;
+  margin-bottom: 4px;
 }
 
 .weekday {
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--n-text-color-3);
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px;
 }
 
 .calendar-day {
@@ -299,13 +301,14 @@ function handleDayClick(day: CalendarDay) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 8px 4px;
-  border-radius: 8px;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
-  min-height: 60px;
+  min-height: 44px;
+  max-height: 52px;
 }
 
 .calendar-day:hover {
@@ -313,12 +316,12 @@ function handleDayClick(day: CalendarDay) {
 }
 
 .calendar-day.other-month {
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 .calendar-day.today {
   background: var(--n-color-target);
-  border: 2px solid var(--n-primary-color);
+  border: 1.5px solid var(--n-primary-color);
 }
 
 .calendar-day.selected {
@@ -334,27 +337,29 @@ function handleDayClick(day: CalendarDay) {
 }
 
 .day-number {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  line-height: 1;
 }
 
 .subscription-indicator {
-  margin-top: 4px;
+  margin-top: 2px;
+  transform: scale(0.85);
 }
 
 .detail-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .detail-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 10px;
   background: var(--n-color-modal);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -371,17 +376,23 @@ function handleDayClick(day: CalendarDay) {
 
 .detail-name {
   font-weight: 500;
+  font-size: 14px;
 }
 
 .detail-meta {
   color: var(--n-text-color-2);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 @media (max-width: 768px) {
+  .calendar-container {
+    max-width: 100%;
+    padding: 10px;
+  }
+  
   .calendar-day {
-    min-height: 50px;
-    padding: 4px 2px;
+    min-height: 38px;
+    max-height: 44px;
   }
   
   .day-number {
@@ -389,7 +400,11 @@ function handleDayClick(day: CalendarDay) {
   }
   
   .calendar-title {
-    font-size: 16px;
+    font-size: 14px;
+  }
+  
+  .subscription-indicator {
+    transform: scale(0.75);
   }
 }
 </style>
