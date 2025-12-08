@@ -65,14 +65,14 @@
           v-for="sub in selectedDaySubscriptions"
           :key="sub.id"
           class="detail-item"
-          @click="$emit('edit', sub)"
         >
           <div class="detail-info">
             <span class="detail-name">{{ sub.name }}</span>
             <n-tag size="small" :type="getTypeTagType(sub.type)">{{ typeLabels[sub.type] }}</n-tag>
           </div>
-          <div class="detail-meta">
-            <span>{{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}</span>
+          <div class="detail-right">
+            <span class="detail-price">{{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}</span>
+            <n-tag size="small" :type="getRenewTagType(sub)">{{ getRenewLabel(sub) }}</n-tag>
           </div>
         </div>
       </div>
@@ -89,7 +89,7 @@ const props = defineProps<{
   subscriptions: Subscription[];
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   edit: [subscription: Subscription];
 }>();
 
@@ -154,6 +154,26 @@ function getTypeTagType(
     other: 'default',
   };
   return typeMap[type] || 'default';
+}
+
+function getRenewLabel(sub: Subscription): string {
+  if (sub.one_time) return '一次性买断';
+  const labels: Record<string, string> = {
+    auto: '自动续订',
+    manual: '手动续订',
+    none: '不续订',
+  };
+  return labels[sub.renew_type] || '不续订';
+}
+
+function getRenewTagType(sub: Subscription): 'info' | 'success' | 'warning' | 'default' {
+  if (sub.one_time) return 'success';
+  const types: Record<string, 'info' | 'warning' | 'default'> = {
+    auto: 'info',
+    manual: 'warning',
+    none: 'default',
+  };
+  return types[sub.renew_type] || 'default';
 }
 
 // 按日期分组的订阅
@@ -385,12 +405,6 @@ function handleDayClick(day: CalendarDay) {
   padding: 10px;
   background: var(--n-color-modal);
   border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.detail-item:hover {
-  background: var(--n-color-hover);
 }
 
 .detail-info {
@@ -404,7 +418,13 @@ function handleDayClick(day: CalendarDay) {
   font-size: 14px;
 }
 
-.detail-meta {
+.detail-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-price {
   color: var(--n-text-color-2);
   font-size: 13px;
 }
