@@ -23,10 +23,14 @@
         <template #label>
           自动发送时间 (北京时间)
         </template>
-        <n-select
-          v-model:value="formData.serverchan_notify_time"
-          :options="hourOptions"
-          placeholder="请选择时间 (默认 8 点)"
+        <n-time-picker
+          v-model:value="notifyTimeValue"
+          format="HH:mm"
+          :hours="Array.from({ length: 24 }, (_, i) => i)"
+          :minutes="[0]"
+          :actions="null"
+          style="width: 100%"
+          @update:value="handleTimeChange"
         />
       </n-form-item>
 
@@ -59,7 +63,7 @@
 
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
-import { h, ref } from 'vue';
+import { computed, h, ref } from 'vue';
 import InfoIcon from '../../assets/icons/InfoIcon.vue';
 import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
@@ -70,17 +74,26 @@ const message = useMessage();
 const authStore = useAuthStore();
 const testingServerChan = ref(false);
 
-const hourOptions = Array.from({ length: 24 }, (_, i) => ({
-  label: `${String(i).padStart(2, '0')}:00`,
-  value: i,
-}));
+// 将小时数转换为时间戳（毫秒）
+const notifyTimeValue = computed(() => {
+  const hour = props.formData.serverchan_notify_time ?? 8;
+  return hour * 60 * 60 * 1000;
+});
+
+function handleTimeChange(value: number | null) {
+  if (value !== null) {
+    const hour = Math.floor(value / (60 * 60 * 1000));
+    props.formData.serverchan_notify_time = hour;
+  }
+}
 
 const intervalOptions = [
+  { label: '每1小时', value: 1 },
+  { label: '每2小时', value: 2 },
+  { label: '每3小时', value: 3 },
   { label: '每6小时', value: 6 },
   { label: '每12小时', value: 12 },
   { label: '每24小时 (每天)', value: 24 },
-  { label: '每48小时 (每2天)', value: 48 },
-  { label: '每72小时 (每3天)', value: 72 },
 ];
 
 function showServerChanHelp() {
@@ -137,4 +150,3 @@ async function handleTestServerChan() {
   }
 }
 </script>
-
