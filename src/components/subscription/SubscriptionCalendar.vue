@@ -5,7 +5,7 @@
       <n-button quaternary circle @click="prevMonth">
         <template #icon>
           <n-icon size="20">
-            <ChevronLeftIcon />
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
           </n-icon>
         </template>
       </n-button>
@@ -13,7 +13,7 @@
       <n-button quaternary circle @click="nextMonth">
         <template #icon>
           <n-icon size="20">
-            <ChevronRightIcon />
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
           </n-icon>
         </template>
       </n-button>
@@ -248,15 +248,6 @@ function handleDayClick(day: CalendarDay) {
     showDetailModal.value = true;
   }
 }
-
-// 图标组件
-const ChevronLeftIcon = {
-  template: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`,
-};
-
-const ChevronRightIcon = {
-  template: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`,
-};
 </script>
 
 <style scoped>
