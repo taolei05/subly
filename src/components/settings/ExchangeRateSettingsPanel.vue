@@ -38,9 +38,9 @@
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
 import { h, ref } from 'vue';
+import { subscriptionApi } from '../../api/subscription';
 import InfoIcon from '../../assets/icons/InfoIcon.vue';
 import type { UserSettings } from '../../types';
-import { subscriptionApi } from '../../api/subscription';
 
 const props = defineProps<{ formData: UserSettings }>();
 const dialog = useDialog();
@@ -100,14 +100,40 @@ async function handleTestExchangeRate() {
         title: '实时汇率（基准：人民币 CNY）',
         content: () => {
           return h('div', [
-            h('p', { style: 'margin-bottom: 12px; color: #666;' }, '以下为 1 CNY 可兑换的各币种数值：'),
-            h('div', { style: 'display: grid; grid-template-columns: 1fr 1fr; gap: 8px;' }, [
-              h('div', [h('strong', 'CNY'), h('span', { style: 'margin-left: 8px;' }, format(rates.CNY))]),
-              h('div', [h('strong', 'HKD'), h('span', { style: 'margin-left: 8px;' }, format(rates.HKD))]),
-              h('div', [h('strong', 'USD'), h('span', { style: 'margin-left: 8px;' }, format(rates.USD))]),
-              h('div', [h('strong', 'EUR'), h('span', { style: 'margin-left: 8px;' }, format(rates.EUR))]),
-              h('div', [h('strong', 'GBP'), h('span', { style: 'margin-left: 8px;' }, format(rates.GBP))]),
-            ]),
+            h(
+              'p',
+              { style: 'margin-bottom: 12px; color: #666;' },
+              '以下为 1 CNY 可兑换的各币种数值：',
+            ),
+            h(
+              'div',
+              {
+                style:
+                  'display: grid; grid-template-columns: 1fr 1fr; gap: 8px;',
+              },
+              [
+                h('div', [
+                  h('strong', 'CNY'),
+                  h('span', { style: 'margin-left: 8px;' }, format(rates.CNY)),
+                ]),
+                h('div', [
+                  h('strong', 'HKD'),
+                  h('span', { style: 'margin-left: 8px;' }, format(rates.HKD)),
+                ]),
+                h('div', [
+                  h('strong', 'USD'),
+                  h('span', { style: 'margin-left: 8px;' }, format(rates.USD)),
+                ]),
+                h('div', [
+                  h('strong', 'EUR'),
+                  h('span', { style: 'margin-left: 8px;' }, format(rates.EUR)),
+                ]),
+                h('div', [
+                  h('strong', 'GBP'),
+                  h('span', { style: 'margin-left: 8px;' }, format(rates.GBP)),
+                ]),
+              ],
+            ),
           ]);
         },
         positiveText: '知道了',

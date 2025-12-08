@@ -30,6 +30,17 @@
         />
       </n-form-item>
 
+      <n-form-item path="serverchan_notify_interval">
+        <template #label>
+          发送频率
+        </template>
+        <n-select
+          v-model:value="formData.serverchan_notify_interval"
+          :options="intervalOptions"
+          placeholder="请选择频率 (默认每24小时)"
+        />
+      </n-form-item>
+
       <n-form-item>
         <n-button
           size="small"
@@ -63,6 +74,14 @@ const hourOptions = Array.from({ length: 24 }, (_, i) => ({
   label: `${String(i).padStart(2, '0')}:00`,
   value: i,
 }));
+
+const intervalOptions = [
+  { label: '每6小时', value: 6 },
+  { label: '每12小时', value: 12 },
+  { label: '每24小时 (每天)', value: 24 },
+  { label: '每48小时 (每2天)', value: 48 },
+  { label: '每72小时 (每3天)', value: 72 },
+];
 
 function showServerChanHelp() {
   dialog.info({

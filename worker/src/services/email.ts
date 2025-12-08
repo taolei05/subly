@@ -1,7 +1,5 @@
 import type { Env, Subscription, User } from '../types';
 
-// ... (existing imports and interface)
-
 export interface EmailData {
   to: string;
   subject: string;
@@ -14,7 +12,6 @@ export async function sendEmail(
   domain: string,
   data: EmailData,
 ): Promise<boolean> {
-  // ... (existing implementation)
   try {
     const fromEmail = domain
       ? `Subly <noreply@${domain}>`
@@ -34,7 +31,13 @@ export async function sendEmail(
       }),
     });
 
-    return response.ok;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Resend API error:', response.status, errorText);
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error('Send email error:', error);
     return false;
@@ -43,7 +46,6 @@ export async function sendEmail(
 
 // 生成提醒邮件 HTML
 function generateReminderEmail(subscriptions: Subscription[]): string {
-  // ... (existing implementation)
   const items = subscriptions
     .map(
       (sub) => `
@@ -90,31 +92,68 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
   `;
 }
 
+// 检查是否应该发送通知（基于时间和频率）
+function shouldSendNotification(
+  notifyTime: number | null | undefined,
+  notifyInterval: number | null | undefined,
+  lastSentAt: string | null | undefined,
+  beijingHour: number,
+): boolean {
+  // 默认通知时间为8点，默认间隔为24小时
+  const targetHour = notifyTime ?? 8;
+  const intervalHours = notifyInterval ?? 24;
+
+  // 检查当前小时是否匹配通知时间
+  if (beijingHour !== targetHour) {
+    return false;
+  }
+
+  // 如果没有上次发送记录，应该发送
+  if (!lastSentAt) {
+    return true;
+  }
+
+  // 计算距离上次发送的小时数
+  const lastSent = new Date(lastSentAt);
+  const now = new Date();
+  const hoursSinceLastSent =
+    (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
+
+  // 如果超过间隔时间，应该发送
+  return hoursSinceLastSent >= intervalHours;
+}
+
 // 检查并发送到期提醒 (由 Cron 触发，每小时执行一次)
 export async function checkAndSendEmailReminders(env: Env): Promise<void> {
   try {
     // 获取当前北京时间的小时 (0-23)
-    // 假设服务器时区为 UTC，需要加 8 小时
     const now = new Date();
     const utcHour = now.getUTCHours();
     const beijingHour = (utcHour + 8) % 24;
 
-    console.log(`Checking reminders for hour: ${beijingHour} (Beijing Time)`);
+    console.log(`[Email] Checking reminders at Beijing hour: ${beijingHour}`);
 
-    // 获取所有配置了通知方式且设定通知时间为当前小时的用户
-    // 如果通知时间为空，默认为 8 点
-    // 必须配置 Resend API Key 或 ServerChan Token 且对应通知时间匹配
+    // 获取所有配置了 Resend API Key 的用户
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '')
-       AND (resend_notify_time = ? OR (resend_notify_time IS NULL AND ? = 8))`,
-    )
-      .bind(beijingHour, beijingHour)
-      .all<User>();
+       WHERE resend_api_key IS NOT NULL AND resend_api_key != ''`,
+    ).all<User>();
 
-    console.log(`Found ${users.length} users to check`);
+    console.log(`[Email] Found ${users.length} users with Resend configured`);
 
     for (const user of users) {
+      // 检查是否应该发送通知
+      if (
+        !shouldSendNotification(
+          user.resend_notify_time,
+          user.resend_notify_interval,
+          user.resend_last_sent_at,
+          beijingHour,
+        )
+      ) {
+        continue;
+      }
+
       // 获取该用户即将到期的订阅（非一次性，非停用）
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
@@ -128,21 +167,36 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
+        const html = generateReminderEmail(subscriptions);
 
-        const isEmailTime =
-          user.resend_notify_time === beijingHour ||
-          (user.resend_notify_time == null && beijingHour === 8);
-        if (user.resend_api_key && isEmailTime) {
-          const html = generateReminderEmail(subscriptions);
-          await sendEmail(user.resend_api_key, user.resend_domain || '', {
+        console.log(
+          `[Email] Sending reminder to user ${user.id} (${user.email})`,
+        );
+
+        const success = await sendEmail(
+          user.resend_api_key as string,
+          user.resend_domain || '',
+          {
             to: user.email,
             subject: title,
             html,
-          });
+          },
+        );
+
+        if (success) {
+          // 更新上次发送时间
+          await env.DB.prepare(
+            `UPDATE users SET resend_last_sent_at = ? WHERE id = ?`,
+          )
+            .bind(now.toISOString(), user.id)
+            .run();
+          console.log(`[Email] Successfully sent to user ${user.id}`);
+        } else {
+          console.error(`[Email] Failed to send to user ${user.id}`);
         }
       }
     }
   } catch (error) {
-    console.error('Check reminders error:', error);
+    console.error('[Email] Check reminders error:', error);
   }
 }
