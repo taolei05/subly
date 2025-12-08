@@ -18,18 +18,34 @@
           :input-props="{ autocomplete: 'new-password' }"
         />
       </n-form-item>
+
+      <n-form-item>
+        <n-button
+          size="small"
+          secondary
+          type="primary"
+          :loading="testingExchangeRate"
+          :disabled="!formData.exchangerate_api_key"
+          @click="handleTestExchangeRate"
+        >
+          测试汇率 API
+        </n-button>
+      </n-form-item>
     </div>
   </n-collapse-item>
 </template>
 
 <script setup lang="ts">
-import { useDialog } from 'naive-ui';
-import { h } from 'vue';
+import { useDialog, useMessage } from 'naive-ui';
+import { h, ref } from 'vue';
 import InfoIcon from '../../assets/icons/InfoIcon.vue';
 import type { UserSettings } from '../../types';
+import { subscriptionApi } from '../../api/subscription';
 
 const props = defineProps<{ formData: UserSettings }>();
 const dialog = useDialog();
+const message = useMessage();
+const testingExchangeRate = ref(false);
 
 function showExchangeRateHelp() {
   dialog.info({
@@ -64,5 +80,48 @@ function showExchangeRateHelp() {
     positiveText: '知道了',
   });
 }
-</script>
 
+async function handleTestExchangeRate() {
+  if (!props.formData.exchangerate_api_key) {
+    message.warning('请先输入 ExchangeRate API Key');
+    return;
+  }
+  testingExchangeRate.value = true;
+  try {
+    const res: any = await subscriptionApi.getExchangeRates();
+    if (res?.success && res?.source === 'exchangerate-api') {
+      message.success('测试成功，已从 ExchangeRate-API 获取汇率');
+
+      const rates = res?.data?.rates || {};
+      const format = (n: number | undefined) =>
+        typeof n === 'number' ? n.toFixed(4) : '-';
+
+      dialog.info({
+        title: '实时汇率（基准：人民币 CNY）',
+        content: () => {
+          return h('div', [
+            h('p', { style: 'margin-bottom: 12px; color: #666;' }, '以下为 1 CNY 可兑换的各币种数值：'),
+            h('div', { style: 'display: grid; grid-template-columns: 1fr 1fr; gap: 8px;' }, [
+              h('div', [h('strong', 'CNY'), h('span', { style: 'margin-left: 8px;' }, format(rates.CNY))]),
+              h('div', [h('strong', 'HKD'), h('span', { style: 'margin-left: 8px;' }, format(rates.HKD))]),
+              h('div', [h('strong', 'USD'), h('span', { style: 'margin-left: 8px;' }, format(rates.USD))]),
+              h('div', [h('strong', 'EUR'), h('span', { style: 'margin-left: 8px;' }, format(rates.EUR))]),
+              h('div', [h('strong', 'GBP'), h('span', { style: 'margin-left: 8px;' }, format(rates.GBP))]),
+            ]),
+          ]);
+        },
+        positiveText: '知道了',
+      });
+    } else if (res?.success && res?.source === 'default') {
+      message.warning('使用默认汇率，请先保存 API Key 后再测试');
+    } else {
+      message.error(res?.message || '测试失败，请检查 API Key');
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '测试失败，请稍后再试';
+    message.error(msg);
+  } finally {
+    testingExchangeRate.value = false;
+  }
+}
+</script>
