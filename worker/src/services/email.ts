@@ -44,6 +44,15 @@ export async function sendEmail(
   }
 }
 
+// 类型中文映射
+const typeLabels: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他',
+};
+
 // 生成提醒邮件 HTML
 function generateReminderEmail(subscriptions: Subscription[]): string {
   const items = subscriptions
@@ -51,7 +60,7 @@ function generateReminderEmail(subscriptions: Subscription[]): string {
       (sub) => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.type}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee;">${typeLabels[sub.type] || sub.type}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.end_date}</td>
     </tr>
   `,
