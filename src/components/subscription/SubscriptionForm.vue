@@ -55,6 +55,8 @@
               v-model:value="formData.end_date" 
               type="date"
               style="width: 100%;"
+              :disabled="formData.one_time"
+              :placeholder="formData.one_time ? '永久' : '请选择到期日期'"
             />
           </n-form-item>
         </n-gi>
@@ -207,7 +209,7 @@ const currencyOptions = [
   { label: '英镑 (GBP)', value: 'GBP' },
 ];
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择订阅类型', trigger: 'change' }],
   price: [
@@ -223,13 +225,13 @@ const rules: FormRules = {
   ],
   end_date: [
     {
-      required: true,
+      required: !formData.one_time,
       type: 'number',
       message: '请选择到期日期',
       trigger: 'change',
     },
   ],
-};
+}));
 
 // 监听 renew_type 变化
 watch(
@@ -246,6 +248,10 @@ watch(
 function handleOneTimeChange(value: boolean) {
   if (value) {
     formData.renew_type = 'none';
+    formData.end_date = null as unknown as number; // 清空到期日期
+  } else {
+    // 恢复默认到期日期（一年后）
+    formData.end_date = Date.now() + 365 * 24 * 60 * 60 * 1000;
   }
 }
 

@@ -102,10 +102,14 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     formData: SubscriptionFormData,
   ): Promise<ApiResponse> {
     try {
+      // 一次性买断时，end_date 设为空字符串或远期日期
+      const endDate = formData.one_time
+        ? '9999-12-31'
+        : formatDate(formData.end_date || Date.now());
       const payload: SubscriptionPayload = {
         ...formData,
         start_date: formatDate(formData.start_date || Date.now()),
-        end_date: formatDate(formData.end_date || Date.now()),
+        end_date: endDate,
       };
       const response = await subscriptionApi.create(payload);
       if (response.success && response.data) {
@@ -129,10 +133,14 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     formData: SubscriptionFormData,
   ): Promise<ApiResponse> {
     try {
+      // 一次性买断时，end_date 设为远期日期
+      const endDate = formData.one_time
+        ? '9999-12-31'
+        : formatDate(formData.end_date || Date.now());
       const payload: SubscriptionPayload = {
         ...formData,
         start_date: formatDate(formData.start_date || Date.now()),
-        end_date: formatDate(formData.end_date || Date.now()),
+        end_date: endDate,
       };
       const response = await subscriptionApi.update(id, payload);
       if (response.success) {
