@@ -61,6 +61,25 @@
         :currency="subscriptionStore.selectedCurrency"
       />
       
+      <!-- 到期倒计时 -->
+      <div v-if="expiringIn7Days.length > 0" class="countdown-section">
+        <h3 class="section-title">
+          <n-icon size="18" style="margin-right: 6px; vertical-align: middle;"><WarningIcon /></n-icon>
+          即将到期 (7天内)
+        </h3>
+        <div class="countdown-list">
+          <div v-for="sub in expiringIn7Days" :key="sub.id" class="countdown-item">
+            <div class="countdown-info">
+              <span class="countdown-name">{{ sub.name }}</span>
+              <span class="countdown-date">{{ sub.end_date }}</span>
+            </div>
+            <n-tag :type="getCountdownType(sub.daysLeft)" size="small">
+              {{ sub.daysLeft === 0 ? '今天到期' : sub.daysLeft < 0 ? `已过期 ${Math.abs(sub.daysLeft)} 天` : `${sub.daysLeft} 天后` }}
+            </n-tag>
+          </div>
+        </div>
+      </div>
+      
       <!-- 工具栏 -->
       <div class="toolbar">
         <div class="toolbar-left">
@@ -209,6 +228,7 @@ import MoonIcon from '../assets/icons/MoonIcon.vue';
 import SearchIcon from '../assets/icons/SearchIcon.vue';
 import SettingsIcon from '../assets/icons/SettingsIcon.vue';
 import SunIcon from '../assets/icons/SunIcon.vue';
+import WarningIcon from '../assets/icons/WarningIcon.vue';
 import StatsCards from '../components/subscription/StatsCards.vue';
 import SubscriptionCalendar from '../components/subscription/SubscriptionCalendar.vue';
 import SubscriptionForm from '../components/subscription/SubscriptionForm.vue';
@@ -267,6 +287,29 @@ const currencyOptions = [
   { label: '€ EUR', value: 'EUR' },
   { label: '£ GBP', value: 'GBP' },
 ];
+
+// 计算7天内到期的订阅
+const expiringIn7Days = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return subscriptionStore.subscriptions
+    .filter(sub => sub.status === 'active' && !sub.one_time)
+    .map(sub => {
+      const endDate = new Date(sub.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return { ...sub, daysLeft };
+    })
+    .filter(sub => sub.daysLeft <= 7)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+});
+
+function getCountdownType(daysLeft: number): 'error' | 'warning' | 'info' {
+  if (daysLeft <= 0) return 'error';
+  if (daysLeft <= 3) return 'warning';
+  return 'info';
+}
 
 const filteredSubscriptions = computed(() => {
   let result = [...subscriptionStore.subscriptions];
