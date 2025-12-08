@@ -74,13 +74,22 @@
       
       <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
         <n-gi>
-          <n-form-item path="auto_renew" label="自动续订">
-            <n-switch v-model:value="formData.auto_renew" />
+          <n-form-item path="renew_type" label="续订类型">
+            <n-select 
+              v-model:value="formData.renew_type" 
+              :options="renewTypeOptions" 
+              :disabled="formData.one_time"
+              placeholder="请选择续订类型"
+            />
           </n-form-item>
         </n-gi>
         <n-gi>
           <n-form-item path="one_time" label="一次性买断">
-            <n-switch v-model:value="formData.one_time" />
+            <n-switch 
+              v-model:value="formData.one_time" 
+              :disabled="formData.renew_type !== 'none'"
+              @update:value="handleOneTimeChange"
+            />
           </n-form-item>
         </n-gi>
       </n-grid>
@@ -139,10 +148,17 @@ const defaultFormData = (): SubscriptionFormData => ({
   start_date: Date.now(),
   end_date: Date.now() + 365 * 24 * 60 * 60 * 1000,
   remind_days: 7,
+  renew_type: 'none' as 'none' | 'auto' | 'manual',
   auto_renew: false,
   one_time: false,
   notes: '',
 });
+
+const renewTypeOptions = [
+  { label: '不续订', value: 'none' },
+  { label: '自动续订', value: 'auto' },
+  { label: '手动续订', value: 'manual' },
+];
 
 const formData = reactive<SubscriptionFormData>(defaultFormData());
 
@@ -216,12 +232,33 @@ const rules: FormRules = {
   ],
 };
 
+// 监听 renew_type 变化，同步 auto_renew
+watch(
+  () => formData.renew_type,
+  (newVal) => {
+    formData.auto_renew = newVal === 'auto';
+    // 如果选择了续订类型，禁用一次性买断
+    if (newVal !== 'none') {
+      formData.one_time = false;
+    }
+  },
+);
+
+// 处理一次性买断变化
+function handleOneTimeChange(value: boolean) {
+  if (value) {
+    formData.renew_type = 'none';
+    formData.auto_renew = false;
+  }
+}
+
 watch(
   () => props.show,
   (newVal) => {
     if (newVal) {
       if (props.subscription) {
         // 编辑模式 - 填充数据
+        const renewType = props.subscription.auto_renew ? 'auto' : 'none';
         Object.assign(formData, {
           name: props.subscription.name,
           type: props.subscription.type,
@@ -231,6 +268,7 @@ watch(
           start_date: new Date(props.subscription.start_date).getTime(),
           end_date: new Date(props.subscription.end_date).getTime(),
           remind_days: props.subscription.remind_days,
+          renew_type: renewType,
           auto_renew: props.subscription.auto_renew,
           one_time: props.subscription.one_time,
           notes: props.subscription.notes || '',

@@ -36,6 +36,8 @@ export interface UserProfileUpdate {
   password?: string;
 }
 
+export type RenewType = 'none' | 'auto' | 'manual';
+
 export interface SubscriptionFormData {
   name: string;
   type: SubscriptionType;
@@ -45,6 +47,7 @@ export interface SubscriptionFormData {
   start_date: number | null;
   end_date: number | null;
   remind_days: number;
+  renew_type: RenewType;
   auto_renew: boolean;
   one_time: boolean;
   notes?: string;
