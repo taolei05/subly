@@ -60,8 +60,10 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
 
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE (serverchan_api_key IS NOT NULL AND serverchan_api_key != '')`,
+       WHERE (serverchan_api_key IS NOT NULL AND serverchan_api_key != '')
+       AND (serverchan_notify_time = ? OR (serverchan_notify_time IS NULL AND ? = 8))`,
     )
+      .bind(beijingHour, beijingHour)
       .all<User>();
 
     for (const user of users) {
@@ -84,21 +86,11 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
             )
             .join('\n\n') + '\n\n请及时处理。';
 
-        const baseHour = user.serverchan_notify_time ?? 8;
-        const interval = Math.max(
-          1,
-          Math.min(24, user.serverchan_notify_interval ?? 24),
+        await sendServerChanMessage(
+          user.serverchan_api_key as string,
+          title,
+          content,
         );
-        const diff = (beijingHour - baseHour + 24) % 24;
-        const shouldSend = diff % interval === 0;
-
-        if (user.serverchan_api_key && shouldSend) {
-          await sendServerChanMessage(
-            user.serverchan_api_key as string,
-            title,
-            content,
-          );
-        }
       }
     }
   } catch {}

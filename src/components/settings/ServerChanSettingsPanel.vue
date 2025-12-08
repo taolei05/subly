@@ -30,19 +30,6 @@
         />
       </n-form-item>
 
-      <n-form-item path="serverchan_notify_interval">
-        <template #label>
-          发送频率（每隔 N 小时）
-        </template>
-        <n-input-number
-          v-model:value="formData.serverchan_notify_interval"
-          :min="1"
-          :max="24"
-          :step="1"
-          placeholder="默认 24 小时"
-        />
-      </n-form-item>
-
       <n-form-item>
         <n-button
           size="small"
@@ -131,3 +118,4 @@ async function handleTestServerChan() {
   }
 }
 </script>
+
