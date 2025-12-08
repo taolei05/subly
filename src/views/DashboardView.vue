@@ -92,6 +92,12 @@
         </div>
         
         <div class="toolbar-right">
+          <n-dropdown :options="importExportOptions" @select="handleImportExport">
+            <n-button secondary>
+              导入/导出
+            </n-button>
+          </n-dropdown>
+          
           <n-button-group>
             <n-button 
               :type="viewMode === 'list' ? 'primary' : 'default'"
@@ -109,6 +115,14 @@
                 <n-icon><GridIcon /></n-icon>
               </template>
             </n-button>
+            <n-button 
+              :type="viewMode === 'calendar' ? 'primary' : 'default'"
+              @click="viewMode = 'calendar'"
+            >
+              <template #icon>
+                <n-icon><CalendarIcon /></n-icon>
+              </template>
+            </n-button>
           </n-button-group>
           
           <n-button type="primary" @click="showAddModal = true">
@@ -120,6 +134,14 @@
         </div>
       </div>
       
+      <!-- 批量操作工具栏 -->
+      <div v-if="selectedIds.length > 0" class="batch-toolbar">
+        <span>已选择 {{ selectedIds.length }} 项</span>
+        <n-button size="small" @click="selectedIds = []">取消选择</n-button>
+        <n-button size="small" type="warning" @click="showBatchRemindModal = true">修改提醒天数</n-button>
+        <n-button size="small" type="error" @click="handleBatchDelete">批量删除</n-button>
+      </div>
+      
       <!-- 订阅列表/卡片 -->
       <div v-if="subscriptionStore.loading" class="loading-container">
         <n-spin size="large" />
@@ -128,6 +150,8 @@
       <template v-else>
         <SubscriptionList 
           v-if="viewMode === 'list'"
+          v-model:selectedIds="selectedIds"
+          :selectable="true"
           :subscriptions="filteredSubscriptions"
           @edit="handleEdit"
           @delete="handleDelete"
@@ -135,15 +159,21 @@
         />
         
         <SubscriptionGrid 
-          v-else
+          v-else-if="viewMode === 'grid'"
           :subscriptions="filteredSubscriptions"
           @edit="handleEdit"
           @delete="handleDelete"
           @toggle-status="handleToggleStatus"
         />
+        
+        <SubscriptionCalendar
+          v-else-if="viewMode === 'calendar'"
+          :subscriptions="filteredSubscriptions"
+          @edit="handleEdit"
+        />
       </template>
       
-      <n-empty v-if="!subscriptionStore.loading && filteredSubscriptions.length === 0 && viewMode === 'grid'" description="暂无订阅数据" />
+      <n-empty v-if="!subscriptionStore.loading && filteredSubscriptions.length === 0 && (viewMode === 'grid' || viewMode === 'list')" description="暂无订阅数据" />
     </n-layout-content>
     
     <!-- 添加/编辑订阅模态框 -->
@@ -153,14 +183,25 @@
       @submit="handleFormSubmit"
       @close="handleFormClose"
     />
+    
+    <!-- 批量修改提醒天数模态框 -->
+    <n-modal v-model:show="showBatchRemindModal" preset="dialog" title="批量修改提醒天数">
+      <n-input-number v-model:value="batchRemindDays" :min="1" :max="365" style="width: 100%;" />
+      <template #action>
+        <n-button @click="showBatchRemindModal = false">取消</n-button>
+        <n-button type="primary" @click="handleBatchUpdateRemindDays">确定</n-button>
+      </template>
+    </n-modal>
   </n-layout>
 </template>
 
 <script setup lang="ts">
-import { useMessage } from 'naive-ui';
+import { useDialog, useMessage } from 'naive-ui';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { subscriptionApi } from '../api/subscription';
 import AddIcon from '../assets/icons/AddIcon.vue';
+import CalendarIcon from '../assets/icons/CalendarIcon.vue';
 import GridIcon from '../assets/icons/GridIcon.vue';
 import ListIcon from '../assets/icons/ListIcon.vue';
 import LogoutIcon from '../assets/icons/LogoutIcon.vue';
@@ -169,6 +210,7 @@ import SearchIcon from '../assets/icons/SearchIcon.vue';
 import SettingsIcon from '../assets/icons/SettingsIcon.vue';
 import SunIcon from '../assets/icons/SunIcon.vue';
 import StatsCards from '../components/subscription/StatsCards.vue';
+import SubscriptionCalendar from '../components/subscription/SubscriptionCalendar.vue';
 import SubscriptionForm from '../components/subscription/SubscriptionForm.vue';
 import SubscriptionGrid from '../components/subscription/SubscriptionGrid.vue';
 import SubscriptionList from '../components/subscription/SubscriptionList.vue';
@@ -183,6 +225,7 @@ import type {
 
 const router = useRouter();
 const message = useMessage();
+const dialog = useDialog();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionStore();
@@ -190,9 +233,18 @@ const subscriptionStore = useSubscriptionStore();
 const searchQuery = ref('');
 const filterType = ref<SubscriptionType | null>(null);
 const sortBy = ref('end_date');
-const viewMode = ref<'list' | 'grid'>('list');
+const viewMode = ref<'list' | 'grid' | 'calendar'>('list');
 const showAddModal = ref(false);
 const editingSubscription = ref<Subscription | null>(null);
+const selectedIds = ref<number[]>([]);
+const showBatchRemindModal = ref(false);
+const batchRemindDays = ref(7);
+
+const importExportOptions = [
+  { label: '导出 JSON', key: 'export-json' },
+  { label: '导出 CSV', key: 'export-csv' },
+  { label: '导入数据', key: 'import' },
+];
 
 const typeOptions = [
   { label: '域名', value: 'domain' },
@@ -317,12 +369,121 @@ function handleFormClose() {
   showAddModal.value = false;
   editingSubscription.value = null;
 }
+
+// 导入导出处理
+async function handleImportExport(key: string) {
+  if (key === 'export-json' || key === 'export-csv') {
+    const format = key === 'export-json' ? 'json' : 'csv';
+    const token = localStorage.getItem('token');
+    const url = `${subscriptionApi.exportData(format)}&token=${token}`;
+    window.open(url, '_blank');
+  } else if (key === 'import') {
+    // 创建隐藏的文件输入
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.csv';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        let data: Record<string, unknown>[];
+
+        if (file.name.endsWith('.json')) {
+          data = JSON.parse(text);
+        } else {
+          // 解析 CSV
+          const lines = text.split('\n').filter((l) => l.trim());
+          const headers = lines[0].split(',');
+          data = lines.slice(1).map((line) => {
+            const values = line.split(',');
+            const obj: Record<string, unknown> = {};
+            headers.forEach((h, i) => {
+              let val: unknown = values[i]?.replace(/^"|"$/g, '');
+              if (h === 'one_time') val = val === 'true' || val === '1';
+              if (h === 'price' || h === 'remind_days') val = Number(val) || 0;
+              obj[h.trim()] = val;
+            });
+            return obj;
+          });
+        }
+
+        const result = await subscriptionApi.importData(data);
+        if (result.success) {
+          message.success(result.message || '导入成功');
+          await subscriptionStore.fetchSubscriptions();
+        } else {
+          message.error(result.message || '导入失败');
+        }
+      } catch (err) {
+        message.error('文件解析失败，请检查格式');
+      }
+    };
+    input.click();
+  }
+}
+
+// 批量删除
+function handleBatchDelete() {
+  dialog.warning({
+    title: '确认删除',
+    content: `确定要删除选中的 ${selectedIds.value.length} 个订阅吗？此操作不可恢复。`,
+    positiveText: '删除',
+    negativeText: '取消',
+    onPositiveClick: async () => {
+      try {
+        const result = await subscriptionApi.batchDelete(selectedIds.value);
+        if (result.success) {
+          message.success(result.message || '删除成功');
+          selectedIds.value = [];
+          await subscriptionStore.fetchSubscriptions();
+        } else {
+          message.error(result.message || '删除失败');
+        }
+      } catch (err) {
+        message.error('删除失败');
+      }
+    },
+  });
+}
+
+// 批量修改提醒天数
+async function handleBatchUpdateRemindDays() {
+  try {
+    const result = await subscriptionApi.batchUpdateRemindDays(
+      selectedIds.value,
+      batchRemindDays.value,
+    );
+    if (result.success) {
+      message.success(result.message || '修改成功');
+      selectedIds.value = [];
+      showBatchRemindModal.value = false;
+      await subscriptionStore.fetchSubscriptions();
+    } else {
+      message.error(result.message || '修改失败');
+    }
+  } catch (err) {
+    message.error('修改失败');
+  }
+}
 </script>
 
 <style scoped>
 .page-container {
   min-height: 100vh;
   background-color: var(--bg-color);
+}
+
+.batch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--n-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid var(--n-border-color);
 }
 
 .header {
@@ -396,6 +557,52 @@ function handleFormClose() {
   display: flex;
   justify-content: center;
   padding: 60px 0;
+}
+
+.countdown-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--n-color);
+  border-radius: 8px;
+  border: 1px solid var(--n-border-color);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: var(--n-text-color);
+}
+
+.countdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.countdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--n-color-modal);
+  border-radius: 6px;
+}
+
+.countdown-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.countdown-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.countdown-date {
+  font-size: 12px;
+  color: var(--n-text-color-3);
 }
 
 @media (max-width: 768px) {

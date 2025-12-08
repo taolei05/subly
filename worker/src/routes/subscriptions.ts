@@ -280,3 +280,226 @@ export async function updateSubscriptionStatus(
     return errorResponse('更新状态失败', 500);
   }
 }
+
+// 导出订阅数据
+export async function exportSubscriptions(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  try {
+    const userId = await getUserId(request);
+    if (!userId) return errorResponse('未授权', 401);
+
+    const url = new URL(request.url);
+    const format = url.searchParams.get('format') || 'json';
+
+    const { results } = await env.DB.prepare(
+      'SELECT name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, status, notes FROM subscriptions WHERE user_id = ? ORDER BY end_date ASC',
+    )
+      .bind(userId)
+      .all<Subscription>();
+
+    const subscriptions = results.map((sub) => ({
+      ...sub,
+      one_time: Boolean(sub.one_time),
+    }));
+
+    if (format === 'csv') {
+      const headers = [
+        'name',
+        'type',
+        'type_detail',
+        'price',
+        'currency',
+        'start_date',
+        'end_date',
+        'remind_days',
+        'renew_type',
+        'one_time',
+        'status',
+        'notes',
+      ];
+      const csvRows = [headers.join(',')];
+
+      for (const sub of subscriptions) {
+        const row = headers.map((h) => {
+          const val = (sub as Record<string, unknown>)[h];
+          if (val === null || val === undefined) return '';
+          if (
+            typeof val === 'string' &&
+            (val.includes(',') || val.includes('"') || val.includes('\n'))
+          ) {
+            return `"${val.replace(/"/g, '""')}"`;
+          }
+          return String(val);
+        });
+        csvRows.push(row.join(','));
+      }
+
+      return new Response(csvRows.join('\n'), {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="subly-export-${new Date().toISOString().split('T')[0]}.csv"`,
+          ...Object.fromEntries(
+            Object.entries({ 'Access-Control-Allow-Origin': '*' }),
+          ),
+        },
+      });
+    }
+
+    // JSON format
+    return new Response(JSON.stringify(subscriptions, null, 2), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="subly-export-${new Date().toISOString().split('T')[0]}.json"`,
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
+  } catch (error) {
+    console.error('ExportSubscriptions error:', error);
+    return errorResponse('导出失败', 500);
+  }
+}
+
+// 导入订阅数据
+export async function importSubscriptions(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  try {
+    const userId = await getUserId(request);
+    if (!userId) return errorResponse('未授权', 401);
+
+    const body = (await request.json()) as {
+      data: Array<Record<string, unknown>>;
+      format?: string;
+    };
+    const { data } = body;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return errorResponse('导入数据为空或格式错误', 400);
+    }
+
+    let imported = 0;
+    let failed = 0;
+
+    for (const item of data) {
+      try {
+        // 验证必填字段
+        if (!item.name || !item.type || !item.start_date || !item.end_date) {
+          failed++;
+          continue;
+        }
+
+        await env.DB.prepare(`
+          INSERT INTO subscriptions 
+          (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, status, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+          .bind(
+            userId,
+            item.name,
+            item.type,
+            item.type_detail || null,
+            item.price || 0,
+            item.currency || 'CNY',
+            item.start_date,
+            item.end_date,
+            item.remind_days || 7,
+            item.renew_type || 'none',
+            item.one_time ? 1 : 0,
+            item.status || 'active',
+            item.notes || null,
+          )
+          .run();
+        imported++;
+      } catch (e) {
+        console.error('Import item error:', e);
+        failed++;
+      }
+    }
+
+    return successResponse(
+      { imported, failed },
+      `成功导入 ${imported} 条，失败 ${failed} 条`,
+    );
+  } catch (error) {
+    console.error('ImportSubscriptions error:', error);
+    return errorResponse('导入失败', 500);
+  }
+}
+
+// 批量删除订阅
+export async function batchDeleteSubscriptions(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  try {
+    const userId = await getUserId(request);
+    if (!userId) return errorResponse('未授权', 401);
+
+    const { ids } = (await request.json()) as { ids: number[] };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return errorResponse('请选择要删除的订阅', 400);
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    const result = await env.DB.prepare(
+      `DELETE FROM subscriptions WHERE id IN (${placeholders}) AND user_id = ?`,
+    )
+      .bind(...ids, userId)
+      .run();
+
+    return successResponse(
+      { deleted: result.meta.changes },
+      `成功删除 ${result.meta.changes} 条订阅`,
+    );
+  } catch (error) {
+    console.error('BatchDeleteSubscriptions error:', error);
+    return errorResponse('批量删除失败', 500);
+  }
+}
+
+// 批量修改提醒天数
+export async function batchUpdateRemindDays(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  try {
+    const userId = await getUserId(request);
+    if (!userId) return errorResponse('未授权', 401);
+
+    const { ids, remind_days } = (await request.json()) as {
+      ids: number[];
+      remind_days: number;
+    };
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return errorResponse('请选择要修改的订阅', 400);
+    }
+
+    if (
+      typeof remind_days !== 'number' ||
+      remind_days < 1 ||
+      remind_days > 365
+    ) {
+      return errorResponse('提醒天数必须在 1-365 之间', 400);
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    const result = await env.DB.prepare(
+      `UPDATE subscriptions SET remind_days = ?, updated_at = datetime('now') WHERE id IN (${placeholders}) AND user_id = ?`,
+    )
+      .bind(remind_days, ...ids, userId)
+      .run();
+
+    return successResponse(
+      { updated: result.meta.changes },
+      `成功修改 ${result.meta.changes} 条订阅的提醒天数`,
+    );
+  } catch (error) {
+    console.error('BatchUpdateRemindDays error:', error);
+    return errorResponse('批量修改失败', 500);
+  }
+}

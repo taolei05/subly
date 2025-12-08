@@ -222,11 +222,15 @@ export async function updateSettings(
     // Determine enabled states (convert boolean to integer for SQLite)
     const newResendEnabled =
       resend_enabled !== undefined
-        ? (resend_enabled ? 1 : 0)
+        ? resend_enabled
+          ? 1
+          : 0
         : (currentSettings?.resend_enabled ?? 1);
     const newServerChanEnabled =
       serverchan_enabled !== undefined
-        ? (serverchan_enabled ? 1 : 0)
+        ? serverchan_enabled
+          ? 1
+          : 0
         : (currentSettings?.serverchan_enabled ?? 1);
 
     await env.DB.prepare(

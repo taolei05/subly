@@ -1,10 +1,12 @@
 <template>
   <n-data-table
-    :columns="columns"
+    :columns="computedColumns"
     :data="subscriptions"
     :row-key="(row: Subscription) => row.id"
     :bordered="false"
     :scroll-x="700"
+    :checked-row-keys="selectable ? selectedIds : undefined"
+    @update:checked-row-keys="handleCheckedChange"
     striped
   >
     <template #empty>
@@ -16,20 +18,27 @@
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui';
 import { NButton, NEmpty, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui';
-import { h } from 'vue';
+import { computed, h } from 'vue';
 import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
 import EditIcon from '../../assets/icons/EditIcon.vue';
 import type { Subscription } from '../../types';
 
 const props = defineProps<{
   subscriptions: Subscription[];
+  selectable?: boolean;
+  selectedIds?: number[];
 }>();
 
 const emit = defineEmits<{
   edit: [subscription: Subscription];
   delete: [subscription: Subscription];
   'toggle-status': [subscription: Subscription];
+  'update:selectedIds': [ids: number[]];
 }>();
+
+function handleCheckedChange(keys: (string | number)[]) {
+  emit('update:selectedIds', keys as number[]);
+}
 
 const typeLabels: Record<string, string> = {
   domain: '域名',
@@ -81,7 +90,7 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('zh-CN');
 }
 
-const columns: DataTableColumns<Subscription> = [
+const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '服务名称',
     key: 'name',
@@ -219,6 +228,13 @@ const columns: DataTableColumns<Subscription> = [
     },
   },
 ];
+
+const computedColumns = computed(() => {
+  if (props.selectable) {
+    return [{ type: 'selection' as const }, ...baseColumns];
+  }
+  return baseColumns;
+});
 </script>
 
 <style scoped>

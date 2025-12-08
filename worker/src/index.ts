@@ -8,10 +8,14 @@ import {
 } from './routes/auth';
 import { sendTestEmail } from './routes/email';
 import {
+  batchDeleteSubscriptions,
+  batchUpdateRemindDays,
   createSubscription,
   deleteSubscription,
+  exportSubscriptions,
   getSubscription,
   getSubscriptions,
+  importSubscriptions,
   updateSubscription,
   updateSubscriptionStatus,
 } from './routes/subscriptions';
@@ -70,6 +74,26 @@ export default {
         }
         if (apiPath === '/subscriptions' && method === 'POST') {
           return await createSubscription(request, env);
+        }
+
+        // 导出订阅
+        if (apiPath === '/subscriptions/export' && method === 'GET') {
+          return await exportSubscriptions(request, env);
+        }
+
+        // 导入订阅
+        if (apiPath === '/subscriptions/import' && method === 'POST') {
+          return await importSubscriptions(request, env);
+        }
+
+        // 批量删除
+        if (apiPath === '/subscriptions/batch' && method === 'DELETE') {
+          return await batchDeleteSubscriptions(request, env);
+        }
+
+        // 批量修改提醒天数
+        if (apiPath === '/subscriptions/batch' && method === 'PATCH') {
+          return await batchUpdateRemindDays(request, env);
         }
 
         // 带 ID 的订阅路由
