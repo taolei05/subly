@@ -1,4 +1,5 @@
 import type { Env, Subscription, User } from '../types';
+import { decryptApiKey } from '../crypto';
 
 export interface EmailData {
   to: string;
@@ -199,8 +200,11 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
           `[Email] Sending reminder to user ${user.id} (${user.email})`,
         );
 
+        // Decrypt API key before use (需求 5.2)
+        const decryptedApiKey = await decryptApiKey(user.resend_api_key as string);
+
         const success = await sendEmail(
-          user.resend_api_key as string,
+          decryptedApiKey,
           user.resend_domain || '',
           {
             to: user.email,
