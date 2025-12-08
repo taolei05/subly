@@ -122,6 +122,23 @@ const columns: DataTableColumns<Subscription> = [
     },
   },
   {
+    title: '续订类型',
+    key: 'renew_type',
+    minWidth: 100,
+    render(row) {
+      if (row.one_time) {
+        return h(NTag, { size: 'small', type: 'success' }, { default: () => '一次性买断' });
+      }
+      const renewLabels: Record<string, { label: string; type: 'info' | 'warning' | 'default' }> = {
+        auto: { label: '自动续订', type: 'info' },
+        manual: { label: '手动续订', type: 'warning' },
+        none: { label: '不续订', type: 'default' },
+      };
+      const config = renewLabels[row.renew_type] || renewLabels.none;
+      return h(NTag, { size: 'small', type: config.type }, { default: () => config.label });
+    },
+  },
+  {
     title: '状态',
     key: 'status',
     minWidth: 100,
