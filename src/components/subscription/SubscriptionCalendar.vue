@@ -16,8 +16,8 @@
         year-format="y年"
         month-format="M月"
         clearable
-        size="small"
-        style="width: 130px;"
+        size="medium"
+        style="width: 140px;"
         @update:value="handleMonthChange"
       />
       <n-button quaternary circle size="small" @click="nextMonth">
@@ -27,7 +27,7 @@
           </n-icon>
         </template>
       </n-button>
-      <n-button size="tiny" @click="goToToday" style="margin-left: 8px;">
+      <n-button size="small" @click="goToToday" style="margin-left: 8px;">
         今天
       </n-button>
     </div>
