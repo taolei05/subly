@@ -188,8 +188,9 @@ onMounted(async () => {
     formData.serverchan_notify_interval =
       authStore.user.serverchan_notify_interval ?? 24;
     formData.site_url = authStore.user.site_url || '';
-    formData.resend_enabled = authStore.user.resend_enabled ?? true;
-    formData.serverchan_enabled = authStore.user.serverchan_enabled ?? true;
+    // SQLite 返回数字 0/1，需要转换为布尔值
+    formData.resend_enabled = authStore.user.resend_enabled === undefined ? true : Boolean(authStore.user.resend_enabled);
+    formData.serverchan_enabled = authStore.user.serverchan_enabled === undefined ? true : Boolean(authStore.user.serverchan_enabled);
   }
 
   // Auto-capture site URL from current browser origin and update if different
