@@ -1,0 +1,38 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="100" cy="100" r="90" fill="#18a058" opacity="0.1"/>
+  
+  <!-- 主图标 - 循环箭头 + 订阅符号 -->
+  <g transform="translate(100, 100)">
+    <!-- 外圈循环箭头 -->
+    <path d="M 0,-50 A 50,50 0 1,1 -35.35,-35.35" 
+          fill="none" 
+          stroke="#18a058" 
+          stroke-width="8" 
+          stroke-linecap="round"/>
+    
+    <!-- 箭头头部 -->
+    <path d="M -35.35,-35.35 L -45,-25 L -25,-45 Z" 
+          fill="#18a058"/>
+    
+    <!-- 中间的"S"字母（Subly首字母） -->
+    <path d="M -15,10 Q -15,-5 0,-5 Q 15,-5 15,-15 Q 15,-25 0,-25 M 0,-25 Q -15,-25 -15,-15" 
+          fill="none" 
+          stroke="#18a058" 
+          stroke-width="6" 
+          stroke-linecap="round"/>
+    
+    <!-- 下方的订阅符号（三个点） -->
+    <circle cx="-15" cy="30" r="4" fill="#18a058"/>
+    <circle cx="0" cy="30" r="4" fill="#18a058"/>
+    <circle cx="15" cy="30" r="4" fill="#18a058"/>
+  </g>
+  
+  <!-- 文字 -->
+  <text x="100" y="175" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-size="28" 
+        font-weight="700" 
+        fill="#18a058" 
+        text-anchor="middle">Subly</text>
+</svg>
