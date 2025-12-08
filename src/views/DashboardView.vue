@@ -13,28 +13,43 @@
             size="small"
             style="width: 100px;"
           />
-          <n-button quaternary circle @click="themeStore.toggleTheme">
-            <template #icon>
-              <n-icon size="20">
-                <SunIcon v-if="themeStore.isDark" />
-                <MoonIcon v-else />
-              </n-icon>
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary circle @click="themeStore.toggleTheme">
+                <template #icon>
+                  <n-icon size="20">
+                    <SunIcon v-if="themeStore.isDark" />
+                    <MoonIcon v-else />
+                  </n-icon>
+                </template>
+              </n-button>
             </template>
-          </n-button>
-          <n-button quaternary circle @click="goToSettings">
-            <template #icon>
-              <n-icon size="20">
-                <SettingsIcon />
-              </n-icon>
+            {{ themeStore.isDark ? '切换到亮色模式' : '切换到暗色模式' }}
+          </n-tooltip>
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary circle @click="goToSettings">
+                <template #icon>
+                  <n-icon size="20">
+                    <SettingsIcon />
+                  </n-icon>
+                </template>
+              </n-button>
             </template>
-          </n-button>
-          <n-button quaternary circle @click="handleLogout">
-            <template #icon>
-              <n-icon size="20">
-                <LogoutIcon />
-              </n-icon>
+            设置
+          </n-tooltip>
+          <n-tooltip trigger="hover">
+            <template #trigger>
+              <n-button quaternary circle @click="handleLogout">
+                <template #icon>
+                  <n-icon size="20">
+                    <LogoutIcon />
+                  </n-icon>
+                </template>
+              </n-button>
             </template>
-          </n-button>
+            退出登录
+          </n-tooltip>
         </div>
       </div>
     </n-layout-header>
