@@ -3,6 +3,7 @@
     <n-layout-header bordered class="header">
       <div class="header-content">
         <div class="header-left">
+          <img src="/favicon.svg" alt="Subly" class="logo-icon" />
           <h1 class="logo">Subly</h1>
         </div>
         <div class="header-right">
@@ -315,6 +316,12 @@ function handleFormClose() {
 .header-left {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
 }
 
 .logo {
