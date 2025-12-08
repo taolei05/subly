@@ -136,8 +136,10 @@ const formData = reactive<UserSettings>({
   exchangerate_api_key: '',
   email: '',
   resend_notify_time: 8,
+  resend_notify_interval: 24,
   serverchan_api_key: '',
   serverchan_notify_time: 8,
+  serverchan_notify_interval: 24,
 });
 
 const rules: FormRules = {
@@ -176,9 +178,10 @@ onMounted(async () => {
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
     formData.email = authStore.user.email || '';
     formData.resend_notify_time = authStore.user.resend_notify_time ?? 8;
+    formData.resend_notify_interval = authStore.user.resend_notify_interval ?? 24;
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
-    formData.serverchan_notify_time =
-      authStore.user.serverchan_notify_time ?? 8;
+    formData.serverchan_notify_time = authStore.user.serverchan_notify_time ?? 8;
+    formData.serverchan_notify_interval = authStore.user.serverchan_notify_interval ?? 24;
   }
 });
 

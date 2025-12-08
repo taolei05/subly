@@ -106,10 +106,8 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
     // 必须配置 Resend API Key 或 ServerChan Token 且对应通知时间匹配
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
-       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '')
-       AND (resend_notify_time = ? OR (resend_notify_time IS NULL AND ? = 8))`,
+       WHERE (resend_api_key IS NOT NULL AND resend_api_key != '')`,
     )
-      .bind(beijingHour, beijingHour)
       .all<User>();
 
     console.log(`Found ${users.length} users to check`);
@@ -129,10 +127,15 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
 
-        const isEmailTime =
-          user.resend_notify_time === beijingHour ||
-          (user.resend_notify_time == null && beijingHour === 8);
-        if (user.resend_api_key && isEmailTime) {
+        const baseHour = user.resend_notify_time ?? 8;
+        const interval = Math.max(
+          1,
+          Math.min(24, user.resend_notify_interval ?? 24),
+        );
+        const diff = (beijingHour - baseHour + 24) % 24;
+        const shouldSend = diff % interval === 0;
+
+        if (user.resend_api_key && shouldSend) {
           const html = generateReminderEmail(subscriptions);
           await sendEmail(user.resend_api_key, user.resend_domain || '', {
             to: user.email,
