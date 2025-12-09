@@ -1,0 +1,27 @@
+{
+  "name": "subly-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "rsbuild build",
+    "check": "biome check --write",
+    "dev": "rsbuild dev",
+    "format": "biome format --write",
+    "preview": "rsbuild preview"
+  },
+  "dependencies": {
+    "@vicons/ionicons5": "^0.13.0",
+    "@vueuse/core": "^14.1.0",
+    "naive-ui": "^2.43.2",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.25",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.8",
+    "@rsbuild/core": "^1.6.12",
+    "@rsbuild/plugin-vue": "^1.2.0",
+    "typescript": "^5.9.3"
+  }
+}
