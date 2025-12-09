@@ -11,6 +11,15 @@ import type {
 } from '../types';
 import { formatDate } from '../utils';
 
+// 默认汇率
+const DEFAULT_RATES: Record<Currency, number> = {
+  CNY: 1,
+  HKD: 1.09,
+  USD: 0.14,
+  EUR: 0.13,
+  GBP: 0.11,
+};
+
 // 从 localStorage 读取保存的货币选择
 function getSavedCurrency(): Currency {
   const saved = localStorage.getItem('selectedCurrency');
@@ -20,17 +29,28 @@ function getSavedCurrency(): Currency {
   return 'CNY';
 }
 
+// 从 localStorage 读取缓存的汇率
+function getCachedRates(): Record<Currency, number> {
+  try {
+    const cached = localStorage.getItem('exchangeRates');
+    if (cached) {
+      const data = JSON.parse(cached);
+      // 检查缓存是否过期（24小时）
+      if (data.timestamp && Date.now() - data.timestamp < 24 * 60 * 60 * 1000) {
+        return data.rates;
+      }
+    }
+  } catch {
+    // 解析失败，使用默认值
+  }
+  return DEFAULT_RATES;
+}
+
 export const useSubscriptionStore = defineStore('subscription', () => {
   const subscriptions = ref<Subscription[]>([]);
   const loading = ref(false);
   const selectedCurrency = ref<Currency>(getSavedCurrency());
-  const exchangeRates = ref<Record<Currency, number>>({
-    CNY: 1,
-    HKD: 1.09,
-    USD: 0.14,
-    EUR: 0.13,
-    GBP: 0.11,
-  });
+  const exchangeRates = ref<Record<Currency, number>>(getCachedRates());
 
   // 监听货币变化并保存到 localStorage
   function setSelectedCurrency(currency: Currency) {
@@ -202,6 +222,14 @@ export const useSubscriptionStore = defineStore('subscription', () => {
       const response = await subscriptionApi.getExchangeRates();
       if (response.success && response.data) {
         exchangeRates.value = response.data.rates;
+        // 缓存汇率到 localStorage
+        localStorage.setItem(
+          'exchangeRates',
+          JSON.stringify({
+            rates: response.data.rates,
+            timestamp: Date.now(),
+          }),
+        );
       }
     } catch (error) {
       console.error('Failed to fetch exchange rates:', error);
