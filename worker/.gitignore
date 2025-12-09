@@ -13,12 +13,6 @@ dist/
 .wrangler/
 .dev.vars
 
-# Kiro
-.kiro/
-
-# Rspack profile
-.rspack-profile-*/
-
 # IDE
-.vscode/*
+.vscode/
 .idea/
