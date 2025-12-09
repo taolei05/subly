@@ -42,11 +42,22 @@ export async function sendTestEmail(
       return errorResponse('请输入或先保存 Resend API Key');
     }
 
-    // 获取用户邮箱
-    const user = await env.DB.prepare('SELECT email FROM users WHERE id = ?')
+    // 获取用户邮箱和站点链接
+    const user = await env.DB.prepare(
+      'SELECT email, site_url FROM users WHERE id = ?',
+    )
       .bind(payload.userId)
-      .first<{ email: string }>();
+      .first<{ email: string; site_url?: string }>();
     if (!user) return errorResponse('用户不存在', 404);
+
+    // 生成查看详情按钮
+    const viewDetailsButton = user.site_url
+      ? `
+        <div style="margin-top: 20px; text-align: center;">
+          <a href="${user.site_url}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
+        </div>
+      `
+      : '';
 
     const success = await sendEmail(apiKeyToUse, resend_domain || '', {
       to: user.email,
@@ -75,6 +86,7 @@ export async function sendTestEmail(
                 <td style="padding: 12px;">${user.email}</td>
               </tr>
             </table>
+            ${viewDetailsButton}
             <p style="margin-top: 20px; color: #666; font-size: 14px;">
               这是一封测试邮件，请勿直接回复。
             </p>
