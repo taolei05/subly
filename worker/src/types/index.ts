@@ -28,6 +28,7 @@ export interface User {
   serverchan_last_sent_at?: string;
   // ExchangeRate 汇率配置
   exchangerate_api_key?: string;
+  exchangerate_enabled?: number;
   // 其他配置
   site_url?: string;
 }
@@ -94,6 +95,7 @@ export interface UpdateSettingsRequest {
   serverchan_notify_interval?: number;
   // ExchangeRate 配置
   exchangerate_api_key?: string;
+  exchangerate_enabled?: boolean;
   // 其他
   site_url?: string;
 }

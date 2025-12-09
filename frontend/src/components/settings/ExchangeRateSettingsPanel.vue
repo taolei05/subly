@@ -1,6 +1,11 @@
 <template>
   <n-collapse-item title="ExchangeRate 汇率配置" name="exchangerate">
     <div style="padding: 16px 0;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <span>启用汇率转换</span>
+        <n-switch v-model:value="formData.exchangerate_enabled" />
+      </div>
+
       <n-form-item path="exchangerate_api_key">
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">

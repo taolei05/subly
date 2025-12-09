@@ -133,7 +133,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
       `SELECT id, username, email, 
               resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
               serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, site_url 
+              exchangerate_api_key, exchangerate_enabled, site_url 
        FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
@@ -177,7 +177,7 @@ export async function updateSettings(
     const currentSettings = await env.DB.prepare(
       `SELECT email, resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
               serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, site_url 
+              exchangerate_api_key, exchangerate_enabled, site_url 
        FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
@@ -236,6 +236,12 @@ export async function updateSettings(
         settings.exchangerate_api_key ??
         currentSettings?.exchangerate_api_key ??
         '',
+      exchangerate_enabled:
+        settings.exchangerate_enabled !== undefined
+          ? settings.exchangerate_enabled
+            ? 1
+            : 0
+          : (currentSettings?.exchangerate_enabled ?? 1),
       // 其他
       site_url: settings.site_url ?? currentSettings?.site_url ?? '',
     };
@@ -245,7 +251,7 @@ export async function updateSettings(
         email = ?, 
         resend_api_key = ?, resend_domain = ?, resend_enabled = ?, resend_notify_time = ?, resend_notify_interval = ?,
         serverchan_api_key = ?, serverchan_enabled = ?, serverchan_notify_time = ?, serverchan_notify_interval = ?,
-        exchangerate_api_key = ?, site_url = ?
+        exchangerate_api_key = ?, exchangerate_enabled = ?, site_url = ?
        WHERE id = ?`,
     )
       .bind(
@@ -260,6 +266,7 @@ export async function updateSettings(
         newSettings.serverchan_notify_time,
         newSettings.serverchan_notify_interval,
         newSettings.exchangerate_api_key,
+        newSettings.exchangerate_enabled,
         newSettings.site_url,
         payload.userId,
       )
@@ -269,7 +276,7 @@ export async function updateSettings(
       `SELECT id, username, email, 
               resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
               serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, site_url 
+              exchangerate_api_key, exchangerate_enabled, site_url 
        FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
@@ -347,7 +354,7 @@ export async function updateProfile(
       `SELECT id, username, email, 
               resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
               serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, site_url 
+              exchangerate_api_key, exchangerate_enabled, site_url 
        FROM users WHERE id = ?`,
     )
       .bind(payload.userId)

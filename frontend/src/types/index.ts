@@ -80,6 +80,7 @@ export interface User {
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
+  exchangerate_enabled?: boolean;
 }
 
 export interface UserSettings {
@@ -95,6 +96,7 @@ export interface UserSettings {
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
+  exchangerate_enabled?: boolean;
 }
 
 export interface LoginCredentials {

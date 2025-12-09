@@ -138,6 +138,7 @@ const formData = reactive<UserSettings>({
   site_url: '',
   resend_enabled: true,
   serverchan_enabled: true,
+  exchangerate_enabled: true,
 });
 
 const rules: FormRules = {
@@ -193,6 +194,10 @@ onMounted(async () => {
       authStore.user.serverchan_enabled === undefined
         ? true
         : Boolean(authStore.user.serverchan_enabled);
+    formData.exchangerate_enabled =
+      authStore.user.exchangerate_enabled === undefined
+        ? true
+        : Boolean(authStore.user.exchangerate_enabled);
   }
 
   // Auto-capture site URL from current browser origin and update if different
