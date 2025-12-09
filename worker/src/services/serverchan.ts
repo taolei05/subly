@@ -80,6 +80,10 @@ function generateReminderContent(
   subscriptions: Subscription[],
   siteUrl?: string,
 ): string {
+  const sendTime = new Date().toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+  });
+
   const tableRows = subscriptions
     .map(
       (sub) =>
@@ -96,7 +100,14 @@ function generateReminderContent(
 | :--- | :--- | :--- |
 ${tableRows}
 
-${siteUrl ? `\n[👉 查看详情](${siteUrl})` : ''}
+---
+
+| 项目 | 内容 |
+| :--- | :--- |
+| 发送时间 | ${sendTime} |
+| 到期数量 | ${subscriptions.length} 个 |
+
+${siteUrl ? `[👉 查看详情](${siteUrl})` : ''}
 
 ---
 
