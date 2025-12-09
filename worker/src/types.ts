@@ -24,7 +24,6 @@ export interface User {
   site_url?: string;
   resend_enabled?: number;
   serverchan_enabled?: number;
-  api_keys_encrypted?: number;
 }
 
 export interface Subscription {

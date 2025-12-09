@@ -8,7 +8,6 @@ import {
   verifyPassword,
   verifyToken,
 } from '../utils';
-import { encryptApiKey, decryptApiKey, maskApiKey } from '../crypto';
 
 // 用户注册
 export async function register(request: Request, env: Env): Promise<Response> {
@@ -84,15 +83,14 @@ export async function login(request: Request, env: Env): Promise<Response> {
 
     const token = await generateToken(user.id, user.username);
 
-    // Mask API keys before returning to frontend (需求 5.3)
     return successResponse({
       token,
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        resend_api_key: maskApiKey(user.resend_api_key || ''),
-        exchangerate_api_key: maskApiKey(user.exchangerate_api_key || ''),
+        resend_api_key: user.resend_api_key,
+        exchangerate_api_key: user.exchangerate_api_key,
         resend_domain: user.resend_domain,
       },
     });
@@ -103,8 +101,6 @@ export async function login(request: Request, env: Env): Promise<Response> {
 }
 
 import { sendServerChanMessage } from '../services/serverchan';
-
-// ... (existing imports and code)
 
 // 获取当前用户信息
 export async function getMe(request: Request, env: Env): Promise<Response> {
@@ -129,11 +125,6 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
     if (!user) {
       return errorResponse('用户不存在', 404);
     }
-
-    // Mask API keys before returning to frontend (需求 5.3)
-    user.resend_api_key = maskApiKey(user.resend_api_key || '');
-    user.exchangerate_api_key = maskApiKey(user.exchangerate_api_key || '');
-    user.serverchan_api_key = maskApiKey(user.serverchan_api_key || '');
 
     return successResponse(user);
   } catch (error) {
@@ -193,7 +184,7 @@ export async function updateSettings(
       .bind(payload.userId)
       .first<User>();
 
-    // Validate site_url if provided - reject invalid URLs per Requirements 4.1, 4.2
+    // Validate site_url if provided
     if (
       site_url !== undefined &&
       site_url !== '' &&
@@ -222,11 +213,9 @@ export async function updateSettings(
         ? serverchan_notify_interval
         : (currentSettings?.serverchan_notify_interval ?? 24);
 
-    // Determine new site_url value - only update if valid URL provided
     const newSiteUrl =
       site_url !== undefined ? site_url : currentSettings?.site_url || '';
 
-    // Determine enabled states (convert boolean to integer for SQLite)
     const newResendEnabled =
       resend_enabled !== undefined
         ? resend_enabled
@@ -240,51 +229,25 @@ export async function updateSettings(
           : 0
         : (currentSettings?.serverchan_enabled ?? 1);
 
-    // Encrypt API keys before storing (需求 5.1)
-    // 如果前端发送的是脱敏值（包含 ***），则保留原值不更新
-    const isMaskedValue = (val: string) =>
-      val.includes('***') || val.includes('已加密');
-
-    const newResendApiKey =
-      resend_api_key !== undefined
-        ? resend_api_key
-          ? isMaskedValue(resend_api_key)
-            ? currentSettings?.resend_api_key || ''
-            : await encryptApiKey(resend_api_key)
-          : ''
-        : currentSettings?.resend_api_key || '';
-
-    const newExchangeRateApiKey =
-      exchangerate_api_key !== undefined
-        ? exchangerate_api_key
-          ? isMaskedValue(exchangerate_api_key)
-            ? currentSettings?.exchangerate_api_key || ''
-            : await encryptApiKey(exchangerate_api_key)
-          : ''
-        : currentSettings?.exchangerate_api_key || '';
-
-    const newServerChanApiKey =
-      serverchan_api_key !== undefined
-        ? serverchan_api_key
-          ? isMaskedValue(serverchan_api_key)
-            ? currentSettings?.serverchan_api_key || ''
-            : await encryptApiKey(serverchan_api_key)
-          : ''
-        : currentSettings?.serverchan_api_key || '';
-
     await env.DB.prepare(
-      'UPDATE users SET email = ?, resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, resend_notify_interval = ?, serverchan_api_key = ?, serverchan_notify_time = ?, serverchan_notify_interval = ?, site_url = ?, resend_enabled = ?, serverchan_enabled = ?, api_keys_encrypted = 1 WHERE id = ?',
+      'UPDATE users SET email = ?, resend_api_key = ?, exchangerate_api_key = ?, resend_domain = ?, resend_notify_time = ?, resend_notify_interval = ?, serverchan_api_key = ?, serverchan_notify_time = ?, serverchan_notify_interval = ?, site_url = ?, resend_enabled = ?, serverchan_enabled = ? WHERE id = ?',
     )
       .bind(
         email !== undefined ? email : currentSettings?.email || '',
-        newResendApiKey,
-        newExchangeRateApiKey,
+        resend_api_key !== undefined
+          ? resend_api_key
+          : currentSettings?.resend_api_key || '',
+        exchangerate_api_key !== undefined
+          ? exchangerate_api_key
+          : currentSettings?.exchangerate_api_key || '',
         resend_domain !== undefined
           ? resend_domain
           : currentSettings?.resend_domain || '',
         newResendNotifyTime,
         newResendNotifyInterval,
-        newServerChanApiKey,
+        serverchan_api_key !== undefined
+          ? serverchan_api_key
+          : currentSettings?.serverchan_api_key || '',
         newServerChanNotifyTime,
         newServerChanNotifyInterval,
         newSiteUrl,
@@ -294,19 +257,11 @@ export async function updateSettings(
       )
       .run();
 
-    // Fetch updated user and mask API keys for response (需求 5.3)
     const user = await env.DB.prepare(
       'SELECT id, username, email, resend_api_key, exchangerate_api_key, resend_domain, resend_notify_time, resend_notify_interval, serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, site_url, resend_enabled, serverchan_enabled FROM users WHERE id = ?',
     )
       .bind(payload.userId)
       .first<Omit<User, 'password'>>();
-
-    // Mask API keys before returning to frontend
-    if (user) {
-      user.resend_api_key = maskApiKey(user.resend_api_key || '');
-      user.exchangerate_api_key = maskApiKey(user.exchangerate_api_key || '');
-      user.serverchan_api_key = maskApiKey(user.serverchan_api_key || '');
-    }
 
     return successResponse(user, '设置已更新');
   } catch (error) {
@@ -333,8 +288,6 @@ export async function sendTestServerChan(
     }
 
     let serverchan_api_key = '';
-    let useDbKey = false;
-
     try {
       const body = (await request.json()) as { serverchan_api_key?: string };
       serverchan_api_key = body.serverchan_api_key || '';
@@ -345,24 +298,13 @@ export async function sendTestServerChan(
       serverchan_api_key = url.searchParams.get('serverchan_api_key') || '';
     }
 
-    // 如果传入的是脱敏值，则从数据库获取
-    const isMaskedValue =
-      serverchan_api_key.includes('***') ||
-      serverchan_api_key.includes('已加密');
-    if (!serverchan_api_key || isMaskedValue) {
-      useDbKey = true;
-    }
-
-    if (useDbKey) {
+    if (!serverchan_api_key) {
       const row = await env.DB.prepare(
         'SELECT serverchan_api_key FROM users WHERE id = ?',
       )
         .bind(payload.userId)
         .first<{ serverchan_api_key: string }>();
-      // Decrypt API key from database (需求 5.2)
-      serverchan_api_key = row?.serverchan_api_key
-        ? await decryptApiKey(row.serverchan_api_key)
-        : '';
+      serverchan_api_key = row?.serverchan_api_key || '';
     }
 
     if (!serverchan_api_key) {
@@ -390,6 +332,7 @@ export async function sendTestServerChan(
     return errorResponse('测试推送失败', 500);
   }
 }
+
 // 更新用户个人信息
 export async function updateProfile(
   request: Request,
@@ -421,7 +364,6 @@ export async function updateProfile(
       return errorResponse('用户名至少3个字符');
     }
 
-    // 检查用户名是否被其他用户占用
     const existing = await env.DB.prepare(
       'SELECT id FROM users WHERE username = ? AND id != ?',
     )

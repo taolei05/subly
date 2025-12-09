@@ -1,5 +1,4 @@
 import type { Env, Subscription, User } from '../types';
-import { decryptApiKey } from '../crypto';
 
 export interface ServerChanResponse {
   code: number;
@@ -144,11 +143,8 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
 
         console.log(`[ServerChan] Sending reminder to user ${user.id}`);
 
-        // Decrypt API key before use (需求 5.2)
-        const decryptedApiKey = await decryptApiKey(user.serverchan_api_key as string);
-
         const result = await sendServerChanMessage(
-          decryptedApiKey,
+          user.serverchan_api_key as string,
           title,
           content,
         );

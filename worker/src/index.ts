@@ -21,7 +21,6 @@ import {
 } from './routes/subscriptions';
 import { checkAndSendEmailReminders, sendEmail } from './services/email';
 import { checkAndSendServerChanReminders } from './services/serverchan';
-import { decryptApiKey } from './crypto';
 import type { Env } from './types';
 import { corsHeaders, errorResponse, jsonResponse, verifyToken } from './utils';
 
@@ -139,10 +138,8 @@ export default {
                   .first<{ exchangerate_api_key: string }>();
 
                 if (user?.exchangerate_api_key) {
-                  // Decrypt API key before use (需求 5.2)
-                  const decryptedApiKey = await decryptApiKey(user.exchangerate_api_key);
                   // 调用 ExchangeRate API
-                  const apiUrl = `https://v6.exchangerate-api.com/v6/${decryptedApiKey}/latest/CNY`;
+                  const apiUrl = `https://v6.exchangerate-api.com/v6/${user.exchangerate_api_key}/latest/CNY`;
                   const response = await fetch(apiUrl);
                   const data = (await response.json()) as {
                     result: string;
@@ -357,11 +354,8 @@ export default {
               </html>
             `;
 
-            // Decrypt API key before use (需求 5.2)
-            const decryptedResendKey = await decryptApiKey(user.resend_api_key as string);
-
             results.email = await sendEmailFn(
-              decryptedResendKey,
+              user.resend_api_key as string,
               (user.resend_domain as string) || '',
               { to: user.email as string, subject: title, html },
             );
@@ -391,11 +385,8 @@ export default {
                 )
                 .join('\n\n') + '\n\n请及时处理。';
 
-            // Decrypt API key before use (需求 5.2)
-            const decryptedServerChanKey = await decryptApiKey(user.serverchan_api_key as string);
-
             const result = await sendServerChanMessage(
-              decryptedServerChanKey,
+              user.serverchan_api_key as string,
               title,
               content,
             );

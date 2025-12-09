@@ -1,4 +1,3 @@
-import { decryptApiKey } from '../crypto';
 import { sendEmail } from '../services/email';
 import type { Env } from '../types';
 import { errorResponse, successResponse, verifyToken } from '../utils';
@@ -25,8 +24,7 @@ export async function sendTestEmail(
     };
 
     // 检查是否是脱敏值
-    const isMaskedValue =
-      resend_api_key?.includes('***') || resend_api_key?.includes('已加密');
+    const isMaskedValue = resend_api_key?.includes('***');
 
     let apiKeyToUse = resend_api_key;
 
@@ -37,9 +35,7 @@ export async function sendTestEmail(
       )
         .bind(payload.userId)
         .first<{ resend_api_key: string }>();
-      apiKeyToUse = row?.resend_api_key
-        ? await decryptApiKey(row.resend_api_key)
-        : '';
+      apiKeyToUse = row?.resend_api_key || '';
     }
 
     if (!apiKeyToUse) {
