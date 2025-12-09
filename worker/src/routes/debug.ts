@@ -46,13 +46,34 @@ export async function getNotifyStatus(
     ? (now.getTime() - serverchanLastSent.getTime()) / (1000 * 60 * 60)
     : null;
 
-  // 获取即将到期的订阅数量
-  const { results: subscriptions } = await env.DB.prepare(`
-    SELECT COUNT(*) as count FROM subscriptions 
+  // 获取即将到期的订阅（详细信息）
+  const { results: expiringSubscriptions } = await env.DB.prepare(`
+    SELECT id, name, type, end_date, remind_days,
+           date('now') as today,
+           date('now', '+' || remind_days || ' days') as remind_until
+    FROM subscriptions 
     WHERE user_id = ? 
       AND status = 'active' 
       AND one_time = 0
-      AND date(end_date) BETWEEN date('now') AND date('now', '+' || remind_days || ' days')
+      AND date(end_date) >= date('now')
+      AND date(end_date) <= date('now', '+' || remind_days || ' days')
+  `)
+    .bind(payload.userId)
+    .all();
+
+  // 获取所有活跃订阅用于对比
+  const { results: allActiveSubscriptions } = await env.DB.prepare(`
+    SELECT id, name, end_date, remind_days,
+           date('now') as today,
+           date('now', '+' || remind_days || ' days') as remind_until,
+           CASE 
+             WHEN date(end_date) < date('now') THEN 'expired'
+             WHEN date(end_date) <= date('now', '+' || remind_days || ' days') THEN 'expiring'
+             ELSE 'ok'
+           END as notify_status
+    FROM subscriptions 
+    WHERE user_id = ? AND status = 'active' AND one_time = 0
+    ORDER BY end_date ASC
   `)
     .bind(payload.userId)
     .all();
@@ -76,8 +97,7 @@ export async function getNotifyStatus(
           !!user?.resend_api_key &&
           beijingHour === (user?.resend_notify_time ?? 8) &&
           (resendHoursSince === null ||
-            resendHoursSince >=
-              ((user?.resend_notify_interval as number) ?? 24)),
+            resendHoursSince >= ((user?.resend_notify_interval as number) ?? 24)),
       },
       serverchan: {
         configured: !!user?.serverchan_api_key,
@@ -89,10 +109,13 @@ export async function getNotifyStatus(
           !!user?.serverchan_api_key &&
           beijingHour === (user?.serverchan_notify_time ?? 8) &&
           (serverchanHoursSince === null ||
-            serverchanHoursSince >=
-              ((user?.serverchan_notify_interval as number) ?? 24)),
+            serverchanHoursSince >= ((user?.serverchan_notify_interval as number) ?? 24)),
       },
-      expiringSubscriptions: (subscriptions[0] as { count: number })?.count,
+      subscriptions: {
+        expiringCount: expiringSubscriptions.length,
+        expiring: expiringSubscriptions,
+        allActive: allActiveSubscriptions,
+      },
     },
   });
 }
@@ -129,7 +152,8 @@ export async function forceNotify(
     WHERE user_id = ? 
       AND status = 'active' 
       AND one_time = 0
-      AND date(end_date) BETWEEN date('now') AND date('now', '+' || remind_days || ' days')
+      AND date(end_date) >= date('now')
+      AND date(end_date) <= date('now', '+' || remind_days || ' days')
   `)
     .bind(payload.userId)
     .all();

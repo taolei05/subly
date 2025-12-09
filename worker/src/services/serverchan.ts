@@ -108,30 +108,37 @@ ${siteUrl ? `\n[👉 查看详情](${siteUrl})` : ''}
 
 /**
  * 检查是否应该发送通知（基于时间和频率）
+ * 返回 { should: boolean, reason: string } 用于调试
  */
 function shouldSendNotification(
   notifyTime: number | null | undefined,
   notifyInterval: number | null | undefined,
   lastSentAt: string | null | undefined,
   beijingHour: number,
-): boolean {
+): { should: boolean; reason: string } {
   const targetHour = notifyTime ?? 8;
   const intervalHours = notifyInterval ?? 24;
 
+  // 检查是否在通知时间
   if (beijingHour !== targetHour) {
-    return false;
+    return { should: false, reason: `当前时间 ${beijingHour} 点，通知时间 ${targetHour} 点` };
   }
 
+  // 从未发送过，直接发送
   if (!lastSentAt) {
-    return true;
+    return { should: true, reason: '首次发送' };
   }
 
+  // 检查距离上次发送的时间间隔
   const lastSent = new Date(lastSentAt);
   const now = new Date();
-  const hoursSinceLastSent =
-    (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
+  const hoursSinceLastSent = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
 
-  return hoursSinceLastSent >= intervalHours;
+  if (hoursSinceLastSent >= intervalHours) {
+    return { should: true, reason: `距上次发送 ${hoursSinceLastSent.toFixed(1)} 小时，超过间隔 ${intervalHours} 小时` };
+  }
+
+  return { should: false, reason: `距上次发送 ${hoursSinceLastSent.toFixed(1)} 小时，未达间隔 ${intervalHours} 小时` };
 }
 
 /**
@@ -143,7 +150,7 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
     const utcHour = now.getUTCHours();
     const beijingHour = (utcHour + 8) % 24;
 
-    logger.info('[ServerChan] Checking reminders', { beijingHour });
+    logger.info('[ServerChan] Checking reminders', { utcHour, beijingHour, timestamp: now.toISOString() });
 
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
@@ -154,32 +161,48 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
     logger.info('[ServerChan] Found users with ServerChan enabled', { count: users.length });
 
     for (const user of users) {
-      if (
-        !shouldSendNotification(
-          user.serverchan_notify_time,
-          user.serverchan_notify_interval,
-          user.serverchan_last_sent_at,
-          beijingHour,
-        )
-      ) {
+      const checkResult = shouldSendNotification(
+        user.serverchan_notify_time,
+        user.serverchan_notify_interval,
+        user.serverchan_last_sent_at,
+        beijingHour,
+      );
+
+      logger.info('[ServerChan] User notification check', {
+        userId: user.id,
+        should: checkResult.should,
+        reason: checkResult.reason,
+        notifyTime: user.serverchan_notify_time ?? 8,
+        lastSentAt: user.serverchan_last_sent_at,
+      });
+
+      if (!checkResult.should) {
         continue;
       }
 
+      // 查询即将到期的订阅（到期日期在今天到 remind_days 天后之间）
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
         WHERE user_id = ? 
           AND status = 'active' 
           AND one_time = 0
-          AND date(end_date) BETWEEN date('now') AND date('now', '+' || remind_days || ' days')
+          AND date(end_date) >= date('now')
+          AND date(end_date) <= date('now', '+' || remind_days || ' days')
       `)
         .bind(user.id)
         .all<Subscription>();
+
+      logger.info('[ServerChan] Found expiring subscriptions', {
+        userId: user.id,
+        count: subscriptions.length,
+        subscriptions: subscriptions.map(s => ({ name: s.name, end_date: s.end_date, remind_days: s.remind_days })),
+      });
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
         const content = generateReminderContent(subscriptions, user.site_url);
 
-        logger.info('[ServerChan] Sending reminder', { userId: user.id });
+        logger.info('[ServerChan] Sending reminder', { userId: user.id, count: subscriptions.length });
 
         const result = await sendServerChanMessage(
           user.serverchan_api_key as string,
@@ -188,15 +211,15 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
         );
 
         if (result.code === 0) {
-          await env.DB.prepare(
-            `UPDATE users SET serverchan_last_sent_at = ? WHERE id = ?`,
-          )
+          await env.DB.prepare(`UPDATE users SET serverchan_last_sent_at = ? WHERE id = ?`)
             .bind(now.toISOString(), user.id)
             .run();
           logger.info('[ServerChan] Successfully sent', { userId: user.id });
         } else {
           logger.error('[ServerChan] Failed to send', { userId: user.id, message: result.message });
         }
+      } else {
+        logger.info('[ServerChan] No expiring subscriptions, skipping', { userId: user.id });
       }
     }
   } catch (error) {
