@@ -11,10 +11,19 @@ import type {
 } from '../types';
 import { formatDate } from '../utils';
 
+// 从 localStorage 读取保存的货币选择
+function getSavedCurrency(): Currency {
+  const saved = localStorage.getItem('selectedCurrency');
+  if (saved && ['CNY', 'HKD', 'USD', 'EUR', 'GBP'].includes(saved)) {
+    return saved as Currency;
+  }
+  return 'CNY';
+}
+
 export const useSubscriptionStore = defineStore('subscription', () => {
   const subscriptions = ref<Subscription[]>([]);
   const loading = ref(false);
-  const selectedCurrency = ref<Currency>('CNY');
+  const selectedCurrency = ref<Currency>(getSavedCurrency());
   const exchangeRates = ref<Record<Currency, number>>({
     CNY: 1,
     HKD: 1.09,
@@ -22,6 +31,12 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     EUR: 0.13,
     GBP: 0.11,
   });
+
+  // 监听货币变化并保存到 localStorage
+  function setSelectedCurrency(currency: Currency) {
+    selectedCurrency.value = currency;
+    localStorage.setItem('selectedCurrency', currency);
+  }
 
   const stats = computed<SubscriptionStats>(() => {
     const now = new Date();
@@ -200,6 +215,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     exchangeRates,
     stats,
     convertCurrency,
+    setSelectedCurrency,
     fetchSubscriptions,
     createSubscription,
     updateSubscription,

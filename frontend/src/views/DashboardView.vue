@@ -1,8 +1,9 @@
 <template>
   <n-layout class="page-container">
     <AppHeader
-      v-model:currency="subscriptionStore.selectedCurrency"
+      :currency="subscriptionStore.selectedCurrency"
       :is-dark="themeStore.isDark"
+      @update:currency="subscriptionStore.setSelectedCurrency"
       @toggle-theme="themeStore.toggleTheme"
       @settings="goToSettings"
       @logout="handleLogout"
