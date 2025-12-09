@@ -7,6 +7,16 @@ export const TYPE_OPTIONS = [
   { label: '其他', value: 'other' },
 ] as const;
 
+// 订阅类型筛选选项（包含"全部"）
+export const TYPE_FILTER_OPTIONS = [
+  { label: '全部', value: null },
+  { label: '域名', value: 'domain' },
+  { label: '服务器', value: 'server' },
+  { label: '会员', value: 'membership' },
+  { label: '软件', value: 'software' },
+  { label: '其他', value: 'other' },
+];
+
 // 订阅类型标签映射
 export const TYPE_LABELS: Record<string, string> = {
   domain: '域名',

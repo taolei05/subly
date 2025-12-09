@@ -77,7 +77,7 @@
 import {
   IMPORT_EXPORT_OPTIONS,
   SORT_OPTIONS,
-  TYPE_OPTIONS,
+  TYPE_FILTER_OPTIONS,
 } from '../../constants';
 import type { SubscriptionType } from '../../types';
 import Icon from '../common/Icon.vue';
@@ -98,7 +98,7 @@ defineEmits<{
   add: [];
 }>();
 
-const typeOptions = TYPE_OPTIONS;
+const typeOptions = TYPE_FILTER_OPTIONS;
 const sortOptions = SORT_OPTIONS;
 const importExportOptions = IMPORT_EXPORT_OPTIONS;
 </script>

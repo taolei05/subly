@@ -24,10 +24,14 @@
 
       <!-- 工具栏 -->
       <AppToolbar
-        v-model:search-query="searchQuery"
-        v-model:filter-type="filterType"
-        v-model:sort-by="sortBy"
-        v-model:view-mode="viewMode"
+        :search-query="searchQuery"
+        :filter-type="filterType"
+        :sort-by="sortBy"
+        :view-mode="viewMode"
+        @update:search-query="searchQuery = $event"
+        @update:filter-type="updateFilterType"
+        @update:sort-by="updateSortBy"
+        @update:view-mode="updateViewMode"
         @import-export="handleImportExport"
         @add="showAddModal = true"
       />
@@ -135,9 +139,48 @@ const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionStore();
 
 const searchQuery = ref('');
-const filterType = ref<SubscriptionType | null>(null);
-const sortBy = ref('end_date');
-const viewMode = ref<'list' | 'grid' | 'calendar'>('list');
+
+// 从 localStorage 读取用户偏好设置
+const savedFilterType = localStorage.getItem('filterType');
+const savedSortBy = localStorage.getItem('sortBy');
+const savedViewMode = localStorage.getItem('viewMode');
+
+const filterType = ref<SubscriptionType | null>(
+  savedFilterType && ['domain', 'server', 'membership', 'software', 'other'].includes(savedFilterType)
+    ? (savedFilterType as SubscriptionType)
+    : null
+);
+const sortBy = ref(
+  savedSortBy && ['end_date', 'price', 'name'].includes(savedSortBy)
+    ? savedSortBy
+    : 'end_date'
+);
+const viewMode = ref<'list' | 'grid' | 'calendar'>(
+  savedViewMode && ['list', 'grid', 'calendar'].includes(savedViewMode)
+    ? (savedViewMode as 'list' | 'grid' | 'calendar')
+    : 'list'
+);
+
+// 监听变化并保存到 localStorage
+function updateFilterType(value: SubscriptionType | null) {
+  filterType.value = value;
+  if (value) {
+    localStorage.setItem('filterType', value);
+  } else {
+    localStorage.removeItem('filterType');
+  }
+}
+
+function updateSortBy(value: string) {
+  sortBy.value = value;
+  localStorage.setItem('sortBy', value);
+}
+
+function updateViewMode(value: 'list' | 'grid' | 'calendar') {
+  viewMode.value = value;
+  localStorage.setItem('viewMode', value);
+}
+
 const showAddModal = ref(false);
 const editingSubscription = ref<Subscription | null>(null);
 const selectedIds = ref<number[]>([]);
