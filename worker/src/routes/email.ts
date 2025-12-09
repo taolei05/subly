@@ -50,13 +50,37 @@ export async function sendTestEmail(
 
     const success = await sendEmail(apiKeyToUse, resend_domain || '', {
       to: user.email,
-      subject: 'Subly 邮件配置测试',
+      subject: '[Subly] 邮件配置测试',
       html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h1>邮件配置测试成功</h1>
-          <p>恭喜！这封邮件证明您的 Resend API Key 或域名配置正确。</p>
-          <p>时间：${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</p>
-        </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>邮件配置测试</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #18a058; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Subly 邮件配置测试</h1>
+          </div>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px; color: #333;">🎉 恭喜！邮件配置测试成功</p>
+            <p style="color: #666;">这封邮件证明您的 Resend API Key 配置正确，订阅到期提醒将会发送到此邮箱。</p>
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 16px;">
+              <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">发送时间</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</td>
+              </tr>
+              <tr>
+                <td style="padding: 12px; color: #999;">收件邮箱</td>
+                <td style="padding: 12px;">${user.email}</td>
+              </tr>
+            </table>
+            <p style="margin-top: 20px; color: #666; font-size: 14px;">
+              这是一封测试邮件，请勿直接回复。
+            </p>
+          </div>
+        </body>
+        </html>
       `,
     });
 
