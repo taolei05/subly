@@ -241,24 +241,34 @@ export async function updateSettings(
         : (currentSettings?.serverchan_enabled ?? 1);
 
     // Encrypt API keys before storing (需求 5.1)
+    // 如果前端发送的是脱敏值（包含 ***），则保留原值不更新
+    const isMaskedValue = (val: string) =>
+      val.includes('***') || val.includes('已加密');
+
     const newResendApiKey =
       resend_api_key !== undefined
         ? resend_api_key
-          ? await encryptApiKey(resend_api_key)
+          ? isMaskedValue(resend_api_key)
+            ? currentSettings?.resend_api_key || ''
+            : await encryptApiKey(resend_api_key)
           : ''
         : currentSettings?.resend_api_key || '';
 
     const newExchangeRateApiKey =
       exchangerate_api_key !== undefined
         ? exchangerate_api_key
-          ? await encryptApiKey(exchangerate_api_key)
+          ? isMaskedValue(exchangerate_api_key)
+            ? currentSettings?.exchangerate_api_key || ''
+            : await encryptApiKey(exchangerate_api_key)
           : ''
         : currentSettings?.exchangerate_api_key || '';
 
     const newServerChanApiKey =
       serverchan_api_key !== undefined
         ? serverchan_api_key
-          ? await encryptApiKey(serverchan_api_key)
+          ? isMaskedValue(serverchan_api_key)
+            ? currentSettings?.serverchan_api_key || ''
+            : await encryptApiKey(serverchan_api_key)
           : ''
         : currentSettings?.serverchan_api_key || '';
 
