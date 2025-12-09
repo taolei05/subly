@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter subly-frontend dev",
-    "build": "pnpm --filter subly-frontend build",
-    "build:all": "pnpm --filter subly-frontend build && pnpm --filter subly-worker install",
+    "build": "pnpm install && pnpm --filter subly-frontend build",
+    "build:all": "pnpm install && pnpm --filter subly-frontend build && pnpm --filter subly-worker install",
     "deploy": "pnpm run build:all && pnpm --filter subly-worker deploy",
     "check": "pnpm --filter subly-frontend check",
     "format": "pnpm --filter subly-frontend format"
