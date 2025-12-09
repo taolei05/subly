@@ -290,16 +290,18 @@ const currencyOptions = [
 const expiringIn7Days = computed(() => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   return subscriptionStore.subscriptions
-    .filter(sub => sub.status === 'active' && !sub.one_time)
-    .map(sub => {
+    .filter((sub) => sub.status === 'active' && !sub.one_time)
+    .map((sub) => {
       const endDate = new Date(sub.end_date);
       endDate.setHours(0, 0, 0, 0);
-      const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.ceil(
+        (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
       return { ...sub, daysLeft };
     })
-    .filter(sub => sub.daysLeft <= 7)
+    .filter((sub) => sub.daysLeft <= 7)
     .sort((a, b) => a.daysLeft - b.daysLeft);
 });
 

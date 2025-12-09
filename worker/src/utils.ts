@@ -1,4 +1,4 @@
-import type { JWTPayload } from './types';
+import type { JWTPayload } from './types/index';
 
 const JWT_SECRET = 'subly-secret-key-change-in-production';
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 天

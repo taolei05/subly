@@ -102,12 +102,16 @@ const selectedDaySubscriptions = ref<Subscription[]>([]);
 
 // 用于日期选择器的时间戳
 const currentMonthTimestamp = ref<number | null>(
-  new Date(currentYear.value, currentMonth.value, 1).getTime()
+  new Date(currentYear.value, currentMonth.value, 1).getTime(),
 );
 
 // 监听年月变化，更新时间戳
 watch([currentYear, currentMonth], () => {
-  currentMonthTimestamp.value = new Date(currentYear.value, currentMonth.value, 1).getTime();
+  currentMonthTimestamp.value = new Date(
+    currentYear.value,
+    currentMonth.value,
+    1,
+  ).getTime();
 });
 
 // 处理月份选择器变化
@@ -166,7 +170,9 @@ function getRenewLabel(sub: Subscription): string {
   return labels[sub.renew_type] || '不续订';
 }
 
-function getRenewTagType(sub: Subscription): 'info' | 'success' | 'warning' | 'default' {
+function getRenewTagType(
+  sub: Subscription,
+): 'info' | 'success' | 'warning' | 'default' {
   if (sub.one_time) return 'success';
   const types: Record<string, 'info' | 'warning' | 'default'> = {
     auto: 'info',

@@ -1,4 +1,6 @@
-import type { Env, Subscription, User } from '../types';
+import type { Env, Subscription, User } from '../types/index';
+
+// ==================== 类型定义 ====================
 
 export interface ServerChanResponse {
   code: number;
@@ -11,6 +13,11 @@ export interface ServerChanResponse {
   };
 }
 
+// ==================== 消息发送 ====================
+
+/**
+ * 发送 Server酱消息
+ */
 export async function sendServerChanMessage(
   token: string,
   title: string,
@@ -18,7 +25,6 @@ export async function sendServerChanMessage(
 ): Promise<ServerChanResponse> {
   try {
     const baseUrl = `https://sctapi.ftqq.com/${token}.send`;
-
     const params = new URLSearchParams();
     params.append('title', title);
     params.append('desp', content);
@@ -44,8 +50,7 @@ export async function sendServerChanMessage(
     legacyParams.append('desp', content);
     const legacyUrl = `https://sc.ftqq.com/${token}.send?${legacyParams.toString()}`;
     const legacyResponse = await fetch(legacyUrl, { method: 'GET' });
-    const legacyResult = (await legacyResponse.json()) as ServerChanResponse;
-    return legacyResult;
+    return (await legacyResponse.json()) as ServerChanResponse;
   } catch (error) {
     console.error('[ServerChan] Send error:', error);
     return {
@@ -56,37 +61,39 @@ export async function sendServerChanMessage(
   }
 }
 
-// 检查是否应该发送通知（基于时间和频率）
+// ==================== 定时任务 ====================
+
+/**
+ * 检查是否应该发送通知（基于时间和频率）
+ */
 function shouldSendNotification(
   notifyTime: number | null | undefined,
   notifyInterval: number | null | undefined,
   lastSentAt: string | null | undefined,
   beijingHour: number,
 ): boolean {
-  // 默认通知时间为8点，默认间隔为24小时
   const targetHour = notifyTime ?? 8;
   const intervalHours = notifyInterval ?? 24;
 
-  // 检查当前小时是否匹配通知时间
   if (beijingHour !== targetHour) {
     return false;
   }
 
-  // 如果没有上次发送记录，应该发送
   if (!lastSentAt) {
     return true;
   }
 
-  // 计算距离上次发送的小时数
   const lastSent = new Date(lastSentAt);
   const now = new Date();
   const hoursSinceLastSent =
     (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
 
-  // 如果超过间隔时间，应该发送
   return hoursSinceLastSent >= intervalHours;
 }
 
+/**
+ * 检查并发送 Server酱提醒 (由 Cron 触发)
+ */
 export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
   try {
     const now = new Date();
@@ -97,7 +104,6 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
       `[ServerChan] Checking reminders at Beijing hour: ${beijingHour}`,
     );
 
-    // 获取所有配置了 ServerChan 且启用了微信提醒的用户
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
        WHERE serverchan_api_key IS NOT NULL AND serverchan_api_key != ''
@@ -109,7 +115,6 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
     );
 
     for (const user of users) {
-      // 检查是否应该发送通知
       if (
         !shouldSendNotification(
           user.serverchan_notify_time,
@@ -121,7 +126,6 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
         continue;
       }
 
-      // 获取该用户即将到期的订阅
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
         WHERE user_id = ? 
@@ -150,7 +154,6 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
         );
 
         if (result.code === 0) {
-          // 更新上次发送时间
           await env.DB.prepare(
             `UPDATE users SET serverchan_last_sent_at = ? WHERE id = ?`,
           )

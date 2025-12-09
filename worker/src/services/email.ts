@@ -1,4 +1,6 @@
-import type { Env, Subscription, User } from '../types';
+import type { Env, Subscription, User } from '../types/index';
+
+// ==================== 类型定义 ====================
 
 export interface EmailData {
   to: string;
@@ -6,7 +8,20 @@ export interface EmailData {
   html: string;
 }
 
-// 发送邮件 (使用 Resend API)
+// 类型中文映射
+const TYPE_LABELS: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他',
+};
+
+// ==================== 邮件发送 ====================
+
+/**
+ * 发送邮件 (使用 Resend API)
+ */
 export async function sendEmail(
   apiKey: string,
   domain: string,
@@ -44,16 +59,11 @@ export async function sendEmail(
   }
 }
 
-// 类型中文映射
-const typeLabels: Record<string, string> = {
-  domain: '域名',
-  server: '服务器',
-  membership: '会员',
-  software: '软件',
-  other: '其他',
-};
+// ==================== 邮件模板 ====================
 
-// 生成提醒邮件 HTML
+/**
+ * 生成提醒邮件 HTML
+ */
 export function generateReminderEmail(
   subscriptions: Subscription[],
   siteUrl?: string,
@@ -63,14 +73,13 @@ export function generateReminderEmail(
       (sub) => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #eee;">${typeLabels[sub.type] || sub.type}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee;">${TYPE_LABELS[sub.type] || sub.type}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.end_date}</td>
     </tr>
   `,
     )
     .join('');
 
-  // Conditionally render "查看详情" button when siteUrl is provided
   const viewDetailsButton = siteUrl
     ? `
         <div style="margin-top: 20px; text-align: center;">
@@ -114,48 +123,47 @@ export function generateReminderEmail(
   `;
 }
 
-// 检查是否应该发送通知（基于时间和频率）
+// ==================== 定时任务 ====================
+
+/**
+ * 检查是否应该发送通知（基于时间和频率）
+ */
 function shouldSendNotification(
   notifyTime: number | null | undefined,
   notifyInterval: number | null | undefined,
   lastSentAt: string | null | undefined,
   beijingHour: number,
 ): boolean {
-  // 默认通知时间为8点，默认间隔为24小时
   const targetHour = notifyTime ?? 8;
   const intervalHours = notifyInterval ?? 24;
 
-  // 检查当前小时是否匹配通知时间
   if (beijingHour !== targetHour) {
     return false;
   }
 
-  // 如果没有上次发送记录，应该发送
   if (!lastSentAt) {
     return true;
   }
 
-  // 计算距离上次发送的小时数
   const lastSent = new Date(lastSentAt);
   const now = new Date();
   const hoursSinceLastSent =
     (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
 
-  // 如果超过间隔时间，应该发送
   return hoursSinceLastSent >= intervalHours;
 }
 
-// 检查并发送到期提醒 (由 Cron 触发，每小时执行一次)
+/**
+ * 检查并发送到期提醒 (由 Cron 触发)
+ */
 export async function checkAndSendEmailReminders(env: Env): Promise<void> {
   try {
-    // 获取当前北京时间的小时 (0-23)
     const now = new Date();
     const utcHour = now.getUTCHours();
     const beijingHour = (utcHour + 8) % 24;
 
     console.log(`[Email] Checking reminders at Beijing hour: ${beijingHour}`);
 
-    // 获取所有配置了 Resend API Key 且启用了邮件提醒的用户
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
        WHERE resend_api_key IS NOT NULL AND resend_api_key != ''
@@ -165,7 +173,6 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
     console.log(`[Email] Found ${users.length} users with Resend enabled`);
 
     for (const user of users) {
-      // 检查是否应该发送通知
       if (
         !shouldSendNotification(
           user.resend_notify_time,
@@ -177,7 +184,6 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
         continue;
       }
 
-      // 获取该用户即将到期的订阅（非一次性，非停用）
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
         WHERE user_id = ? 
@@ -202,15 +208,10 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
         const success = await sendEmail(
           user.resend_api_key as string,
           user.resend_domain || '',
-          {
-            to: user.email,
-            subject: title,
-            html,
-          },
+          { to: user.email, subject: title, html },
         );
 
         if (success) {
-          // 更新上次发送时间
           await env.DB.prepare(
             `UPDATE users SET resend_last_sent_at = ? WHERE id = ?`,
           )

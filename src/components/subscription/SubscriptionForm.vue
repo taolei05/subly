@@ -274,7 +274,9 @@ watch(
           currency: props.subscription.currency,
           start_date: new Date(props.subscription.start_date).getTime(),
           // 一次性买断时，end_date 设为 null（不显示日期）
-          end_date: isOneTime ? null : new Date(props.subscription.end_date).getTime(),
+          end_date: isOneTime
+            ? null
+            : new Date(props.subscription.end_date).getTime(),
           remind_days: props.subscription.remind_days,
           renew_type: renewType,
           one_time: isOneTime,

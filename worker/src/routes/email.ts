@@ -1,5 +1,5 @@
 import { sendEmail } from '../services/email';
-import type { Env } from '../types';
+import type { Env } from '../types/index';
 import { errorResponse, successResponse, verifyToken } from '../utils';
 
 export async function sendTestEmail(
