@@ -6,6 +6,10 @@
         <n-switch v-model:value="formData.exchangerate_enabled" />
       </div>
 
+      <n-alert v-if="!formData.exchangerate_enabled" type="info" :show-icon="true" style="margin-bottom: 16px;">
+        汇率转换已关闭，系统将使用内置的默认汇率进行货币换算。
+      </n-alert>
+
       <n-form-item path="exchangerate_api_key">
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
@@ -23,16 +27,25 @@
       </n-form-item>
 
       <n-form-item>
-        <n-button
-          size="small"
-          secondary
-          type="primary"
-          :loading="testingExchangeRate"
-          :disabled="!formData.exchangerate_api_key"
-          @click="handleTestExchangeRate"
-        >
-          测试汇率 API
-        </n-button>
+        <n-space>
+          <n-button
+            size="small"
+            secondary
+            type="primary"
+            :loading="testingExchangeRate"
+            :disabled="!formData.exchangerate_api_key"
+            @click="handleTestExchangeRate"
+          >
+            测试汇率 API
+          </n-button>
+          <n-button
+            size="small"
+            secondary
+            @click="showDefaultRates"
+          >
+            查看默认汇率
+          </n-button>
+        </n-space>
       </n-form-item>
     </div>
   </n-collapse-item>
@@ -49,6 +62,65 @@ const props = defineProps<{ formData: UserSettings }>();
 const dialog = useDialog();
 const message = useMessage();
 const testingExchangeRate = ref(false);
+
+// 默认汇率（与后端保持一致）
+const DEFAULT_RATES = {
+  CNY: 1,
+  HKD: 1.09,
+  USD: 0.14,
+  EUR: 0.13,
+  GBP: 0.11,
+};
+
+function showDefaultRates() {
+  const format = (n: number) => n.toFixed(4);
+  dialog.info({
+    title: '默认汇率（基准：人民币 CNY）',
+    content: () => {
+      return h('div', [
+        h(
+          'p',
+          { style: 'margin-bottom: 12px; color: #666;' },
+          '以下为系统内置的默认汇率（1 CNY 可兑换）：',
+        ),
+        h(
+          'div',
+          {
+            style: 'display: grid; grid-template-columns: 1fr 1fr; gap: 8px;',
+          },
+          [
+            h('div', [
+              h('strong', 'CNY'),
+              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.CNY)),
+            ]),
+            h('div', [
+              h('strong', 'HKD'),
+              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.HKD)),
+            ]),
+            h('div', [
+              h('strong', 'USD'),
+              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.USD)),
+            ]),
+            h('div', [
+              h('strong', 'EUR'),
+              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.EUR)),
+            ]),
+            h('div', [
+              h('strong', 'GBP'),
+              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.GBP)),
+            ]),
+          ],
+        ),
+        h(
+          'p',
+          { style: 'margin-top: 12px; color: #999; font-size: 12px;' },
+          '提示：关闭汇率转换功能或未配置 API Key 时将使用此默认汇率。',
+        ),
+      ]);
+    },
+    positiveText: '知道了',
+  });
+}
 
 function showExchangeRateHelp() {
   dialog.info({

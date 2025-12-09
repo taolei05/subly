@@ -6,7 +6,7 @@ const DEFAULT_RATES: Record<string, number> = {
   CNY: 1,
   HKD: 1.09,
   USD: 0.14,
-  EUR: 0.8,
+  EUR: 0.13,
   GBP: 0.11,
 };
 
@@ -34,12 +34,13 @@ export async function getExchangeRate(
 
       if (payload) {
         const user = await env.DB.prepare(
-          'SELECT exchangerate_api_key FROM users WHERE id = ?',
+          'SELECT exchangerate_api_key, exchangerate_enabled FROM users WHERE id = ?',
         )
           .bind(payload.userId)
-          .first<{ exchangerate_api_key: string }>();
+          .first<{ exchangerate_api_key: string; exchangerate_enabled: number }>();
 
-        if (user?.exchangerate_api_key) {
+        // 只有当功能启用且有 API Key 时才使用 ExchangeRate API
+        if (user?.exchangerate_enabled !== 0 && user?.exchangerate_api_key) {
           const rates = await fetchExchangeRates(user.exchangerate_api_key);
           if (rates) {
             return jsonResponse({
