@@ -171,7 +171,7 @@ export async function forceNotify(
 
   // 发送邮件
   if ((type === 'all' || type === 'email') && user.resend_api_key) {
-    const html = generateTestEmailHtml(subscriptions);
+    const html = generateTestEmailHtml(subscriptions, user.site_url as string | undefined);
     results.email = await sendEmail(
       user.resend_api_key as string,
       (user.resend_domain as string) || '',
@@ -189,12 +189,7 @@ export async function forceNotify(
 
   // 发送 ServerChan
   if ((type === 'all' || type === 'serverchan') && user.serverchan_api_key) {
-    const content =
-      subscriptions
-        .map(
-          (sub: any) => `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`,
-        )
-        .join('\n\n') + '\n\n请及时处理。';
+    const content = generateServerChanContent(subscriptions, user.site_url as string | undefined);
 
     const result = await sendServerChanMessage(
       user.serverchan_api_key as string,
@@ -265,21 +260,69 @@ export async function resetLastSent(
   });
 }
 
+// 类型中文映射
+const TYPE_LABELS: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他',
+};
+
+/**
+ * 生成 ServerChan 消息内容
+ */
+function generateServerChanContent(subscriptions: any[], siteUrl?: string): string {
+  const sendTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  const tableRows = subscriptions
+    .map((sub) => `| ${sub.name} | ${TYPE_LABELS[sub.type] || sub.type} | ${sub.end_date} |`)
+    .join('\n');
+
+  return `
+## ⏰ 订阅到期提醒
+
+您有以下订阅即将到期，请及时处理：
+
+| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+${tableRows}
+
+---
+
+| 项目 | 内容 |
+| :--- | :--- |
+| 发送时间 | ${sendTime} |
+| 到期数量 | ${subscriptions.length} 个 |
+
+${siteUrl ? `[👉 查看详情](${siteUrl})` : ''}
+
+---
+
+*这是一条强制发送的测试消息。*
+`.trim();
+}
+
 /**
  * 生成测试邮件 HTML
  */
-function generateTestEmailHtml(subscriptions: any[]): string {
+function generateTestEmailHtml(subscriptions: any[], siteUrl?: string): string {
   const items = subscriptions
     .map(
       (sub) => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.type}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee;">${TYPE_LABELS[sub.type] || sub.type}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.end_date}</td>
     </tr>
   `,
     )
     .join('');
+
+  const viewDetailsButton = siteUrl
+    ? `<div style="margin-top: 20px; text-align: center;">
+        <a href="${siteUrl}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
+      </div>`
+    : '';
 
   return `
     <!DOCTYPE html>
@@ -287,7 +330,7 @@ function generateTestEmailHtml(subscriptions: any[]): string {
     <head><meta charset="utf-8"><title>订阅到期提醒</title></head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: #18a058; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-        <h1 style="margin: 0; font-size: 24px;">Subly 订阅提醒 (测试)</h1>
+        <h1 style="margin: 0; font-size: 24px;">Subly 订阅提醒 (强制测试)</h1>
       </div>
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
         <p>您有以下订阅即将到期：</p>
@@ -301,6 +344,8 @@ function generateTestEmailHtml(subscriptions: any[]): string {
           </thead>
           <tbody>${items}</tbody>
         </table>
+        ${viewDetailsButton}
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封强制发送的测试邮件。</p>
       </div>
     </body>
     </html>
