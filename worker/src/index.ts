@@ -64,6 +64,9 @@ export default {
         if (apiPath === '/auth/test-email' && method === 'POST') {
           return await sendTestEmail(request, env);
         }
+        if (apiPath === '/email/test' && method === 'POST') {
+          return await sendTestEmail(request, env);
+        }
         if (apiPath === '/auth/test-serverchan' && method === 'POST') {
           return await sendTestServerChan(request, env);
         }
