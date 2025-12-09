@@ -333,6 +333,8 @@ export async function sendTestServerChan(
     }
 
     let serverchan_api_key = '';
+    let useDbKey = false;
+
     try {
       const body = (await request.json()) as { serverchan_api_key?: string };
       serverchan_api_key = body.serverchan_api_key || '';
@@ -343,7 +345,15 @@ export async function sendTestServerChan(
       serverchan_api_key = url.searchParams.get('serverchan_api_key') || '';
     }
 
-    if (!serverchan_api_key) {
+    // 如果传入的是脱敏值，则从数据库获取
+    const isMaskedValue =
+      serverchan_api_key.includes('***') ||
+      serverchan_api_key.includes('已加密');
+    if (!serverchan_api_key || isMaskedValue) {
+      useDbKey = true;
+    }
+
+    if (useDbKey) {
       const row = await env.DB.prepare(
         'SELECT serverchan_api_key FROM users WHERE id = ?',
       )
