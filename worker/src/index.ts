@@ -30,7 +30,7 @@ import {
   checkAndSendServerChanReminders,
 } from './services';
 import type { Env } from './types/index';
-import { corsHeaders, errorResponse, jsonResponse } from './utils';
+import { corsHeaders, errorResponse, jsonResponse, logger } from './utils';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -147,7 +147,7 @@ export default {
 
       return response || new Response('Not Found', { status: 404 });
     } catch (error) {
-      console.error('Worker global error:', error);
+      logger.error('Worker global error', error);
       return new Response('Internal Server Error', { status: 500 });
     }
   },

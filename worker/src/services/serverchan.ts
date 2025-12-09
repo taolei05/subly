@@ -1,4 +1,5 @@
 import type { Env, Subscription, User } from '../types/index';
+import { logger } from '../utils';
 
 // ==================== 类型定义 ====================
 
@@ -52,7 +53,7 @@ export async function sendServerChanMessage(
     const legacyResponse = await fetch(legacyUrl, { method: 'GET' });
     return (await legacyResponse.json()) as ServerChanResponse;
   } catch (error) {
-    console.error('[ServerChan] Send error:', error);
+    logger.error('[ServerChan] Send error', error);
     return {
       code: -1,
       message: String(error),
@@ -142,9 +143,7 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
     const utcHour = now.getUTCHours();
     const beijingHour = (utcHour + 8) % 24;
 
-    console.log(
-      `[ServerChan] Checking reminders at Beijing hour: ${beijingHour}`,
-    );
+    logger.info('[ServerChan] Checking reminders', { beijingHour });
 
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
@@ -152,9 +151,7 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
        AND (serverchan_enabled IS NULL OR serverchan_enabled = 1)`,
     ).all<User>();
 
-    console.log(
-      `[ServerChan] Found ${users.length} users with ServerChan enabled`,
-    );
+    logger.info('[ServerChan] Found users with ServerChan enabled', { count: users.length });
 
     for (const user of users) {
       if (
@@ -182,7 +179,7 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
         const content = generateReminderContent(subscriptions, user.site_url);
 
-        console.log(`[ServerChan] Sending reminder to user ${user.id}`);
+        logger.info('[ServerChan] Sending reminder', { userId: user.id });
 
         const result = await sendServerChanMessage(
           user.serverchan_api_key as string,
@@ -196,16 +193,13 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
           )
             .bind(now.toISOString(), user.id)
             .run();
-          console.log(`[ServerChan] Successfully sent to user ${user.id}`);
+          logger.info('[ServerChan] Successfully sent', { userId: user.id });
         } else {
-          console.error(
-            `[ServerChan] Failed to send to user ${user.id}:`,
-            result.message,
-          );
+          logger.error('[ServerChan] Failed to send', { userId: user.id, message: result.message });
         }
       }
     }
   } catch (error) {
-    console.error('[ServerChan] Check reminders error:', error);
+    logger.error('[ServerChan] Check reminders error', error);
   }
 }

@@ -1,6 +1,6 @@
 import { sendEmail } from '../services/email';
 import type { Env } from '../types/index';
-import { errorResponse, successResponse, verifyToken } from '../utils';
+import { errorResponse, logger, successResponse, verifyToken } from '../utils';
 
 export async function sendTestEmail(
   request: Request,
@@ -97,12 +97,13 @@ export async function sendTestEmail(
     });
 
     if (success) {
+      logger.info('Test email sent', { userId: payload.userId });
       return successResponse(null, '测试邮件已发送');
     } else {
       return errorResponse('发送失败，请检查配置');
     }
   } catch (error) {
-    console.error('SendTestEmail error:', error);
+    logger.error('SendTestEmail error', error);
     return errorResponse('发送测试邮件失败', 500);
   }
 }

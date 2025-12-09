@@ -75,9 +75,9 @@
 </template>
 
 <script setup lang="ts">
-import Icon from '../common/Icon.vue';
-import { TYPE_LABELS, CURRENCY_SYMBOLS } from '../../constants';
+import { CURRENCY_SYMBOLS, TYPE_LABELS } from '../../constants';
 import type { Subscription } from '../../types';
+import Icon from '../common/Icon.vue';
 
 defineProps<{
   subscriptions: Subscription[];

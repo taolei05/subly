@@ -9,7 +9,12 @@ import {
   generateToken,
   hashPassword,
   isValidSiteUrl,
+  logger,
+  shouldRefreshToken,
   successResponse,
+  USER_PUBLIC_FIELDS,
+  USER_SETTINGS_FIELDS,
+  validateRequest,
   verifyPassword,
   verifyToken,
 } from '../utils';
@@ -18,6 +23,18 @@ export { sendTestEmail } from './email';
 // 重新导出测试功能
 export { sendTestServerChan } from './serverchan';
 
+// ==================== 验证 Schema ====================
+const registerSchema = {
+  username: { required: true, type: 'string' as const, minLength: 3, maxLength: 50 },
+  password: { required: true, type: 'string' as const, minLength: 6, maxLength: 100 },
+  email: { type: 'string' as const },
+};
+
+const loginSchema = {
+  username: { required: true, type: 'string' as const },
+  password: { required: true, type: 'string' as const },
+};
+
 // ==================== 用户认证 ====================
 
 /**
@@ -25,23 +42,17 @@ export { sendTestServerChan } from './serverchan';
  */
 export async function register(request: Request, env: Env): Promise<Response> {
   try {
-    const { username, password, email } = (await request.json()) as {
-      username: string;
-      password: string;
-      email?: string;
-    };
+    const body = await request.json();
+    const validation = validateRequest<{ username: string; password: string; email?: string }>(
+      body,
+      registerSchema,
+    );
 
-    if (!username || !password) {
-      return errorResponse('用户名和密码都是必填项');
+    if (!validation.valid) {
+      return errorResponse(validation.error);
     }
 
-    if (username.length < 3) {
-      return errorResponse('用户名至少3个字符');
-    }
-
-    if (password.length < 6) {
-      return errorResponse('密码至少6个字符');
-    }
+    const { username, password, email } = validation.data;
 
     const existing = await env.DB.prepare(
       'SELECT id FROM users WHERE username = ?',
@@ -60,9 +71,10 @@ export async function register(request: Request, env: Env): Promise<Response> {
       .bind(username, hashedPassword, email ?? '')
       .run();
 
+    logger.info('User registered', { username });
     return successResponse(null, '注册成功');
   } catch (error) {
-    console.error('Register error:', error);
+    logger.error('Register error', error);
     return errorResponse('注册失败，请重试', 500);
   }
 }
@@ -72,14 +84,17 @@ export async function register(request: Request, env: Env): Promise<Response> {
  */
 export async function login(request: Request, env: Env): Promise<Response> {
   try {
-    const { username, password } = (await request.json()) as {
-      username: string;
-      password: string;
-    };
+    const body = await request.json();
+    const validation = validateRequest<{ username: string; password: string }>(
+      body,
+      loginSchema,
+    );
 
-    if (!username || !password) {
-      return errorResponse('请输入用户名和密码');
+    if (!validation.valid) {
+      return errorResponse(validation.error);
     }
+
+    const { username, password } = validation.data;
 
     const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?')
       .bind(username)
@@ -96,6 +111,7 @@ export async function login(request: Request, env: Env): Promise<Response> {
 
     const token = await generateToken(user.id, user.username);
 
+    logger.info('User logged in', { userId: user.id, username });
     return successResponse({
       token,
       user: {
@@ -108,7 +124,7 @@ export async function login(request: Request, env: Env): Promise<Response> {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', error);
     return errorResponse('登录失败，请重试', 500);
   }
 }
@@ -130,11 +146,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
     }
 
     const user = await env.DB.prepare(
-      `SELECT id, username, email, 
-              resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
-              serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, exchangerate_enabled, site_url 
-       FROM users WHERE id = ?`,
+      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
       .first<UserPublic>();
@@ -143,9 +155,18 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
       return errorResponse('用户不存在', 404);
     }
 
-    return successResponse(user);
+    // 检查是否需要刷新 Token
+    const needRefresh = await shouldRefreshToken(token);
+    const response: { user: UserPublic; newToken?: string } = { user };
+
+    if (needRefresh) {
+      response.newToken = await generateToken(payload.userId, payload.username);
+      logger.info('Token refreshed', { userId: payload.userId });
+    }
+
+    return successResponse(response);
   } catch (error) {
-    console.error('GetMe error:', error);
+    logger.error('GetMe error', error);
     return errorResponse('获取用户信息失败', 500);
   }
 }
@@ -175,10 +196,7 @@ export async function updateSettings(
 
     // 获取当前设置
     const currentSettings = await env.DB.prepare(
-      `SELECT email, resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
-              serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, exchangerate_enabled, site_url 
-       FROM users WHERE id = ?`,
+      `SELECT ${USER_SETTINGS_FIELDS} FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
       .first<User>();
@@ -273,18 +291,15 @@ export async function updateSettings(
       .run();
 
     const user = await env.DB.prepare(
-      `SELECT id, username, email, 
-              resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
-              serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, exchangerate_enabled, site_url 
-       FROM users WHERE id = ?`,
+      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
       .first<UserPublic>();
 
+    logger.info('Settings updated', { userId: payload.userId });
     return successResponse(user, '设置已更新');
   } catch (error) {
-    console.error('UpdateSettings error:', error);
+    logger.error('UpdateSettings error', error);
     return errorResponse('更新设置失败', 500);
   }
 }
@@ -351,18 +366,15 @@ export async function updateProfile(
       .run();
 
     const user = await env.DB.prepare(
-      `SELECT id, username, email, 
-              resend_api_key, resend_domain, resend_enabled, resend_notify_time, resend_notify_interval,
-              serverchan_api_key, serverchan_enabled, serverchan_notify_time, serverchan_notify_interval,
-              exchangerate_api_key, exchangerate_enabled, site_url 
-       FROM users WHERE id = ?`,
+      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
     )
       .bind(payload.userId)
       .first<UserPublic>();
 
+    logger.info('Profile updated', { userId: payload.userId });
     return successResponse(user, '个人信息已更新');
   } catch (error) {
-    console.error('UpdateProfile error:', error);
+    logger.error('UpdateProfile error', error);
     return errorResponse('更新个人信息失败', 500);
   }
 }

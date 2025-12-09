@@ -67,9 +67,9 @@
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
 import { computed, h, ref } from 'vue';
-import Icon from '../common/Icon.vue';
 import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
+import Icon from '../common/Icon.vue';
 
 const props = defineProps<{ formData: UserSettings }>();
 const dialog = useDialog();

@@ -1,6 +1,6 @@
 import { sendServerChanMessage } from '../services/serverchan';
 import type { Env } from '../types/index';
-import { errorResponse, successResponse, verifyToken } from '../utils';
+import { errorResponse, logger, successResponse, verifyToken } from '../utils';
 
 // 测试 Server酱推送
 export async function sendTestServerChan(
@@ -81,6 +81,7 @@ ${user?.site_url ? `\n[👉 查看详情](${user.site_url})` : ''}
     );
 
     if (result.code === 0) {
+      logger.info('Test ServerChan sent', { userId: payload.userId });
       return successResponse(null, '测试推送已发送');
     } else {
       const msg =
@@ -90,7 +91,7 @@ ${user?.site_url ? `\n[👉 查看详情](${user.site_url})` : ''}
       return errorResponse(msg);
     }
   } catch (error) {
-    console.error('SendTestServerChan error:', error);
+    logger.error('SendTestServerChan error', error);
     return errorResponse('测试推送失败', 500);
   }
 }

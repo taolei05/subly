@@ -55,9 +55,9 @@
 </template>
 
 <script setup lang="ts">
-import Icon from '../common/Icon.vue';
 import { CURRENCY_SYMBOLS } from '../../constants';
 import type { Currency, SubscriptionStats } from '../../types';
+import Icon from '../common/Icon.vue';
 
 defineProps<{
   stats: SubscriptionStats;

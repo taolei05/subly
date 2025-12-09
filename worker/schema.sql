@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
     serverchan_last_sent_at TEXT,
     site_url TEXT,
     resend_enabled INTEGER DEFAULT 1,
-    serverchan_enabled INTEGER DEFAULT 1
+    serverchan_enabled INTEGER DEFAULT 1,
+    exchangerate_enabled INTEGER DEFAULT 1
 );
 
 -- 订阅表

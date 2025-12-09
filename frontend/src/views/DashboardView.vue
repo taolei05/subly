@@ -146,19 +146,22 @@ const savedSortBy = localStorage.getItem('sortBy');
 const savedViewMode = localStorage.getItem('viewMode');
 
 const filterType = ref<SubscriptionType | null>(
-  savedFilterType && ['domain', 'server', 'membership', 'software', 'other'].includes(savedFilterType)
+  savedFilterType &&
+    ['domain', 'server', 'membership', 'software', 'other'].includes(
+      savedFilterType,
+    )
     ? (savedFilterType as SubscriptionType)
-    : null
+    : null,
 );
 const sortBy = ref(
   savedSortBy && ['end_date', 'price', 'name'].includes(savedSortBy)
     ? savedSortBy
-    : 'end_date'
+    : 'end_date',
 );
 const viewMode = ref<'list' | 'grid' | 'calendar'>(
   savedViewMode && ['list', 'grid', 'calendar'].includes(savedViewMode)
     ? (savedViewMode as 'list' | 'grid' | 'calendar')
-    : 'list'
+    : 'list',
 );
 
 // 监听变化并保存到 localStorage

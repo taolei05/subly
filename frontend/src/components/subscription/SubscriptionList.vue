@@ -19,9 +19,9 @@
 import type { DataTableColumns } from 'naive-ui';
 import { NButton, NEmpty, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui';
 import { computed, h } from 'vue';
-import Icon from '../common/Icon.vue';
-import { TYPE_LABELS, CURRENCY_SYMBOLS } from '../../constants';
+import { CURRENCY_SYMBOLS, TYPE_LABELS } from '../../constants';
 import type { Subscription } from '../../types';
+import Icon from '../common/Icon.vue';
 
 const props = defineProps<{
   subscriptions: Subscription[];

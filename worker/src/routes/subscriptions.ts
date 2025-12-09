@@ -1,5 +1,30 @@
 import type { Env, Subscription, SubscriptionRequest } from '../types/index';
-import { errorResponse, successResponse, verifyToken } from '../utils';
+import {
+  errorResponse,
+  logger,
+  successResponse,
+  validateRequest,
+  verifyToken,
+} from '../utils';
+
+// ==================== 验证 Schema ====================
+const subscriptionSchema = {
+  name: { required: true, type: 'string' as const, minLength: 1, maxLength: 100 },
+  type: {
+    required: true,
+    type: 'string' as const,
+    enum: ['domain', 'server', 'membership', 'software', 'other'] as const,
+  },
+  price: { required: true, type: 'number' as const, min: 0 },
+  currency: {
+    required: true,
+    type: 'string' as const,
+    enum: ['CNY', 'HKD', 'USD', 'EUR', 'GBP'] as const,
+  },
+  start_date: { required: true, type: 'string' as const },
+  end_date: { required: true, type: 'string' as const },
+  remind_days: { type: 'number' as const, min: 1, max: 365 },
+};
 
 // ==================== 辅助函数 ====================
 
@@ -58,7 +83,7 @@ export async function getSubscriptions(
     const subscriptions = results.map(transformSubscription);
     return successResponse(subscriptions);
   } catch (error) {
-    console.error('GetSubscriptions error:', error);
+    logger.error('GetSubscriptions error', error);
     return errorResponse('获取订阅失败', 500);
   }
 }
@@ -87,7 +112,7 @@ export async function getSubscription(
 
     return successResponse(transformSubscription(subscription));
   } catch (error) {
-    console.error('GetSubscription error:', error);
+    logger.error('GetSubscription error', error);
     return errorResponse('获取订阅失败', 500);
   }
 }
@@ -103,7 +128,14 @@ export async function createSubscription(
     const userId = await getUserId(request);
     if (!userId) return errorResponse('未授权', 401);
 
-    const data = (await request.json()) as SubscriptionRequest;
+    const body = await request.json();
+    const validation = validateRequest<SubscriptionRequest>(body, subscriptionSchema);
+
+    if (!validation.valid) {
+      return errorResponse(validation.error);
+    }
+
+    const data = validation.data;
     const renewType = data.renew_type || 'none';
 
     const result = await env.DB.prepare(`
@@ -120,7 +152,7 @@ export async function createSubscription(
         data.currency,
         data.start_date,
         data.end_date,
-        data.remind_days,
+        data.remind_days || 7,
         renewType,
         data.one_time ? 1 : 0,
         data.notes || null,
@@ -138,12 +170,13 @@ export async function createSubscription(
       return errorResponse('创建后获取订阅失败', 500);
     }
 
+    logger.info('Subscription created', { userId, subscriptionId: newId });
     return successResponse(
       transformSubscription(newSubscription),
       '订阅创建成功',
     );
   } catch (error) {
-    console.error('CreateSubscription error:', error);
+    logger.error('CreateSubscription error', error);
     return errorResponse('创建订阅失败', 500);
   }
 }
@@ -170,7 +203,14 @@ export async function updateSubscription(
       return errorResponse('订阅不存在', 404);
     }
 
-    const data = (await request.json()) as SubscriptionRequest;
+    const body = await request.json();
+    const validation = validateRequest<SubscriptionRequest>(body, subscriptionSchema);
+
+    if (!validation.valid) {
+      return errorResponse(validation.error);
+    }
+
+    const data = validation.data;
     const renewType = data.renew_type || 'none';
 
     await env.DB.prepare(`
@@ -188,7 +228,7 @@ export async function updateSubscription(
         data.currency,
         data.start_date,
         data.end_date,
-        data.remind_days,
+        data.remind_days || 7,
         renewType,
         data.one_time ? 1 : 0,
         data.notes || null,
@@ -207,12 +247,13 @@ export async function updateSubscription(
       return errorResponse('更新后获取订阅失败', 500);
     }
 
+    logger.info('Subscription updated', { userId, subscriptionId: id });
     return successResponse(
       transformSubscription(updatedSubscription),
       '订阅更新成功',
     );
   } catch (error) {
-    console.error('UpdateSubscription error:', error);
+    logger.error('UpdateSubscription error', error);
     return errorResponse('更新订阅失败', 500);
   }
 }
@@ -239,9 +280,10 @@ export async function deleteSubscription(
       return errorResponse('订阅不存在', 404);
     }
 
+    logger.info('Subscription deleted', { userId, subscriptionId: id });
     return successResponse(null, '订阅删除成功');
   } catch (error) {
-    console.error('DeleteSubscription error:', error);
+    logger.error('DeleteSubscription error', error);
     return errorResponse('删除订阅失败', 500);
   }
 }
@@ -268,7 +310,7 @@ export async function updateSubscriptionStatus(
 
     return successResponse(null, '状态更新成功');
   } catch (error) {
-    console.error('UpdateSubscriptionStatus error:', error);
+    logger.error('UpdateSubscriptionStatus error', error);
     return errorResponse('更新状态失败', 500);
   }
 }
@@ -299,12 +341,13 @@ export async function batchDeleteSubscriptions(
       .bind(...ids, userId)
       .run();
 
+    logger.info('Batch delete completed', { userId, count: result.meta.changes });
     return successResponse(
       { deleted: result.meta.changes },
       `成功删除 ${result.meta.changes} 条订阅`,
     );
   } catch (error) {
-    console.error('BatchDeleteSubscriptions error:', error);
+    logger.error('BatchDeleteSubscriptions error', error);
     return errorResponse('批量删除失败', 500);
   }
 }
@@ -344,12 +387,13 @@ export async function batchUpdateRemindDays(
       .bind(remind_days, ...ids, userId)
       .run();
 
+    logger.info('Batch update remind days completed', { userId, count: result.meta.changes });
     return successResponse(
       { updated: result.meta.changes },
       `成功修改 ${result.meta.changes} 条订阅的提醒天数`,
     );
   } catch (error) {
-    console.error('BatchUpdateRemindDays error:', error);
+    logger.error('BatchUpdateRemindDays error', error);
     return errorResponse('批量修改失败', 500);
   }
 }
@@ -381,13 +425,15 @@ export async function exportSubscriptions(
     const subscriptions = results.map(transformSubscription);
     const filename = `subly-export-${new Date().toISOString().split('T')[0]}`;
 
+    logger.info('Subscriptions exported', { userId, format, count: subscriptions.length });
+
     if (format === 'csv') {
       return exportAsCsv(subscriptions, filename);
     }
 
     return exportAsJson(subscriptions, filename);
   } catch (error) {
-    console.error('ExportSubscriptions error:', error);
+    logger.error('ExportSubscriptions error', error);
     return errorResponse('导出失败', 500);
   }
 }
@@ -445,17 +491,18 @@ export async function importSubscriptions(
           .run();
         imported++;
       } catch (e) {
-        console.error('Import item error:', e);
+        logger.warn('Import item failed', e);
         failed++;
       }
     }
 
+    logger.info('Subscriptions imported', { userId, imported, failed });
     return successResponse(
       { imported, failed },
       `成功导入 ${imported} 条，失败 ${failed} 条`,
     );
   } catch (error) {
-    console.error('ImportSubscriptions error:', error);
+    logger.error('ImportSubscriptions error', error);
     return errorResponse('导入失败', 500);
   }
 }

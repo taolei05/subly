@@ -50,7 +50,19 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.getMe();
       if (response.success && response.data) {
-        user.value = response.data;
+        const data = response.data as { user: User; newToken?: string } | User;
+        // 处理新的响应格式（包含 user 和可选的 newToken）
+        if ('user' in data && typeof data.user === 'object') {
+          user.value = data.user;
+          // 如果服务器返回了新 Token，自动刷新
+          if (data.newToken) {
+            token.value = data.newToken;
+            localStorage.setItem('token', data.newToken);
+          }
+        } else {
+          // 兼容旧格式
+          user.value = data as User;
+        }
       }
     } catch (error) {
       logout();

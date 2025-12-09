@@ -1,4 +1,5 @@
 import type { Env, Subscription, User } from '../types/index';
+import { logger } from '../utils';
 
 // ==================== 类型定义 ====================
 
@@ -48,13 +49,13 @@ export async function sendEmail(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Resend API error:', response.status, errorText);
+      logger.error('Resend API error', { status: response.status, error: errorText });
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Send email error:', error);
+    logger.error('Send email error', error);
     return false;
   }
 }
@@ -162,7 +163,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
     const utcHour = now.getUTCHours();
     const beijingHour = (utcHour + 8) % 24;
 
-    console.log(`[Email] Checking reminders at Beijing hour: ${beijingHour}`);
+    logger.info('[Email] Checking reminders', { beijingHour });
 
     const { results: users } = await env.DB.prepare(
       `SELECT * FROM users 
@@ -170,7 +171,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
        AND (resend_enabled IS NULL OR resend_enabled = 1)`,
     ).all<User>();
 
-    console.log(`[Email] Found ${users.length} users with Resend enabled`);
+    logger.info('[Email] Found users with Resend enabled', { count: users.length });
 
     for (const user of users) {
       if (
@@ -201,9 +202,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
           user.site_url || undefined,
         );
 
-        console.log(
-          `[Email] Sending reminder to user ${user.id} (${user.email})`,
-        );
+        logger.info('[Email] Sending reminder', { userId: user.id, email: user.email });
 
         const success = await sendEmail(
           user.resend_api_key as string,
@@ -217,13 +216,13 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
           )
             .bind(now.toISOString(), user.id)
             .run();
-          console.log(`[Email] Successfully sent to user ${user.id}`);
+          logger.info('[Email] Successfully sent', { userId: user.id });
         } else {
-          console.error(`[Email] Failed to send to user ${user.id}`);
+          logger.error('[Email] Failed to send', { userId: user.id });
         }
       }
     }
   } catch (error) {
-    console.error('[Email] Check reminders error:', error);
+    logger.error('[Email] Check reminders error', error);
   }
 }

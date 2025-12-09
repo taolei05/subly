@@ -55,8 +55,8 @@
 import { useDialog, useMessage } from 'naive-ui';
 import { h, ref } from 'vue';
 import { subscriptionApi } from '../../api/subscription';
-import Icon from '../common/Icon.vue';
 import type { UserSettings } from '../../types';
+import Icon from '../common/Icon.vue';
 
 const props = defineProps<{ formData: UserSettings }>();
 const dialog = useDialog();
@@ -91,23 +91,43 @@ function showDefaultRates() {
           [
             h('div', [
               h('strong', 'CNY'),
-              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.CNY)),
+              h(
+                'span',
+                { style: 'margin-left: 8px;' },
+                format(DEFAULT_RATES.CNY),
+              ),
             ]),
             h('div', [
               h('strong', 'HKD'),
-              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.HKD)),
+              h(
+                'span',
+                { style: 'margin-left: 8px;' },
+                format(DEFAULT_RATES.HKD),
+              ),
             ]),
             h('div', [
               h('strong', 'USD'),
-              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.USD)),
+              h(
+                'span',
+                { style: 'margin-left: 8px;' },
+                format(DEFAULT_RATES.USD),
+              ),
             ]),
             h('div', [
               h('strong', 'EUR'),
-              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.EUR)),
+              h(
+                'span',
+                { style: 'margin-left: 8px;' },
+                format(DEFAULT_RATES.EUR),
+              ),
             ]),
             h('div', [
               h('strong', 'GBP'),
-              h('span', { style: 'margin-left: 8px;' }, format(DEFAULT_RATES.GBP)),
+              h(
+                'span',
+                { style: 'margin-left: 8px;' },
+                format(DEFAULT_RATES.GBP),
+              ),
             ]),
           ],
         ),

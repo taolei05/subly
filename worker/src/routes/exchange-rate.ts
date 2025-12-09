@@ -1,5 +1,5 @@
 import type { Env } from '../types/index';
-import { jsonResponse, verifyToken } from '../utils';
+import { jsonResponse, logger, verifyToken } from '../utils';
 
 // 默认汇率（备用）
 const DEFAULT_RATES: Record<string, number> = {
@@ -61,7 +61,7 @@ export async function getExchangeRate(
         }
       }
     } catch (e) {
-      console.error('Exchange rate API error:', e);
+      logger.error('Exchange rate API error', e);
     }
   }
 
@@ -89,7 +89,7 @@ async function fetchExchangeRates(
     }
     return null;
   } catch (error) {
-    console.error('Fetch exchange rates error:', error);
+    logger.error('Fetch exchange rates error', error);
     return null;
   }
 }
