@@ -5,7 +5,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             API Key
-            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp" />
+            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp" />
           </div>
         </template>
         <n-input

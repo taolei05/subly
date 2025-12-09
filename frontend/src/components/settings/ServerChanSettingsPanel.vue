@@ -10,7 +10,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             SendKey
-            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp" />
+            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showServerChanHelp" />
           </div>
         </template>
         <n-input

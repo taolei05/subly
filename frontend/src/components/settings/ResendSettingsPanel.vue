@@ -18,7 +18,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             API Key
-            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp" />
+            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp" />
           </div>
         </template>
         <n-input
@@ -88,7 +88,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             本站链接
-            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showSiteUrlHelp" />
+            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showSiteUrlHelp" />
           </div>
         </template>
         <n-input
