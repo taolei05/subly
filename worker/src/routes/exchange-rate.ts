@@ -6,7 +6,7 @@ const DEFAULT_RATES: Record<string, number> = {
   CNY: 1,
   HKD: 1.09,
   USD: 0.14,
-  EUR: 0.13,
+  EUR: 0.8,
   GBP: 0.11,
 };
 
