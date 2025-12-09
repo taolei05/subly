@@ -77,15 +77,20 @@ const message = useMessage();
 const authStore = useAuthStore();
 const testingServerChan = ref(false);
 
-// 将小时数转换为时间戳（毫秒）
+// 将小时数转换为时间戳（毫秒）- 使用本地时间
 const notifyTimeValue = computed(() => {
   const hour = props.formData.serverchan_notify_time ?? 8;
-  return hour * 60 * 60 * 1000;
+  // 创建一个今天的日期，设置为指定小时
+  const date = new Date();
+  date.setHours(hour, 0, 0, 0);
+  return date.getTime();
 });
 
 function handleTimeChange(value: number | null) {
   if (value !== null) {
-    const hour = Math.floor(value / (60 * 60 * 1000));
+    // 从时间戳中提取本地小时数
+    const date = new Date(value);
+    const hour = date.getHours();
     props.formData.serverchan_notify_time = hour;
   }
 }
