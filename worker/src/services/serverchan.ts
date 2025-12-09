@@ -61,6 +61,48 @@ export async function sendServerChanMessage(
   }
 }
 
+// ==================== 消息模板 ====================
+
+// 类型中文映射
+const TYPE_LABELS: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他',
+};
+
+/**
+ * 生成提醒消息内容 (Markdown 格式)
+ */
+function generateReminderContent(
+  subscriptions: Subscription[],
+  siteUrl?: string,
+): string {
+  const tableRows = subscriptions
+    .map(
+      (sub) =>
+        `| ${sub.name} | ${TYPE_LABELS[sub.type] || sub.type} | ${sub.end_date} |`,
+    )
+    .join('\n');
+
+  return `
+## ⏰ 订阅到期提醒
+
+您有以下订阅即将到期，请及时处理：
+
+| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+${tableRows}
+
+${siteUrl ? `\n[👉 查看详情](${siteUrl})` : ''}
+
+---
+
+*这是一条自动发送的消息，请勿直接回复。*
+`.trim();
+}
+
 // ==================== 定时任务 ====================
 
 /**
@@ -138,12 +180,7 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
-        const content =
-          subscriptions
-            .map(
-              (sub) => `- **${sub.name}** (${sub.type}): ${sub.end_date} 到期`,
-            )
-            .join('\n\n') + '\n\n请及时处理。';
+        const content = generateReminderContent(subscriptions, user.site_url);
 
         console.log(`[ServerChan] Sending reminder to user ${user.id}`);
 

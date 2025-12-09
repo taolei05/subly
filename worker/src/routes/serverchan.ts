@@ -43,11 +43,41 @@ export async function sendTestServerChan(
       return errorResponse('请输入或先保存 Server酱 SendKey');
     }
 
+    // 获取用户邮箱和站点链接
+    const user = await env.DB.prepare(
+      'SELECT email, site_url FROM users WHERE id = ?',
+    )
+      .bind(payload.userId)
+      .first<{ email: string; site_url?: string }>();
+
+    const sendTime = new Date().toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+    });
+
+    // 生成 Markdown 格式的消息内容
+    const content = `
+## 🎉 配置测试成功
+
+这条消息证明您的 Server酱 SendKey 配置正确，订阅到期提醒将会推送到此。
+
+---
+
+| 项目 | 内容 |
+| :--- | :--- |
+| 发送时间 | ${sendTime} |
+| 接收账号 | ${user?.email || '未设置'} |
+
+${user?.site_url ? `\n[👉 查看详情](${user.site_url})` : ''}
+
+---
+
+*这是一条测试消息，请勿直接回复。*
+`.trim();
+
     const result = await sendServerChanMessage(
       serverchan_api_key,
-      'Subly 测试消息',
-      '这是一条来自 Subly 的测试推送，恭喜您配置成功！\n\n- 发送时间：' +
-        new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+      '[Subly] 微信通知配置测试',
+      content,
     );
 
     if (result.code === 0) {
