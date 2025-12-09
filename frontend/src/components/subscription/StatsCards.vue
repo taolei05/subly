@@ -3,7 +3,7 @@
     <n-card :bordered="false" class="stat-card">
       <div class="stat-content">
         <div class="stat-icon total">
-          <n-icon size="24"><SubscriptionIcon /></n-icon>
+          <Icon name="subscription" :size="24" />
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.total }}</div>
@@ -15,7 +15,7 @@
     <n-card :bordered="false" class="stat-card">
       <div class="stat-content">
         <div class="stat-icon expiring">
-          <n-icon size="24"><ClockIcon /></n-icon>
+          <Icon name="clock" :size="24" />
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.expiring }}</div>
@@ -27,7 +27,7 @@
     <n-card :bordered="false" class="stat-card">
       <div class="stat-content">
         <div class="stat-icon one-time">
-          <n-icon size="24"><MoneyIcon /></n-icon>
+          <Icon name="money" :size="24" />
         </div>
         <div class="stat-info">
           <div class="stat-value">
@@ -41,7 +41,7 @@
     <n-card :bordered="false" class="stat-card">
       <div class="stat-content">
         <div class="stat-icon monthly">
-          <n-icon size="24"><MoneyIcon /></n-icon>
+          <Icon name="money" :size="24" />
         </div>
         <div class="stat-info">
           <div class="stat-value">
@@ -55,9 +55,8 @@
 </template>
 
 <script setup lang="ts">
-import ClockIcon from '../../assets/icons/ClockIcon.vue';
-import MoneyIcon from '../../assets/icons/MoneyIcon.vue';
-import SubscriptionIcon from '../../assets/icons/SubscriptionIcon.vue';
+import Icon from '../common/Icon.vue';
+import { CURRENCY_SYMBOLS } from '../../constants';
 import type { Currency, SubscriptionStats } from '../../types';
 
 defineProps<{
@@ -65,13 +64,7 @@ defineProps<{
   currency: Currency;
 }>();
 
-const currencySymbols: Record<Currency, string> = {
-  CNY: '¥',
-  HKD: 'HK$',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
+const currencySymbols = CURRENCY_SYMBOLS as Record<Currency, string>;
 </script>
 
 <style scoped>

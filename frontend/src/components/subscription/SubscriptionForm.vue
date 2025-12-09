@@ -121,6 +121,11 @@
 <script setup lang="ts">
 import type { FormInst, FormRules } from 'naive-ui';
 import { computed, reactive, ref, watch } from 'vue';
+import {
+  CURRENCY_OPTIONS_FULL,
+  RENEW_TYPE_OPTIONS,
+  TYPE_OPTIONS,
+} from '../../constants';
 import type {
   Currency,
   Subscription,
@@ -156,11 +161,9 @@ const defaultFormData = (): SubscriptionFormData => ({
   notes: '',
 });
 
-const renewTypeOptions = [
-  { label: '不续订', value: 'none' },
-  { label: '自动续订', value: 'auto' },
-  { label: '手动续订', value: 'manual' },
-];
+const typeOptions = TYPE_OPTIONS;
+const currencyOptions = CURRENCY_OPTIONS_FULL;
+const renewTypeOptions = RENEW_TYPE_OPTIONS;
 
 const formData = reactive<SubscriptionFormData>(defaultFormData());
 
@@ -193,22 +196,6 @@ const typeDetailPlaceholder = computed(() => {
       return '请输入相关详情信息';
   }
 });
-
-const typeOptions = [
-  { label: '域名', value: 'domain' },
-  { label: '服务器', value: 'server' },
-  { label: '会员', value: 'membership' },
-  { label: '软件', value: 'software' },
-  { label: '其他', value: 'other' },
-];
-
-const currencyOptions = [
-  { label: '人民币 (CNY)', value: 'CNY' },
-  { label: '港币 (HKD)', value: 'HKD' },
-  { label: '美元 (USD)', value: 'USD' },
-  { label: '欧元 (EUR)', value: 'EUR' },
-  { label: '英镑 (GBP)', value: 'GBP' },
-];
 
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],

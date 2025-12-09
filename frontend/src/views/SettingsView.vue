@@ -18,10 +18,7 @@
         <div class="header-right">
           <n-button quaternary circle @click="themeStore.toggleTheme">
             <template #icon>
-              <n-icon size="20">
-                <SunIcon v-if="themeStore.isDark" />
-                <MoonIcon v-else />
-              </n-icon>
+              <Icon :name="themeStore.isDark ? 'sun' : 'moon'" :size="20" />
             </template>
           </n-button>
         </div>
@@ -111,8 +108,7 @@
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { h, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import MoonIcon from '../assets/icons/MoonIcon.vue';
-import SunIcon from '../assets/icons/SunIcon.vue';
+import Icon from '../components/common/Icon.vue';
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
 import ResendSettingsPanel from '../components/settings/ResendSettingsPanel.vue';
 import ServerChanSettingsPanel from '../components/settings/ServerChanSettingsPanel.vue';

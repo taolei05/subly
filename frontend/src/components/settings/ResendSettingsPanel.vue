@@ -18,9 +18,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             API Key
-            <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp">
-              <InfoIcon />
-            </n-icon>
+            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showApiKeyHelp" />
           </div>
         </template>
         <n-input
@@ -90,9 +88,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             本站链接
-            <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showSiteUrlHelp">
-              <InfoIcon />
-            </n-icon>
+            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showSiteUrlHelp" />
           </div>
         </template>
         <n-input
@@ -109,7 +105,7 @@
 import { AlertCircleOutline } from '@vicons/ionicons5';
 import { useDialog, useMessage } from 'naive-ui';
 import { computed, h, ref } from 'vue';
-import InfoIcon from '../../assets/icons/InfoIcon.vue';
+import Icon from '../common/Icon.vue';
 import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
 

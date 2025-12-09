@@ -19,8 +19,8 @@
 import type { DataTableColumns } from 'naive-ui';
 import { NButton, NEmpty, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui';
 import { computed, h } from 'vue';
-import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
-import EditIcon from '../../assets/icons/EditIcon.vue';
+import Icon from '../common/Icon.vue';
+import { TYPE_LABELS, CURRENCY_SYMBOLS } from '../../constants';
 import type { Subscription } from '../../types';
 
 const props = defineProps<{
@@ -40,21 +40,8 @@ function handleCheckedChange(keys: (string | number)[]) {
   emit('update:selectedIds', keys as number[]);
 }
 
-const typeLabels: Record<string, string> = {
-  domain: '域名',
-  server: '服务器',
-  membership: '会员',
-  software: '软件',
-  other: '其他',
-};
-
-const currencySymbols: Record<string, string> = {
-  CNY: '¥',
-  HKD: 'HK$',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
+const typeLabels = TYPE_LABELS;
+const currencySymbols = CURRENCY_SYMBOLS;
 
 function getStatusType(
   subscription: Subscription,
@@ -200,7 +187,7 @@ const baseColumns: DataTableColumns<Subscription> = [
                 quaternary: true,
                 onClick: () => emit('edit', row),
               },
-              { icon: () => h(NIcon, null, { default: () => h(EditIcon) }) },
+              { icon: () => h(Icon, { name: 'edit' }) },
             ),
             h(
               NPopconfirm,
@@ -216,10 +203,7 @@ const baseColumns: DataTableColumns<Subscription> = [
                       quaternary: true,
                       type: 'error',
                     },
-                    {
-                      icon: () =>
-                        h(NIcon, null, { default: () => h(DeleteIcon) }),
-                    },
+                    { icon: () => h(Icon, { name: 'delete' }) },
                   ),
                 default: () => '确定删除此订阅吗？',
               },

@@ -54,7 +54,7 @@
       <div class="card-actions">
         <n-button size="small" quaternary @click="$emit('edit', sub)">
           <template #icon>
-            <n-icon><EditIcon /></n-icon>
+            <Icon name="edit" />
           </template>
           编辑
         </n-button>
@@ -62,7 +62,7 @@
           <template #trigger>
             <n-button size="small" quaternary type="error">
               <template #icon>
-                <n-icon><DeleteIcon /></n-icon>
+                <Icon name="delete" />
               </template>
               删除
             </n-button>
@@ -75,8 +75,8 @@
 </template>
 
 <script setup lang="ts">
-import DeleteIcon from '../../assets/icons/DeleteIcon.vue';
-import EditIcon from '../../assets/icons/EditIcon.vue';
+import Icon from '../common/Icon.vue';
+import { TYPE_LABELS, CURRENCY_SYMBOLS } from '../../constants';
 import type { Subscription } from '../../types';
 
 defineProps<{
@@ -89,21 +89,8 @@ defineEmits<{
   'toggle-status': [subscription: Subscription];
 }>();
 
-const typeLabels: Record<string, string> = {
-  domain: '域名',
-  server: '服务器',
-  membership: '会员',
-  software: '软件',
-  other: '其他',
-};
-
-const currencySymbols: Record<string, string> = {
-  CNY: '¥',
-  HKD: 'HK$',
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
+const typeLabels = TYPE_LABELS;
+const currencySymbols = CURRENCY_SYMBOLS;
 
 function getStatusType(
   subscription: Subscription,

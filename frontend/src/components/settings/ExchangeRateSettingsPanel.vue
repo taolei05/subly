@@ -5,9 +5,7 @@
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             API Key
-            <n-icon size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp">
-              <InfoIcon />
-            </n-icon>
+            <Icon name="info" :size="16" style="cursor: pointer; color: var(--primary-color);" @click="showExchangeRateHelp" />
           </div>
         </template>
         <n-input
@@ -39,7 +37,7 @@
 import { useDialog, useMessage } from 'naive-ui';
 import { h, ref } from 'vue';
 import { subscriptionApi } from '../../api/subscription';
-import InfoIcon from '../../assets/icons/InfoIcon.vue';
+import Icon from '../common/Icon.vue';
 import type { UserSettings } from '../../types';
 
 const props = defineProps<{ formData: UserSettings }>();

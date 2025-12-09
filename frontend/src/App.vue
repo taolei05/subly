@@ -17,6 +17,7 @@ import { dateZhCN, zhCN } from 'naive-ui';
 import { useThemeStore } from './stores/theme';
 
 const themeStore = useThemeStore();
+// themeStore 用于模板中的 themeStore.theme
 </script>
 
 <style>
