@@ -1,15 +1,17 @@
 import { sendEmail } from '../services/email';
 import { sendServerChanMessage } from '../services/serverchan';
-import type { Env } from '../types/index';
+import type { Env, Subscription } from '../types/index';
 import { errorResponse, jsonResponse, verifyToken } from '../utils';
 
-/**
- * 获取用户通知配置和状态
- */
-export async function getNotifyStatus(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+const TYPE_LABELS: Record<string, string> = {
+  domain: '域名',
+  server: '服务器',
+  membership: '会员',
+  software: '软件',
+  other: '其他',
+};
+
+export async function getNotifyStatus(request: Request, env: Env): Promise<Response> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return errorResponse('未授权', 401);
@@ -19,25 +21,34 @@ export async function getNotifyStatus(
   const payload = await verifyToken(token);
   if (!payload) return errorResponse('无效的 Token', 401);
 
-  const user = await env.DB.prepare(
-    `SELECT id, email, resend_api_key, resend_notify_time, resend_notify_interval, resend_last_sent_at,
-            serverchan_api_key, serverchan_notify_time, serverchan_notify_interval, serverchan_last_sent_at
-     FROM users WHERE id = ?`,
-  )
-    .bind(payload.userId)
-    .first();
-
   const now = new Date();
   const utcHour = now.getUTCHours();
   const beijingHour = (utcHour + 8) % 24;
+  const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  // 计算距离上次发送的时间
-  const resendLastSent = user?.resend_last_sent_at
-    ? new Date(user.resend_last_sent_at as string)
-    : null;
-  const serverchanLastSent = user?.serverchan_last_sent_at
-    ? new Date(user.serverchan_last_sent_at as string)
-    : null;
+  // 获取 Resend 配置
+  const resendConfig = await env.DB.prepare(
+    'SELECT email, api_key, notify_time, notify_interval, last_sent_at FROM resend_config WHERE user_id = ?',
+  ).bind(payload.userId).first<{
+    email: string;
+    api_key: string;
+    notify_time: number;
+    notify_interval: number;
+    last_sent_at: string;
+  }>();
+
+  // 获取 ServerChan 配置
+  const serverchanConfig = await env.DB.prepare(
+    'SELECT api_key, notify_time, notify_interval, last_sent_at FROM serverchan_config WHERE user_id = ?',
+  ).bind(payload.userId).first<{
+    api_key: string;
+    notify_time: number;
+    notify_interval: number;
+    last_sent_at: string;
+  }>();
+
+  const resendLastSent = resendConfig?.last_sent_at ? new Date(resendConfig.last_sent_at) : null;
+  const serverchanLastSent = serverchanConfig?.last_sent_at ? new Date(serverchanConfig.last_sent_at) : null;
 
   const resendHoursSince = resendLastSent
     ? (now.getTime() - resendLastSent.getTime()) / (1000 * 60 * 60)
@@ -46,10 +57,7 @@ export async function getNotifyStatus(
     ? (now.getTime() - serverchanLastSent.getTime()) / (1000 * 60 * 60)
     : null;
 
-  // 使用北京时间进行日期比较
-  const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  // 获取即将到期的订阅（详细信息）
+  // 获取即将到期的订阅
   const { results: expiringSubscriptions } = await env.DB.prepare(`
     SELECT id, name, type, end_date, remind_days,
            ? as today,
@@ -60,11 +68,9 @@ export async function getNotifyStatus(
       AND one_time = 0
       AND date(end_date) >= date(?)
       AND date(end_date) <= date(?, '+' || remind_days || ' days')
-  `)
-    .bind(beijingDate, beijingDate, payload.userId, beijingDate, beijingDate)
-    .all();
+  `).bind(beijingDate, beijingDate, payload.userId, beijingDate, beijingDate).all();
 
-  // 获取所有活跃订阅用于对比
+  // 获取所有活跃订阅
   const { results: allActiveSubscriptions } = await env.DB.prepare(`
     SELECT id, name, end_date, remind_days,
            ? as today,
@@ -77,9 +83,7 @@ export async function getNotifyStatus(
     FROM subscriptions 
     WHERE user_id = ? AND status = 'active' AND one_time = 0
     ORDER BY end_date ASC
-  `)
-    .bind(beijingDate, beijingDate, beijingDate, beijingDate, payload.userId)
-    .all();
+  `).bind(beijingDate, beijingDate, beijingDate, beijingDate, payload.userId).all();
 
   return jsonResponse({
     success: true,
@@ -91,28 +95,26 @@ export async function getNotifyStatus(
         beijingTime: `${String(beijingHour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`,
       },
       resend: {
-        configured: !!user?.resend_api_key,
-        notifyTime: user?.resend_notify_time ?? 8,
-        notifyInterval: user?.resend_notify_interval ?? 24,
-        lastSentAt: user?.resend_last_sent_at || null,
+        configured: !!resendConfig?.api_key,
+        notifyTime: resendConfig?.notify_time ?? 8,
+        notifyInterval: resendConfig?.notify_interval ?? 24,
+        lastSentAt: resendConfig?.last_sent_at || null,
         hoursSinceLastSent: resendHoursSince?.toFixed(2) || null,
         wouldSendNow:
-          !!user?.resend_api_key &&
-          beijingHour === (user?.resend_notify_time ?? 8) &&
-          (resendHoursSince === null ||
-            resendHoursSince >= ((user?.resend_notify_interval as number) ?? 24)),
+          !!resendConfig?.api_key &&
+          beijingHour === (resendConfig?.notify_time ?? 8) &&
+          (resendHoursSince === null || resendHoursSince >= (resendConfig?.notify_interval ?? 24)),
       },
       serverchan: {
-        configured: !!user?.serverchan_api_key,
-        notifyTime: user?.serverchan_notify_time ?? 8,
-        notifyInterval: user?.serverchan_notify_interval ?? 24,
-        lastSentAt: user?.serverchan_last_sent_at || null,
+        configured: !!serverchanConfig?.api_key,
+        notifyTime: serverchanConfig?.notify_time ?? 8,
+        notifyInterval: serverchanConfig?.notify_interval ?? 24,
+        lastSentAt: serverchanConfig?.last_sent_at || null,
         hoursSinceLastSent: serverchanHoursSince?.toFixed(2) || null,
         wouldSendNow:
-          !!user?.serverchan_api_key &&
-          beijingHour === (user?.serverchan_notify_time ?? 8) &&
-          (serverchanHoursSince === null ||
-            serverchanHoursSince >= ((user?.serverchan_notify_interval as number) ?? 24)),
+          !!serverchanConfig?.api_key &&
+          beijingHour === (serverchanConfig?.notify_time ?? 8) &&
+          (serverchanHoursSince === null || serverchanHoursSince >= (serverchanConfig?.notify_interval ?? 24)),
       },
       subscriptions: {
         expiringCount: expiringSubscriptions.length,
@@ -123,13 +125,7 @@ export async function getNotifyStatus(
   });
 }
 
-/**
- * 强制发送通知（忽略时间和频率限制）
- */
-export async function forceNotify(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function forceNotify(request: Request, env: Env): Promise<Response> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return errorResponse('未授权', 401);
@@ -139,18 +135,16 @@ export async function forceNotify(
   const payload = await verifyToken(token);
   if (!payload) return errorResponse('无效的 Token', 401);
 
-  const body = (await request.json()) as {
-    type?: 'email' | 'serverchan' | 'all';
-  };
+  const body = (await request.json()) as { type?: 'email' | 'serverchan' | 'all' };
   const type = body.type || 'all';
 
-  const user = await env.DB.prepare(`SELECT * FROM users WHERE id = ?`)
+  // 获取用户信息
+  const user = await env.DB.prepare('SELECT site_url FROM users WHERE id = ?')
     .bind(payload.userId)
-    .first();
+    .first<{ site_url?: string }>();
 
   if (!user) return errorResponse('用户不存在', 404);
 
-  // 使用北京时间进行日期比较
   const now = new Date();
   const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -161,76 +155,64 @@ export async function forceNotify(
       AND one_time = 0
       AND date(end_date) >= date(?)
       AND date(end_date) <= date(?, '+' || remind_days || ' days')
-  `)
-    .bind(payload.userId, beijingDate, beijingDate)
-    .all();
-
-  const results: { email?: boolean; serverchan?: boolean } = {};
+  `).bind(payload.userId, beijingDate, beijingDate).all<Subscription>();
 
   if (subscriptions.length === 0) {
-    return jsonResponse({
-      success: false,
-      message: '没有即将到期的订阅，无需发送通知',
-    });
+    return jsonResponse({ success: false, message: '没有即将到期的订阅，无需发送通知' });
   }
 
+  const results: { email?: boolean; serverchan?: boolean } = {};
   const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
 
   // 发送邮件
-  if ((type === 'all' || type === 'email') && user.resend_api_key) {
-    const html = generateTestEmailHtml(subscriptions, user.site_url as string | undefined);
-    results.email = await sendEmail(
-      user.resend_api_key as string,
-      (user.resend_domain as string) || '',
-      { to: user.email as string, subject: title, html },
-    );
+  if (type === 'all' || type === 'email') {
+    const resendConfig = await env.DB.prepare('SELECT email, api_key, domain FROM resend_config WHERE user_id = ?')
+      .bind(payload.userId)
+      .first<{ email: string; api_key: string; domain?: string }>();
 
-    if (results.email) {
-      await env.DB.prepare(
-        `UPDATE users SET resend_last_sent_at = ? WHERE id = ?`,
-      )
-        .bind(new Date().toISOString(), payload.userId)
-        .run();
+    if (resendConfig?.api_key) {
+      const html = generateTestEmailHtml(subscriptions, user.site_url);
+      results.email = await sendEmail(resendConfig.api_key, resendConfig.domain || '', {
+        to: resendConfig.email,
+        subject: title,
+        html,
+      });
+
+      if (results.email) {
+        await env.DB.prepare('UPDATE resend_config SET last_sent_at = ? WHERE user_id = ?')
+          .bind(now.toISOString(), payload.userId)
+          .run();
+      }
     }
   }
 
   // 发送 ServerChan
-  if ((type === 'all' || type === 'serverchan') && user.serverchan_api_key) {
-    const content = generateServerChanContent(subscriptions, user.site_url as string | undefined);
+  if (type === 'all' || type === 'serverchan') {
+    const serverchanConfig = await env.DB.prepare('SELECT api_key FROM serverchan_config WHERE user_id = ?')
+      .bind(payload.userId)
+      .first<{ api_key: string }>();
 
-    const result = await sendServerChanMessage(
-      user.serverchan_api_key as string,
-      title,
-      content,
-    );
-    results.serverchan = result.code === 0;
+    if (serverchanConfig?.api_key) {
+      const content = generateServerChanContent(subscriptions, user.site_url);
+      const result = await sendServerChanMessage(serverchanConfig.api_key, title, content);
+      results.serverchan = result.code === 0;
 
-    if (results.serverchan) {
-      await env.DB.prepare(
-        `UPDATE users SET serverchan_last_sent_at = ? WHERE id = ?`,
-      )
-        .bind(new Date().toISOString(), payload.userId)
-        .run();
+      if (results.serverchan) {
+        await env.DB.prepare('UPDATE serverchan_config SET last_sent_at = ? WHERE user_id = ?')
+          .bind(now.toISOString(), payload.userId)
+          .run();
+      }
     }
   }
 
   return jsonResponse({
     success: true,
     message: '强制发送完成',
-    data: {
-      subscriptionCount: subscriptions.length,
-      results,
-    },
+    data: { subscriptionCount: subscriptions.length, results },
   });
 }
 
-/**
- * 重置上次发送时间
- */
-export async function resetLastSent(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function resetLastSent(request: Request, env: Env): Promise<Response> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return errorResponse('未授权', 401);
@@ -240,46 +222,25 @@ export async function resetLastSent(
   const payload = await verifyToken(token);
   if (!payload) return errorResponse('无效的 Token', 401);
 
-  const body = (await request.json()) as {
-    type?: 'email' | 'serverchan' | 'all';
-  };
+  const body = (await request.json()) as { type?: 'email' | 'serverchan' | 'all' };
   const type = body.type || 'all';
 
   if (type === 'all' || type === 'email') {
-    await env.DB.prepare(
-      `UPDATE users SET resend_last_sent_at = NULL WHERE id = ?`,
-    )
+    await env.DB.prepare('UPDATE resend_config SET last_sent_at = NULL WHERE user_id = ?')
       .bind(payload.userId)
       .run();
   }
 
   if (type === 'all' || type === 'serverchan') {
-    await env.DB.prepare(
-      `UPDATE users SET serverchan_last_sent_at = NULL WHERE id = ?`,
-    )
+    await env.DB.prepare('UPDATE serverchan_config SET last_sent_at = NULL WHERE user_id = ?')
       .bind(payload.userId)
       .run();
   }
 
-  return jsonResponse({
-    success: true,
-    message: `已重置 ${type} 的上次发送时间`,
-  });
+  return jsonResponse({ success: true, message: `已重置 ${type} 的上次发送时间` });
 }
 
-// 类型中文映射
-const TYPE_LABELS: Record<string, string> = {
-  domain: '域名',
-  server: '服务器',
-  membership: '会员',
-  software: '软件',
-  other: '其他',
-};
-
-/**
- * 生成 ServerChan 消息内容
- */
-function generateServerChanContent(subscriptions: any[], siteUrl?: string): string {
+function generateServerChanContent(subscriptions: Subscription[], siteUrl?: string): string {
   const sendTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   const tableRows = subscriptions
     .map((sub) => `| ${sub.name} | ${TYPE_LABELS[sub.type] || sub.type} | ${sub.end_date} |`)
@@ -309,10 +270,7 @@ ${siteUrl ? `[👉 查看详情](${siteUrl})` : ''}
 `.trim();
 }
 
-/**
- * 生成测试邮件 HTML
- */
-function generateTestEmailHtml(subscriptions: any[], siteUrl?: string): string {
+function generateTestEmailHtml(subscriptions: Subscription[], siteUrl?: string): string {
   const items = subscriptions
     .map(
       (sub) => `

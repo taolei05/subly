@@ -2,10 +2,7 @@ import { sendEmail } from '../services/email';
 import type { Env } from '../types/index';
 import { errorResponse, logger, successResponse, verifyToken } from '../utils';
 
-export async function sendTestEmail(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function sendTestEmail(request: Request, env: Env): Promise<Response> {
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -23,19 +20,15 @@ export async function sendTestEmail(
       resend_domain?: string;
     };
 
-    // 检查是否是脱敏值
     const isMaskedValue = resend_api_key?.includes('***');
-
     let apiKeyToUse = resend_api_key;
 
     // 如果是脱敏值或为空，从数据库获取
     if (!resend_api_key || isMaskedValue) {
-      const row = await env.DB.prepare(
-        'SELECT resend_api_key FROM users WHERE id = ?',
-      )
+      const row = await env.DB.prepare('SELECT api_key FROM resend_config WHERE user_id = ?')
         .bind(payload.userId)
-        .first<{ resend_api_key: string }>();
-      apiKeyToUse = row?.resend_api_key || '';
+        .first<{ api_key: string }>();
+      apiKeyToUse = row?.api_key || '';
     }
 
     if (!apiKeyToUse) {
@@ -43,32 +36,28 @@ export async function sendTestEmail(
     }
 
     // 获取用户邮箱和站点链接
-    const user = await env.DB.prepare(
-      'SELECT email, site_url FROM users WHERE id = ?',
-    )
-      .bind(payload.userId)
-      .first<{ email: string; site_url?: string }>();
-    if (!user) return errorResponse('用户不存在', 404);
+    const config = await env.DB.prepare(`
+      SELECT r.email, u.site_url 
+      FROM resend_config r 
+      JOIN users u ON r.user_id = u.id 
+      WHERE r.user_id = ?
+    `).bind(payload.userId).first<{ email: string; site_url?: string }>();
 
-    // 生成查看详情按钮
-    const viewDetailsButton = user.site_url
-      ? `
-        <div style="margin-top: 20px; text-align: center;">
-          <a href="${user.site_url}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
-        </div>
-      `
+    if (!config) return errorResponse('用户不存在', 404);
+
+    const viewDetailsButton = config.site_url
+      ? `<div style="margin-top: 20px; text-align: center;">
+          <a href="${config.site_url}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
+        </div>`
       : '';
 
     const success = await sendEmail(apiKeyToUse, resend_domain || '', {
-      to: user.email,
+      to: config.email,
       subject: '[Subly] 邮件配置测试',
       html: `
         <!DOCTYPE html>
         <html>
-        <head>
-          <meta charset="utf-8">
-          <title>邮件配置测试</title>
-        </head>
+        <head><meta charset="utf-8"><title>邮件配置测试</title></head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #18a058; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
             <h1 style="margin: 0; font-size: 24px;">Subly 邮件配置测试</h1>
@@ -83,13 +72,11 @@ export async function sendTestEmail(
               </tr>
               <tr>
                 <td style="padding: 12px; color: #999;">收件邮箱</td>
-                <td style="padding: 12px;">${user.email}</td>
+                <td style="padding: 12px;">${config.email}</td>
               </tr>
             </table>
             ${viewDetailsButton}
-            <p style="margin-top: 20px; color: #666; font-size: 14px;">
-              这是一封测试邮件，请勿直接回复。
-            </p>
+            <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封测试邮件，请勿直接回复。</p>
           </div>
         </body>
         </html>

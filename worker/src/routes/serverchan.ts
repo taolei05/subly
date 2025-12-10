@@ -2,11 +2,7 @@ import { sendServerChanMessage } from '../services/serverchan';
 import type { Env } from '../types/index';
 import { errorResponse, logger, successResponse, verifyToken } from '../utils';
 
-// 测试 Server酱推送
-export async function sendTestServerChan(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function sendTestServerChan(request: Request, env: Env): Promise<Response> {
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -31,12 +27,10 @@ export async function sendTestServerChan(
     }
 
     if (!serverchan_api_key) {
-      const row = await env.DB.prepare(
-        'SELECT serverchan_api_key FROM users WHERE id = ?',
-      )
+      const row = await env.DB.prepare('SELECT api_key FROM serverchan_config WHERE user_id = ?')
         .bind(payload.userId)
-        .first<{ serverchan_api_key: string }>();
-      serverchan_api_key = row?.serverchan_api_key || '';
+        .first<{ api_key: string }>();
+      serverchan_api_key = row?.api_key || '';
     }
 
     if (!serverchan_api_key) {
@@ -44,17 +38,15 @@ export async function sendTestServerChan(
     }
 
     // 获取用户邮箱和站点链接
-    const user = await env.DB.prepare(
-      'SELECT email, site_url FROM users WHERE id = ?',
-    )
-      .bind(payload.userId)
-      .first<{ email: string; site_url?: string }>();
+    const config = await env.DB.prepare(`
+      SELECT r.email, u.site_url 
+      FROM resend_config r 
+      JOIN users u ON r.user_id = u.id 
+      WHERE r.user_id = ?
+    `).bind(payload.userId).first<{ email: string; site_url?: string }>();
 
-    const sendTime = new Date().toLocaleString('zh-CN', {
-      timeZone: 'Asia/Shanghai',
-    });
+    const sendTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
 
-    // 生成 Markdown 格式的消息内容
     const content = `
 ## 🎉 配置测试成功
 
@@ -65,29 +57,22 @@ export async function sendTestServerChan(
 | 项目 | 内容 |
 | :--- | :--- |
 | 发送时间 | ${sendTime} |
-| 接收账号 | ${user?.email || '未设置'} |
+| 接收账号 | ${config?.email || '未设置'} |
 
-${user?.site_url ? `\n[👉 查看详情](${user.site_url})` : ''}
+${config?.site_url ? `\n[👉 查看详情](${config.site_url})` : ''}
 
 ---
 
 *这是一条测试消息，请勿直接回复。*
 `.trim();
 
-    const result = await sendServerChanMessage(
-      serverchan_api_key,
-      '[Subly] 微信通知配置测试',
-      content,
-    );
+    const result = await sendServerChanMessage(serverchan_api_key, '[Subly] 微信通知配置测试', content);
 
     if (result.code === 0) {
       logger.info('Test ServerChan sent', { userId: payload.userId });
       return successResponse(null, '测试推送已发送');
     } else {
-      const msg =
-        result.data?.error ||
-        result.message ||
-        '测试推送发送失败，请检查 SendKey 是否正确';
+      const msg = result.data?.error || result.message || '测试推送发送失败，请检查 SendKey 是否正确';
       return errorResponse(msg);
     }
   } catch (error) {

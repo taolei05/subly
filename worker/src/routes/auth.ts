@@ -1,9 +1,4 @@
-import type {
-  Env,
-  UpdateSettingsRequest,
-  User,
-  UserPublic,
-} from '../types/index';
+import type { Env, UpdateSettingsRequest, UserWithConfig } from '../types/index';
 import {
   errorResponse,
   generateToken,
@@ -13,14 +8,13 @@ import {
   shouldRefreshToken,
   successResponse,
   USER_PUBLIC_FIELDS,
-  USER_SETTINGS_FIELDS,
+  USER_WITH_CONFIG_QUERY,
   validateRequest,
   verifyPassword,
   verifyToken,
 } from '../utils';
 
 export { sendTestEmail } from './email';
-// 重新导出测试功能
 export { sendTestServerChan } from './serverchan';
 
 // ==================== 验证 Schema ====================
@@ -54,9 +48,7 @@ export async function register(request: Request, env: Env): Promise<Response> {
 
     const { username, password, email } = validation.data;
 
-    const existing = await env.DB.prepare(
-      'SELECT id FROM users WHERE username = ?',
-    )
+    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?')
       .bind(username)
       .first();
 
@@ -65,11 +57,20 @@ export async function register(request: Request, env: Env): Promise<Response> {
     }
 
     const hashedPassword = await hashPassword(password);
-    await env.DB.prepare(
-      'INSERT INTO users (username, password, email) VALUES (?, ?, ?)',
-    )
-      .bind(username, hashedPassword, email ?? '')
+    
+    // 创建用户
+    const result = await env.DB.prepare('INSERT INTO users (username, password) VALUES (?, ?)')
+      .bind(username, hashedPassword)
       .run();
+
+    const userId = result.meta.last_row_id;
+
+    // 创建关联的配置记录
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO resend_config (user_id, email) VALUES (?, ?)').bind(userId, email ?? ''),
+      env.DB.prepare('INSERT INTO serverchan_config (user_id) VALUES (?)').bind(userId),
+      env.DB.prepare('INSERT INTO exchangerate_config (user_id) VALUES (?)').bind(userId),
+    ]);
 
     logger.info('User registered', { username });
     return successResponse(null, '注册成功');
@@ -85,10 +86,7 @@ export async function register(request: Request, env: Env): Promise<Response> {
 export async function login(request: Request, env: Env): Promise<Response> {
   try {
     const body = await request.json();
-    const validation = validateRequest<{ username: string; password: string }>(
-      body,
-      loginSchema,
-    );
+    const validation = validateRequest<{ username: string; password: string }>(body, loginSchema);
 
     if (!validation.valid) {
       return errorResponse(validation.error);
@@ -96,9 +94,9 @@ export async function login(request: Request, env: Env): Promise<Response> {
 
     const { username, password } = validation.data;
 
-    const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?')
+    const user = await env.DB.prepare('SELECT id, username, password FROM users WHERE username = ?')
       .bind(username)
-      .first<User>();
+      .first<{ id: number; username: string; password: string }>();
 
     if (!user) {
       return errorResponse('用户名或密码错误');
@@ -111,17 +109,15 @@ export async function login(request: Request, env: Env): Promise<Response> {
 
     const token = await generateToken(user.id, user.username);
 
+    // 获取完整用户信息
+    const userWithConfig = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
+      .bind(user.id)
+      .first<UserWithConfig>();
+
     logger.info('User logged in', { userId: user.id, username });
     return successResponse({
       token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        resend_api_key: user.resend_api_key,
-        exchangerate_api_key: user.exchangerate_api_key,
-        resend_domain: user.resend_domain,
-      },
+      user: userWithConfig,
     });
   } catch (error) {
     logger.error('Login error', error);
@@ -145,19 +141,16 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
       return errorResponse('Token 无效或已过期', 401);
     }
 
-    const user = await env.DB.prepare(
-      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
-    )
+    const user = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
       .bind(payload.userId)
-      .first<UserPublic>();
+      .first<UserWithConfig>();
 
     if (!user) {
       return errorResponse('用户不存在', 404);
     }
 
-    // 检查是否需要刷新 Token
     const needRefresh = await shouldRefreshToken(token);
-    const response: { user: UserPublic; newToken?: string } = { user };
+    const response: { user: UserWithConfig; newToken?: string } = { user };
 
     if (needRefresh) {
       response.newToken = await generateToken(payload.userId, payload.username);
@@ -176,10 +169,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
 /**
  * 更新用户设置（包含所有 API 配置）
  */
-export async function updateSettings(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function updateSettings(request: Request, env: Env): Promise<Response> {
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -194,107 +184,63 @@ export async function updateSettings(
 
     const settings = (await request.json()) as UpdateSettingsRequest;
 
-    // 获取当前设置
-    const currentSettings = await env.DB.prepare(
-      `SELECT ${USER_SETTINGS_FIELDS} FROM users WHERE id = ?`,
-    )
-      .bind(payload.userId)
-      .first<User>();
-
     // 验证站点 URL
-    if (
-      settings.site_url !== undefined &&
-      settings.site_url !== '' &&
-      !isValidSiteUrl(settings.site_url)
-    ) {
+    if (settings.site_url !== undefined && settings.site_url !== '' && !isValidSiteUrl(settings.site_url)) {
       return errorResponse('站点链接格式无效，必须以 http:// 或 https:// 开头');
     }
 
-    // 合并设置
-    const newSettings = {
-      email: settings.email ?? currentSettings?.email ?? '',
-      // Resend 配置
-      resend_api_key:
-        settings.resend_api_key ?? currentSettings?.resend_api_key ?? '',
-      resend_domain:
-        settings.resend_domain ?? currentSettings?.resend_domain ?? '',
-      resend_enabled:
-        settings.resend_enabled !== undefined
-          ? settings.resend_enabled
-            ? 1
-            : 0
-          : (currentSettings?.resend_enabled ?? 1),
-      resend_notify_time:
-        settings.resend_notify_time ?? currentSettings?.resend_notify_time ?? 8,
-      resend_notify_interval:
-        settings.resend_notify_interval ??
-        currentSettings?.resend_notify_interval ??
-        24,
-      // Server酱配置
-      serverchan_api_key:
-        settings.serverchan_api_key ??
-        currentSettings?.serverchan_api_key ??
-        '',
-      serverchan_enabled:
-        settings.serverchan_enabled !== undefined
-          ? settings.serverchan_enabled
-            ? 1
-            : 0
-          : (currentSettings?.serverchan_enabled ?? 1),
-      serverchan_notify_time:
-        settings.serverchan_notify_time ??
-        currentSettings?.serverchan_notify_time ??
-        8,
-      serverchan_notify_interval:
-        settings.serverchan_notify_interval ??
-        currentSettings?.serverchan_notify_interval ??
-        24,
-      // ExchangeRate 配置
-      exchangerate_api_key:
-        settings.exchangerate_api_key ??
-        currentSettings?.exchangerate_api_key ??
-        '',
-      exchangerate_enabled:
-        settings.exchangerate_enabled !== undefined
-          ? settings.exchangerate_enabled
-            ? 1
-            : 0
-          : (currentSettings?.exchangerate_enabled ?? 1),
-      // 其他
-      site_url: settings.site_url ?? currentSettings?.site_url ?? '',
-    };
-
-    await env.DB.prepare(
-      `UPDATE users SET 
-        email = ?, 
-        resend_api_key = ?, resend_domain = ?, resend_enabled = ?, resend_notify_time = ?, resend_notify_interval = ?,
-        serverchan_api_key = ?, serverchan_enabled = ?, serverchan_notify_time = ?, serverchan_notify_interval = ?,
-        exchangerate_api_key = ?, exchangerate_enabled = ?, site_url = ?
-       WHERE id = ?`,
-    )
-      .bind(
-        newSettings.email,
-        newSettings.resend_api_key,
-        newSettings.resend_domain,
-        newSettings.resend_enabled,
-        newSettings.resend_notify_time,
-        newSettings.resend_notify_interval,
-        newSettings.serverchan_api_key,
-        newSettings.serverchan_enabled,
-        newSettings.serverchan_notify_time,
-        newSettings.serverchan_notify_interval,
-        newSettings.exchangerate_api_key,
-        newSettings.exchangerate_enabled,
-        newSettings.site_url,
-        payload.userId,
-      )
-      .run();
-
-    const user = await env.DB.prepare(
-      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
-    )
+    // 获取当前配置
+    const current = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
       .bind(payload.userId)
-      .first<UserPublic>();
+      .first<UserWithConfig>();
+
+    // 更新用户表
+    if (settings.site_url !== undefined) {
+      await env.DB.prepare('UPDATE users SET site_url = ? WHERE id = ?')
+        .bind(settings.site_url, payload.userId)
+        .run();
+    }
+
+    // 更新 Resend 配置
+    await env.DB.prepare(`
+      UPDATE resend_config SET 
+        email = ?, api_key = ?, domain = ?, enabled = ?, notify_time = ?, notify_interval = ?
+      WHERE user_id = ?
+    `).bind(
+      settings.email ?? current?.email ?? '',
+      settings.resend_api_key ?? current?.resend_api_key ?? '',
+      settings.resend_domain ?? current?.resend_domain ?? '',
+      settings.resend_enabled !== undefined ? (settings.resend_enabled ? 1 : 0) : (current?.resend_enabled ?? 1),
+      settings.resend_notify_time ?? current?.resend_notify_time ?? 8,
+      settings.resend_notify_interval ?? current?.resend_notify_interval ?? 24,
+      payload.userId,
+    ).run();
+
+    // 更新 Server酱 配置
+    await env.DB.prepare(`
+      UPDATE serverchan_config SET 
+        api_key = ?, enabled = ?, notify_time = ?, notify_interval = ?
+      WHERE user_id = ?
+    `).bind(
+      settings.serverchan_api_key ?? current?.serverchan_api_key ?? '',
+      settings.serverchan_enabled !== undefined ? (settings.serverchan_enabled ? 1 : 0) : (current?.serverchan_enabled ?? 1),
+      settings.serverchan_notify_time ?? current?.serverchan_notify_time ?? 8,
+      settings.serverchan_notify_interval ?? current?.serverchan_notify_interval ?? 24,
+      payload.userId,
+    ).run();
+
+    // 更新 ExchangeRate 配置
+    await env.DB.prepare(`
+      UPDATE exchangerate_config SET api_key = ?, enabled = ? WHERE user_id = ?
+    `).bind(
+      settings.exchangerate_api_key ?? current?.exchangerate_api_key ?? '',
+      settings.exchangerate_enabled !== undefined ? (settings.exchangerate_enabled ? 1 : 0) : (current?.exchangerate_enabled ?? 1),
+      payload.userId,
+    ).run();
+
+    const user = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
+      .bind(payload.userId)
+      .first<UserWithConfig>();
 
     logger.info('Settings updated', { userId: payload.userId });
     return successResponse(user, '设置已更新');
@@ -307,10 +253,7 @@ export async function updateSettings(
 /**
  * 更新用户个人信息（用户名、邮箱、密码）
  */
-export async function updateProfile(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function updateProfile(request: Request, env: Env): Promise<Response> {
   try {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -337,9 +280,7 @@ export async function updateProfile(
       return errorResponse('用户名至少3个字符');
     }
 
-    const existing = await env.DB.prepare(
-      'SELECT id FROM users WHERE username = ? AND id != ?',
-    )
+    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ? AND id != ?')
       .bind(username, payload.userId)
       .first();
 
@@ -347,8 +288,9 @@ export async function updateProfile(
       return errorResponse('用户名已存在');
     }
 
-    let query = 'UPDATE users SET username = ?, email = ?';
-    const params: (string | number)[] = [username, email];
+    // 更新用户名
+    let query = 'UPDATE users SET username = ?';
+    const params: (string | number)[] = [username];
 
     if (password && password.length >= 6) {
       const hashedPassword = await hashPassword(password);
@@ -361,15 +303,16 @@ export async function updateProfile(
     query += ' WHERE id = ?';
     params.push(payload.userId);
 
-    await env.DB.prepare(query)
-      .bind(...params)
+    await env.DB.prepare(query).bind(...params).run();
+
+    // 更新邮箱到 resend_config
+    await env.DB.prepare('UPDATE resend_config SET email = ? WHERE user_id = ?')
+      .bind(email, payload.userId)
       .run();
 
-    const user = await env.DB.prepare(
-      `SELECT ${USER_PUBLIC_FIELDS} FROM users WHERE id = ?`,
-    )
+    const user = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
       .bind(payload.userId)
-      .first<UserPublic>();
+      .first<UserWithConfig>();
 
     logger.info('Profile updated', { userId: payload.userId });
     return successResponse(user, '个人信息已更新');

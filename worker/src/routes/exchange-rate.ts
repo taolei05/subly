@@ -1,7 +1,6 @@
 import type { Env } from '../types/index';
 import { jsonResponse, logger, verifyToken } from '../utils';
 
-// 默认汇率（备用）
 const DEFAULT_RATES: Record<string, number> = {
   CNY: 1,
   HKD: 1.09,
@@ -10,38 +9,26 @@ const DEFAULT_RATES: Record<string, number> = {
   GBP: 0.11,
 };
 
-// ExchangeRate API 响应类型
 interface ExchangeRateApiResponse {
   result: string;
   conversion_rates: Record<string, number>;
 }
 
-/**
- * 获取汇率
- * 优先使用用户配置的 ExchangeRate API Key，否则返回默认汇率
- */
-export async function getExchangeRate(
-  request: Request,
-  env: Env,
-): Promise<Response> {
+export async function getExchangeRate(request: Request, env: Env): Promise<Response> {
   const authHeader = request.headers.get('Authorization');
 
-  // 尝试从用户设置获取 API Key
   if (authHeader?.startsWith('Bearer ')) {
     try {
       const token = authHeader.slice(7);
       const payload = await verifyToken(token);
 
       if (payload) {
-        const user = await env.DB.prepare(
-          'SELECT exchangerate_api_key, exchangerate_enabled FROM users WHERE id = ?',
-        )
+        const config = await env.DB.prepare('SELECT api_key, enabled FROM exchangerate_config WHERE user_id = ?')
           .bind(payload.userId)
-          .first<{ exchangerate_api_key: string; exchangerate_enabled: number }>();
+          .first<{ api_key: string; enabled: number }>();
 
-        // 只有当功能启用且有 API Key 时才使用 ExchangeRate API
-        if (user?.exchangerate_enabled !== 0 && user?.exchangerate_api_key) {
-          const rates = await fetchExchangeRates(user.exchangerate_api_key);
+        if (config?.enabled !== 0 && config?.api_key) {
+          const rates = await fetchExchangeRates(config.api_key);
           if (rates) {
             return jsonResponse({
               success: true,
@@ -65,7 +52,6 @@ export async function getExchangeRate(
     }
   }
 
-  // 返回默认汇率
   return jsonResponse({
     success: true,
     source: 'default',
@@ -73,12 +59,7 @@ export async function getExchangeRate(
   });
 }
 
-/**
- * 从 ExchangeRate API 获取汇率
- */
-async function fetchExchangeRates(
-  apiKey: string,
-): Promise<Record<string, number> | null> {
+async function fetchExchangeRates(apiKey: string): Promise<Record<string, number> | null> {
   try {
     const apiUrl = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/CNY`;
     const response = await fetch(apiUrl);

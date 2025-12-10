@@ -1,24 +1,46 @@
 -- Subly D1 数据库 Schema
--- 用户表
+
+-- 用户表（核心信息）
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    site_url TEXT
+);
+
+-- Resend 邮件配置表
+CREATE TABLE IF NOT EXISTS resend_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
     email TEXT NOT NULL,
-    resend_api_key TEXT,
-    exchangerate_api_key TEXT,
-    resend_domain TEXT,
-    resend_notify_time INTEGER DEFAULT 8,
-    resend_notify_interval INTEGER DEFAULT 24,
-    resend_last_sent_at TEXT,
-    serverchan_api_key TEXT,
-    serverchan_notify_time INTEGER DEFAULT 8,
-    serverchan_notify_interval INTEGER DEFAULT 24,
-    serverchan_last_sent_at TEXT,
-    site_url TEXT,
-    resend_enabled INTEGER DEFAULT 1,
-    serverchan_enabled INTEGER DEFAULT 1,
-    exchangerate_enabled INTEGER DEFAULT 1
+    api_key TEXT,
+    domain TEXT,
+    notify_time INTEGER DEFAULT 8,
+    notify_interval INTEGER DEFAULT 24,
+    last_sent_at TEXT,
+    enabled INTEGER DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Server酱配置表
+CREATE TABLE IF NOT EXISTS serverchan_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    api_key TEXT,
+    notify_time INTEGER DEFAULT 8,
+    notify_interval INTEGER DEFAULT 24,
+    last_sent_at TEXT,
+    enabled INTEGER DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 汇率 API 配置表
+CREATE TABLE IF NOT EXISTS exchangerate_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    api_key TEXT,
+    enabled INTEGER DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 订阅表
@@ -43,6 +65,9 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 -- 创建索引优化查询
+CREATE INDEX IF NOT EXISTS idx_resend_config_user_id ON resend_config(user_id);
+CREATE INDEX IF NOT EXISTS idx_serverchan_config_user_id ON serverchan_config(user_id);
+CREATE INDEX IF NOT EXISTS idx_exchangerate_config_user_id ON exchangerate_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_end_date ON subscriptions(end_date);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);

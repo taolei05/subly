@@ -1,4 +1,4 @@
-import type { Env, Subscription, User } from '../types/index';
+import type { Env, ResendConfig, Subscription } from '../types/index';
 import { logger } from '../utils';
 
 // ==================== 类型定义 ====================
@@ -9,7 +9,6 @@ export interface EmailData {
   html: string;
 }
 
-// 类型中文映射
 const TYPE_LABELS: Record<string, string> = {
   domain: '域名',
   server: '服务器',
@@ -20,18 +19,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 // ==================== 邮件发送 ====================
 
-/**
- * 发送邮件 (使用 Resend API)
- */
-export async function sendEmail(
-  apiKey: string,
-  domain: string,
-  data: EmailData,
-): Promise<boolean> {
+export async function sendEmail(apiKey: string, domain: string, data: EmailData): Promise<boolean> {
   try {
-    const fromEmail = domain
-      ? `Subly <noreply@${domain}>`
-      : 'Subly <onboarding@resend.dev>';
+    const fromEmail = domain ? `Subly <noreply@${domain}>` : 'Subly <onboarding@resend.dev>';
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -62,13 +52,7 @@ export async function sendEmail(
 
 // ==================== 邮件模板 ====================
 
-/**
- * 生成提醒邮件 HTML
- */
-export function generateReminderEmail(
-  subscriptions: Subscription[],
-  siteUrl?: string,
-): string {
+export function generateReminderEmail(subscriptions: Subscription[], siteUrl?: string): string {
   const items = subscriptions
     .map(
       (sub) => `
@@ -82,20 +66,15 @@ export function generateReminderEmail(
     .join('');
 
   const viewDetailsButton = siteUrl
-    ? `
-        <div style="margin-top: 20px; text-align: center;">
-          <a href="${siteUrl}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
-        </div>
-      `
+    ? `<div style="margin-top: 20px; text-align: center;">
+        <a href="${siteUrl}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
+      </div>`
     : '';
 
   return `
     <!DOCTYPE html>
     <html>
-    <head>
-      <meta charset="utf-8">
-      <title>订阅到期提醒</title>
-    </head>
+    <head><meta charset="utf-8"><title>订阅到期提醒</title></head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: #18a058; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
         <h1 style="margin: 0; font-size: 24px;">Subly 订阅提醒</h1>
@@ -110,14 +89,10 @@ export function generateReminderEmail(
               <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">到期日期</th>
             </tr>
           </thead>
-          <tbody>
-            ${items}
-          </tbody>
+          <tbody>${items}</tbody>
         </table>
         ${viewDetailsButton}
-        <p style="margin-top: 20px; color: #666; font-size: 14px;">
-          这是一封自动发送的邮件，请勿直接回复。
-        </p>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的邮件，请勿直接回复。</p>
       </div>
     </body>
     </html>
@@ -126,10 +101,6 @@ export function generateReminderEmail(
 
 // ==================== 定时任务 ====================
 
-/**
- * 检查是否应该发送通知（基于时间和频率）
- * 返回 { should: boolean, reason: string } 用于调试
- */
 function shouldSendNotification(
   notifyTime: number | null | undefined,
   notifyInterval: number | null | undefined,
@@ -139,17 +110,14 @@ function shouldSendNotification(
   const targetHour = notifyTime ?? 8;
   const intervalHours = notifyInterval ?? 24;
 
-  // 检查是否在通知时间（允许1小时误差）
   if (beijingHour !== targetHour) {
     return { should: false, reason: `当前时间 ${beijingHour} 点，通知时间 ${targetHour} 点` };
   }
 
-  // 从未发送过，直接发送
   if (!lastSentAt) {
     return { should: true, reason: '首次发送' };
   }
 
-  // 检查距离上次发送的时间间隔
   const lastSent = new Date(lastSentAt);
   const now = new Date();
   const hoursSinceLastSent = (now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
@@ -161,9 +129,19 @@ function shouldSendNotification(
   return { should: false, reason: `距上次发送 ${hoursSinceLastSent.toFixed(1)} 小时，未达间隔 ${intervalHours} 小时` };
 }
 
-/**
- * 检查并发送到期提醒 (由 Cron 触发)
- */
+// 用于定时任务的聚合查询结果类型
+interface UserResendConfig {
+  user_id: number;
+  site_url?: string;
+  email: string;
+  api_key: string;
+  domain?: string;
+  notify_time: number;
+  notify_interval: number;
+  last_sent_at?: string;
+  enabled: number;
+}
+
 export async function checkAndSendEmailReminders(env: Env): Promise<void> {
   try {
     const now = new Date();
@@ -172,36 +150,37 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 
     logger.info('[Email] Checking reminders', { utcHour, beijingHour, timestamp: now.toISOString() });
 
-    const { results: users } = await env.DB.prepare(
-      `SELECT * FROM users 
-       WHERE resend_api_key IS NOT NULL AND resend_api_key != ''
-       AND (resend_enabled IS NULL OR resend_enabled = 1)`,
-    ).all<User>();
+    // 查询启用了 Resend 且有 API Key 的用户
+    const { results: configs } = await env.DB.prepare(`
+      SELECT r.user_id, u.site_url, r.email, r.api_key, r.domain, 
+             r.notify_time, r.notify_interval, r.last_sent_at, r.enabled
+      FROM resend_config r
+      JOIN users u ON r.user_id = u.id
+      WHERE r.api_key IS NOT NULL AND r.api_key != ''
+        AND (r.enabled IS NULL OR r.enabled = 1)
+    `).all<UserResendConfig>();
 
-    logger.info('[Email] Found users with Resend enabled', { count: users.length });
+    logger.info('[Email] Found users with Resend enabled', { count: configs.length });
 
-    for (const user of users) {
+    for (const config of configs) {
       const checkResult = shouldSendNotification(
-        user.resend_notify_time,
-        user.resend_notify_interval,
-        user.resend_last_sent_at,
+        config.notify_time,
+        config.notify_interval,
+        config.last_sent_at,
         beijingHour,
       );
 
       logger.info('[Email] User notification check', {
-        userId: user.id,
+        userId: config.user_id,
         should: checkResult.should,
         reason: checkResult.reason,
-        notifyTime: user.resend_notify_time ?? 8,
-        lastSentAt: user.resend_last_sent_at,
+        notifyTime: config.notify_time ?? 8,
+        lastSentAt: config.last_sent_at,
       });
 
-      if (!checkResult.should) {
-        continue;
-      }
+      if (!checkResult.should) continue;
 
-      // 查询即将到期的订阅（到期日期在今天到 remind_days 天后之间）
-      // 使用北京时间进行日期比较，避免 UTC 时区问题
+      // 使用北京时间进行日期比较
       const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
@@ -210,38 +189,36 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
           AND one_time = 0
           AND date(end_date) >= date(?)
           AND date(end_date) <= date(?, '+' || remind_days || ' days')
-      `)
-        .bind(user.id, beijingDate, beijingDate)
-        .all<Subscription>();
+      `).bind(config.user_id, beijingDate, beijingDate).all<Subscription>();
 
       logger.info('[Email] Found expiring subscriptions', {
-        userId: user.id,
+        userId: config.user_id,
         count: subscriptions.length,
-        subscriptions: subscriptions.map(s => ({ name: s.name, end_date: s.end_date, remind_days: s.remind_days })),
+        subscriptions: subscriptions.map((s) => ({ name: s.name, end_date: s.end_date, remind_days: s.remind_days })),
       });
 
       if (subscriptions.length > 0) {
         const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
-        const html = generateReminderEmail(subscriptions, user.site_url || undefined);
+        const html = generateReminderEmail(subscriptions, config.site_url || undefined);
 
-        logger.info('[Email] Sending reminder', { userId: user.id, email: user.email, count: subscriptions.length });
+        logger.info('[Email] Sending reminder', { userId: config.user_id, email: config.email, count: subscriptions.length });
 
-        const success = await sendEmail(
-          user.resend_api_key as string,
-          user.resend_domain || '',
-          { to: user.email, subject: title, html },
-        );
+        const success = await sendEmail(config.api_key, config.domain || '', {
+          to: config.email,
+          subject: title,
+          html,
+        });
 
         if (success) {
-          await env.DB.prepare(`UPDATE users SET resend_last_sent_at = ? WHERE id = ?`)
-            .bind(now.toISOString(), user.id)
+          await env.DB.prepare('UPDATE resend_config SET last_sent_at = ? WHERE user_id = ?')
+            .bind(now.toISOString(), config.user_id)
             .run();
-          logger.info('[Email] Successfully sent', { userId: user.id });
+          logger.info('[Email] Successfully sent', { userId: config.user_id });
         } else {
-          logger.error('[Email] Failed to send', { userId: user.id });
+          logger.error('[Email] Failed to send', { userId: config.user_id });
         }
       } else {
-        logger.info('[Email] No expiring subscriptions, skipping', { userId: user.id });
+        logger.info('[Email] No expiring subscriptions, skipping', { userId: config.user_id });
       }
     }
   } catch (error) {

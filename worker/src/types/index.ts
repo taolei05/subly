@@ -12,8 +12,48 @@ export interface User {
   id: number;
   username: string;
   password: string;
+  site_url?: string;
+}
+
+export type UserPublic = Omit<User, 'password'>;
+
+// ==================== 配置表类型 ====================
+export interface ResendConfig {
+  id: number;
+  user_id: number;
   email: string;
-  // Resend 邮件配置
+  api_key?: string;
+  domain?: string;
+  notify_time: number;
+  notify_interval: number;
+  last_sent_at?: string;
+  enabled: number;
+}
+
+export interface ServerChanConfig {
+  id: number;
+  user_id: number;
+  api_key?: string;
+  notify_time: number;
+  notify_interval: number;
+  last_sent_at?: string;
+  enabled: number;
+}
+
+export interface ExchangeRateConfig {
+  id: number;
+  user_id: number;
+  api_key?: string;
+  enabled: number;
+}
+
+// 聚合用户信息（用于API响应）
+export interface UserWithConfig {
+  id: number;
+  username: string;
+  site_url?: string;
+  // Resend 配置
+  email?: string;
   resend_api_key?: string;
   resend_domain?: string;
   resend_enabled?: number;
@@ -26,14 +66,10 @@ export interface User {
   serverchan_notify_time?: number;
   serverchan_notify_interval?: number;
   serverchan_last_sent_at?: string;
-  // ExchangeRate 汇率配置
+  // ExchangeRate 配置
   exchangerate_api_key?: string;
   exchangerate_enabled?: number;
-  // 其他配置
-  site_url?: string;
 }
-
-export type UserPublic = Omit<User, 'password'>;
 
 // ==================== 订阅相关 ====================
 export type SubscriptionType =

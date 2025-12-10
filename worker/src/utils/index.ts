@@ -23,4 +23,4 @@ export {
 } from './validation';
 
 // 常量
-export { USER_PUBLIC_FIELDS, USER_SETTINGS_FIELDS } from './constants';
+export { USER_PUBLIC_FIELDS, USER_WITH_CONFIG_QUERY } from './constants';
