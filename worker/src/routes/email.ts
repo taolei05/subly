@@ -1,60 +1,67 @@
-import { sendEmail } from '../services/email';
-import type { Env } from '../types/index';
-import { errorResponse, logger, successResponse, verifyToken } from '../utils';
+import { sendEmail } from "../services/email";
+import type { Env } from "../types/index";
+import { errorResponse, logger, successResponse, verifyToken } from "../utils";
 
-export async function sendTestEmail(request: Request, env: Env): Promise<Response> {
-  try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return errorResponse('未授权', 401);
-    }
+export async function sendTestEmail(
+	request: Request,
+	env: Env,
+): Promise<Response> {
+	try {
+		const authHeader = request.headers.get("Authorization");
+		if (!authHeader?.startsWith("Bearer ")) {
+			return errorResponse("未授权", 401);
+		}
 
-    const token = authHeader.slice(7);
-    const payload = await verifyToken(token);
-    if (!payload) {
-      return errorResponse('Token 无效或已过期', 401);
-    }
+		const token = authHeader.slice(7);
+		const payload = await verifyToken(token);
+		if (!payload) {
+			return errorResponse("Token 无效或已过期", 401);
+		}
 
-    const { resend_api_key, resend_domain } = (await request.json()) as {
-      resend_api_key: string;
-      resend_domain?: string;
-    };
+		const { resend_api_key, resend_domain } = (await request.json()) as {
+			resend_api_key: string;
+			resend_domain?: string;
+		};
 
-    const isMaskedValue = resend_api_key?.includes('***');
-    let apiKeyToUse = resend_api_key;
+		const isMaskedValue = resend_api_key?.includes("***");
+		let apiKeyToUse = resend_api_key;
 
-    // 如果是脱敏值或为空，从数据库获取
-    if (!resend_api_key || isMaskedValue) {
-      const row = await env.DB.prepare('SELECT api_key FROM resend_config WHERE user_id = ?')
-        .bind(payload.userId)
-        .first<{ api_key: string }>();
-      apiKeyToUse = row?.api_key || '';
-    }
+		// 如果是脱敏值或为空，从数据库获取
+		if (!resend_api_key || isMaskedValue) {
+			const row = await env.DB.prepare(
+				"SELECT api_key FROM resend_config WHERE user_id = ?",
+			)
+				.bind(payload.userId)
+				.first<{ api_key: string }>();
+			apiKeyToUse = row?.api_key || "";
+		}
 
-    if (!apiKeyToUse) {
-      return errorResponse('请输入或先保存 Resend API Key');
-    }
+		if (!apiKeyToUse) {
+			return errorResponse("请输入或先保存 Resend API Key");
+		}
 
-    // 获取用户邮箱和站点链接
-    const config = await env.DB.prepare(`
+		// 获取用户邮箱和站点链接
+		const config = await env.DB.prepare(`
       SELECT r.email, u.site_url 
       FROM resend_config r 
       JOIN users u ON r.user_id = u.id 
       WHERE r.user_id = ?
-    `).bind(payload.userId).first<{ email: string; site_url?: string }>();
+    `)
+			.bind(payload.userId)
+			.first<{ email: string; site_url?: string }>();
 
-    if (!config) return errorResponse('用户不存在', 404);
+		if (!config) return errorResponse("用户不存在", 404);
 
-    const viewDetailsButton = config.site_url
-      ? `<div style="margin-top: 20px; text-align: center;">
+		const viewDetailsButton = config.site_url
+			? `<div style="margin-top: 20px; text-align: center;">
           <a href="${config.site_url}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
         </div>`
-      : '';
+			: "";
 
-    const success = await sendEmail(apiKeyToUse, resend_domain || '', {
-      to: config.email,
-      subject: '[Subly] 邮件配置测试',
-      html: `
+		const success = await sendEmail(apiKeyToUse, resend_domain || "", {
+			to: config.email,
+			subject: "[Subly] 邮件配置测试",
+			html: `
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"><title>邮件配置测试</title></head>
@@ -68,7 +75,7 @@ export async function sendTestEmail(request: Request, env: Env): Promise<Respons
             <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 16px;">
               <tr>
                 <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">发送时间</td>
-                <td style="padding: 12px; border-bottom: 1px solid #eee;">${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}</td>
               </tr>
               <tr>
                 <td style="padding: 12px; color: #999;">收件邮箱</td>
@@ -81,16 +88,16 @@ export async function sendTestEmail(request: Request, env: Env): Promise<Respons
         </body>
         </html>
       `,
-    });
+		});
 
-    if (success) {
-      logger.info('Test email sent', { userId: payload.userId });
-      return successResponse(null, '测试邮件已发送');
-    } else {
-      return errorResponse('发送失败，请检查配置');
-    }
-  } catch (error) {
-    logger.error('SendTestEmail error', error);
-    return errorResponse('发送测试邮件失败', 500);
-  }
+		if (success) {
+			logger.info("Test email sent", { userId: payload.userId });
+			return successResponse(null, "测试邮件已发送");
+		} else {
+			return errorResponse("发送失败，请检查配置");
+		}
+	} catch (error) {
+		logger.error("SendTestEmail error", error);
+		return errorResponse("发送测试邮件失败", 500);
+	}
 }

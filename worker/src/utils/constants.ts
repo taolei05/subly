@@ -1,5 +1,5 @@
 // 用户查询字段常量（仅用户表字段）
-export const USER_PUBLIC_FIELDS = 'id, username, site_url';
+export const USER_PUBLIC_FIELDS = "id, username, site_url";
 
 // 聚合查询：用户 + 所有配置
 export const USER_WITH_CONFIG_QUERY = `

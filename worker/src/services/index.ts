@@ -1,14 +1,14 @@
 // 邮件服务
 export {
-  checkAndSendEmailReminders,
-  type EmailData,
-  generateReminderEmail,
-  sendEmail,
-} from './email';
+	checkAndSendEmailReminders,
+	type EmailData,
+	generateReminderEmail,
+	sendEmail,
+} from "./email";
 
 // Server酱服务
 export {
-  checkAndSendServerChanReminders,
-  type ServerChanResponse,
-  sendServerChanMessage,
-} from './serverchan';
+	checkAndSendServerChanReminders,
+	type ServerChanResponse,
+	sendServerChanMessage,
+} from "./serverchan";
