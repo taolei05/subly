@@ -1,18 +1,20 @@
 <template>
-  <div class="charts-container">
-    <n-grid cols="1 m:2" responsive="screen" :x-gap="16" :y-gap="16">
-      <n-gi>
-        <n-card title="类型分布" size="small">
-          <v-chart class="chart" :option="typeChartOption" autoresize />
-        </n-card>
-      </n-gi>
-      <n-gi>
-        <n-card title="月度支出趋势" size="small">
-          <v-chart class="chart" :option="trendChartOption" autoresize />
-        </n-card>
-      </n-gi>
-    </n-grid>
-  </div>
+  <n-collapse class="charts-collapse">
+    <n-collapse-item title="订阅统计" name="charts">
+      <n-grid cols="1 m:2" responsive="screen" :x-gap="16" :y-gap="16">
+        <n-gi>
+          <n-card title="类型分布" size="small">
+            <v-chart class="chart" :option="typeChartOption" autoresize />
+          </n-card>
+        </n-gi>
+        <n-gi>
+          <n-card title="月度支出趋势" size="small">
+            <v-chart class="chart" :option="trendChartOption" autoresize />
+          </n-card>
+        </n-gi>
+      </n-grid>
+    </n-collapse-item>
+  </n-collapse>
 </template>
 
 <script setup lang="ts">
@@ -212,7 +214,7 @@ const trendChartOption = computed(() => {
 </script>
 
 <style scoped>
-.charts-container {
+.charts-collapse {
   margin-bottom: 16px;
 }
 

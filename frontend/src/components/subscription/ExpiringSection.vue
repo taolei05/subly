@@ -1,21 +1,25 @@
 <template>
-  <div class="countdown-section">
-    <h3 class="section-title">
-      <Icon name="warning" :size="18" />
-      即将到期 (7天内)
-    </h3>
-    <div class="countdown-list">
-      <div v-for="sub in subscriptions" :key="sub.id" class="countdown-item">
-        <div class="countdown-info">
-          <span class="countdown-name">{{ sub.name }}</span>
-          <span class="countdown-date">{{ sub.end_date }}</span>
+  <n-collapse class="expiring-collapse">
+    <n-collapse-item name="expiring">
+      <template #header>
+        <div class="section-title">
+          <Icon name="warning" :size="18" />
+          即将到期 (7天内)
         </div>
-        <n-tag :type="getCountdownType(sub.daysLeft)" size="small">
-          {{ getCountdownText(sub.daysLeft) }}
-        </n-tag>
+      </template>
+      <div class="countdown-list">
+        <div v-for="sub in subscriptions" :key="sub.id" class="countdown-item">
+          <div class="countdown-info">
+            <span class="countdown-name">{{ sub.name }}</span>
+            <span class="countdown-date">{{ sub.end_date }}</span>
+          </div>
+          <n-tag :type="getCountdownType(sub.daysLeft)" size="small">
+            {{ getCountdownText(sub.daysLeft) }}
+          </n-tag>
+        </div>
       </div>
-    </div>
-  </div>
+    </n-collapse-item>
+  </n-collapse>
 </template>
 
 <script setup lang="ts">
@@ -40,21 +44,16 @@ function getCountdownText(daysLeft: number): string {
 </script>
 
 <style scoped>
-.countdown-section {
-  margin-top: 20px;
-  padding: 16px;
-  background: var(--n-color);
-  border-radius: 8px;
-  border: 1px solid var(--n-border-color);
+.expiring-collapse {
+  margin-top: 16px;
 }
 
 .section-title {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 12px 0;
   color: var(--n-text-color);
 }
 
