@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy && pnpm run db:init:remote",
+    "deploy": "wrangler deploy",
+    "build": "pnpm run db:init:remote",
     "db:init": "wrangler d1 execute subly --local --file=./schema.sql --yes",
     "db:init:remote": "wrangler d1 execute subly --remote --file=./schema.sql --yes",
     "test": "vitest --run"
