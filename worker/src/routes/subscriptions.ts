@@ -28,7 +28,7 @@ const subscriptionSchema = {
 	},
 	start_date: { required: true, type: "string" as const },
 	end_date: { required: true, type: "string" as const },
-	remind_days: { type: "number" as const, min: 1, max: 365 },
+	remind_days: { type: "number" as const, min: 0, max: 365 },
 };
 
 // ==================== 辅助函数 ====================
