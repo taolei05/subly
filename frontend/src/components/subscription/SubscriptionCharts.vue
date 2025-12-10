@@ -7,18 +7,29 @@
           订阅统计
         </div>
       </template>
-      <n-grid cols="1 m:2" responsive="screen" :x-gap="16" :y-gap="16">
-        <n-gi>
-          <n-card title="类型分布" size="small">
-            <v-chart class="chart" :option="typeChartOption" autoresize />
-          </n-card>
-        </n-gi>
-        <n-gi>
-          <n-card title="月度支出趋势" size="small">
-            <v-chart class="chart" :option="trendChartOption" autoresize />
-          </n-card>
-        </n-gi>
-      </n-grid>
+      <n-radio-group v-model:value="chartType" size="small" class="chart-tabs">
+        <n-radio-button value="monthly">月均支出分布</n-radio-button>
+        <n-radio-button value="onetime">一次性买断分布</n-radio-button>
+        <n-radio-button value="trend">月度支出趋势</n-radio-button>
+      </n-radio-group>
+      <v-chart
+        v-if="chartType === 'monthly'"
+        class="chart"
+        :option="monthlyTypeChartOption"
+        autoresize
+      />
+      <v-chart
+        v-else-if="chartType === 'onetime'"
+        class="chart"
+        :option="oneTimeTypeChartOption"
+        autoresize
+      />
+      <v-chart
+        v-else
+        class="chart"
+        :option="trendChartOption"
+        autoresize
+      />
     </n-collapse-item>
   </n-collapse>
 </template>
@@ -33,7 +44,11 @@ import {
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+
+type ChartType = 'monthly' | 'onetime' | 'trend';
+const chartType = ref<ChartType>('monthly');
+
 import VChart from 'vue-echarts';
 import { useSubscriptionStore } from '../../stores/subscription';
 import type { Currency, Subscription, SubscriptionType } from '../../types';
@@ -90,7 +105,8 @@ function getMonthlyPrice(sub: Subscription): number {
   return convertPrice(sub) / months;
 }
 
-const typeChartOption = computed(() => {
+// 月均支出分布饼图
+const monthlyTypeChartOption = computed(() => {
   const typeData: Record<SubscriptionType, number> = {
     domain: 0,
     server: 0,
@@ -100,7 +116,7 @@ const typeChartOption = computed(() => {
   };
 
   subscriptionStore.subscriptions
-    .filter((s) => s.status !== 'inactive')
+    .filter((s) => s.status !== 'inactive' && !s.one_time)
     .forEach((sub) => {
       typeData[sub.type] += getMonthlyPrice(sub);
     });
@@ -117,6 +133,61 @@ const typeChartOption = computed(() => {
       trigger: 'item',
       formatter: (params: { name: string; value: number; percent: number }) =>
         `${params.name}<br/>${currencySymbol.value}${params.value.toFixed(2)}/月 (${params.percent}%)`,
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 6,
+          borderColor: '#fff',
+          borderWidth: 2,
+        },
+        label: { show: false },
+        emphasis: {
+          label: { show: true, fontSize: 14, fontWeight: 'bold' },
+        },
+        data,
+      },
+    ],
+  };
+});
+
+// 一次性买断分布饼图
+const oneTimeTypeChartOption = computed(() => {
+  const typeData: Record<SubscriptionType, number> = {
+    domain: 0,
+    server: 0,
+    membership: 0,
+    software: 0,
+    other: 0,
+  };
+
+  subscriptionStore.subscriptions
+    .filter((s) => s.status !== 'inactive' && s.one_time)
+    .forEach((sub) => {
+      typeData[sub.type] += convertPrice(sub);
+    });
+
+  const data = Object.entries(typeData)
+    .filter(([, value]) => value > 0)
+    .map(([type, value]) => ({
+      name: TYPE_LABELS[type as SubscriptionType],
+      value: Math.round(value * 100) / 100,
+    }));
+
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: (params: { name: string; value: number; percent: number }) =>
+        `${params.name}<br/>${currencySymbol.value}${params.value.toFixed(2)} (${params.percent}%)`,
     },
     legend: {
       orient: 'vertical',
@@ -232,6 +303,10 @@ const trendChartOption = computed(() => {
   font-size: 16px;
   font-weight: 600;
   color: var(--n-text-color);
+}
+
+.chart-tabs {
+  margin-bottom: 16px;
 }
 
 .chart {
