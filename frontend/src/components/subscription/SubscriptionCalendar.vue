@@ -272,7 +272,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
 const detailTitle = computed(() => {
   if (!selectedDate.value) return '';
   const [year, month, day] = selectedDate.value.split('-');
-  return `${year}年${Number.parseInt(month)}月${Number.parseInt(day)}日到期的订阅`;
+  return `${year}年${Number.parseInt(month, 10)}月${Number.parseInt(day, 10)}日到期的订阅`;
 });
 
 function prevMonth() {

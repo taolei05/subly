@@ -11,7 +11,6 @@ import {
 	logger,
 	shouldRefreshToken,
 	successResponse,
-	USER_PUBLIC_FIELDS,
 	USER_WITH_CONFIG_QUERY,
 	validateRequest,
 	verifyPassword,

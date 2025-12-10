@@ -1,4 +1,4 @@
-import type { Env, ResendConfig, Subscription } from "../types/index";
+import type { Env, Subscription } from "../types/index";
 import { logger } from "../utils";
 
 // ==================== 类型定义 ====================

@@ -183,7 +183,7 @@ async function handleTestExchangeRate() {
   }
   testingExchangeRate.value = true;
   try {
-    const res: any = await subscriptionApi.getExchangeRates();
+    const res = await subscriptionApi.getExchangeRates();
     if (res?.success && res?.source === 'exchangerate-api') {
       message.success('测试成功，已从 ExchangeRate-API 获取汇率');
 
