@@ -69,7 +69,7 @@ export async function register(request: Request, env: Env): Promise<Response> {
 			.first();
 
 		if (existing) {
-			return errorResponse("用户名已存在");
+			return errorResponse("该用户名已存在");
 		}
 
 		const hashedPassword = await hashPassword(password);

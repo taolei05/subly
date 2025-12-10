@@ -42,32 +42,17 @@ export async function sendTestServerChan(
 			return errorResponse("请输入或先保存 Server酱 SendKey");
 		}
 
-		// 获取用户邮箱和站点链接
-		const config = await env.DB.prepare(`
-      SELECT r.email, u.site_url 
-      FROM resend_config r 
-      JOIN users u ON r.user_id = u.id 
-      WHERE r.user_id = ?
-    `)
+		// 获取站点链接
+		const config = await env.DB.prepare(
+			"SELECT site_url FROM users WHERE id = ?",
+		)
 			.bind(payload.userId)
-			.first<{ email: string; site_url?: string }>();
-
-		const sendTime = new Date().toLocaleString("zh-CN", {
-			timeZone: "Asia/Shanghai",
-		});
+			.first<{ site_url?: string }>();
 
 		const content = `
 ## 🎉 配置测试成功
 
 这条消息证明您的 Server酱 SendKey 配置正确，订阅到期提醒将会推送到此。
-
----
-
-| 项目 | 内容 |
-| :--- | :--- |
-| 发送时间 | ${sendTime} |
-| 接收账号 | ${config?.email || "未设置"} |
-
 ${config?.site_url ? `\n[👉 查看详情](${config.site_url})` : ""}
 
 ---

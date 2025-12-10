@@ -35,7 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.register(data);
       return response;
     } catch (error) {
-      return { success: false, message: '注册失败，请重试' };
+      const msg = error instanceof Error ? error.message : '注册失败，请重试';
+      return { success: false, message: msg };
     }
   }
 
