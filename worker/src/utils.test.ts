@@ -2,7 +2,7 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { generateReminderEmail } from "./services/email";
 import type { Subscription } from "./types";
-import { isValidSiteUrl } from "./utils";
+import { isValidSiteUrl } from "./utils/index";
 
 describe("site_url storage round trip", () => {
 	/**
