@@ -16,6 +16,9 @@
         :currency="subscriptionStore.selectedCurrency"
       />
 
+      <!-- 统计图表 -->
+      <SubscriptionCharts v-if="subscriptionStore.subscriptions.length > 0" />
+
       <!-- 到期倒计时 -->
       <ExpiringSection
         v-if="expiringIn7Days.length > 0"
@@ -118,6 +121,7 @@ import BatchToolbar from '../components/subscription/BatchToolbar.vue';
 import ExpiringSection from '../components/subscription/ExpiringSection.vue';
 import StatsCards from '../components/subscription/StatsCards.vue';
 import SubscriptionCalendar from '../components/subscription/SubscriptionCalendar.vue';
+import SubscriptionCharts from '../components/subscription/SubscriptionCharts.vue';
 import SubscriptionForm from '../components/subscription/SubscriptionForm.vue';
 import SubscriptionGrid from '../components/subscription/SubscriptionGrid.vue';
 import SubscriptionList from '../components/subscription/SubscriptionList.vue';
