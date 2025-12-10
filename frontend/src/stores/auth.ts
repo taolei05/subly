@@ -26,7 +26,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return response;
     } catch (error) {
-      return { success: false, message: '登录失败，请重试' };
+      const msg = error instanceof Error ? error.message : '登录失败，请重试';
+      return { success: false, message: msg };
     }
   }
 

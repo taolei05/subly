@@ -128,12 +128,12 @@ export async function login(request: Request, env: Env): Promise<Response> {
 			.first<{ id: number; username: string; password: string }>();
 
 		if (!user) {
-			return errorResponse("用户名或密码错误");
+			return errorResponse("用户不存在");
 		}
 
 		const isValid = await verifyPassword(password, user.password);
 		if (!isValid) {
-			return errorResponse("用户名或密码错误");
+			return errorResponse("用户密码错误");
 		}
 
 		const token = await generateToken(user.id, user.username);
