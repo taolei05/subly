@@ -172,7 +172,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
       };
       const response = await subscriptionApi.update(id, payload);
       if (response.success) {
-        if (response.data && response.data.name) {
+        if (response.data?.name) {
           // 本地更新列表中的项目
           const index = subscriptions.value.findIndex((s) => s.id === id);
           if (index !== -1) {

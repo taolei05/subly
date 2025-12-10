@@ -190,7 +190,7 @@ const subscriptionsByDate = computed(() => {
     if (!map.has(dateStr)) {
       map.set(dateStr, []);
     }
-    map.get(dateStr)!.push(sub);
+    map.get(dateStr)?.push(sub);
   }
   return map;
 });
