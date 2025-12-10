@@ -1,6 +1,12 @@
 <template>
   <n-collapse class="charts-collapse">
-    <n-collapse-item title="订阅统计" name="charts">
+    <n-collapse-item name="charts">
+      <template #header>
+        <div class="section-title">
+          <Icon name="stats" :size="20" />
+          订阅统计
+        </div>
+      </template>
       <n-grid cols="1 m:2" responsive="screen" :x-gap="16" :y-gap="16">
         <n-gi>
           <n-card title="类型分布" size="small">
@@ -31,6 +37,7 @@ import { computed } from 'vue';
 import VChart from 'vue-echarts';
 import { useSubscriptionStore } from '../../stores/subscription';
 import type { Currency, Subscription, SubscriptionType } from '../../types';
+import Icon from '../common/Icon.vue';
 
 use([
   CanvasRenderer,
@@ -216,6 +223,15 @@ const trendChartOption = computed(() => {
 <style scoped>
 .charts-collapse {
   margin-bottom: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--n-text-color);
 }
 
 .chart {

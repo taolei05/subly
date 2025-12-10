@@ -3,7 +3,7 @@
     <n-collapse-item name="expiring">
       <template #header>
         <div class="section-title">
-          <Icon name="warning" :size="18" />
+          <Icon name="warning" :size="20" />
           即将到期 (7天内)
         </div>
       </template>
@@ -51,8 +51,8 @@ function getCountdownText(daysLeft: number): string {
 .section-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--n-text-color);
 }
