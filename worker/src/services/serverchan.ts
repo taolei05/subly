@@ -192,15 +192,17 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
       }
 
       // 查询即将到期的订阅（到期日期在今天到 remind_days 天后之间）
+      // 使用北京时间进行日期比较，避免 UTC 时区问题
+      const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
       const { results: subscriptions } = await env.DB.prepare(`
         SELECT * FROM subscriptions 
         WHERE user_id = ? 
           AND status = 'active' 
           AND one_time = 0
-          AND date(end_date) >= date('now')
-          AND date(end_date) <= date('now', '+' || remind_days || ' days')
+          AND date(end_date) >= date(?)
+          AND date(end_date) <= date(?, '+' || remind_days || ' days')
       `)
-        .bind(user.id)
+        .bind(user.id, beijingDate, beijingDate)
         .all<Subscription>();
 
       logger.info('[ServerChan] Found expiring subscriptions', {

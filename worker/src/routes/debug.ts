@@ -46,36 +46,39 @@ export async function getNotifyStatus(
     ? (now.getTime() - serverchanLastSent.getTime()) / (1000 * 60 * 60)
     : null;
 
+  // 使用北京时间进行日期比较
+  const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   // 获取即将到期的订阅（详细信息）
   const { results: expiringSubscriptions } = await env.DB.prepare(`
     SELECT id, name, type, end_date, remind_days,
-           date('now') as today,
-           date('now', '+' || remind_days || ' days') as remind_until
+           ? as today,
+           date(?, '+' || remind_days || ' days') as remind_until
     FROM subscriptions 
     WHERE user_id = ? 
       AND status = 'active' 
       AND one_time = 0
-      AND date(end_date) >= date('now')
-      AND date(end_date) <= date('now', '+' || remind_days || ' days')
+      AND date(end_date) >= date(?)
+      AND date(end_date) <= date(?, '+' || remind_days || ' days')
   `)
-    .bind(payload.userId)
+    .bind(beijingDate, beijingDate, payload.userId, beijingDate, beijingDate)
     .all();
 
   // 获取所有活跃订阅用于对比
   const { results: allActiveSubscriptions } = await env.DB.prepare(`
     SELECT id, name, end_date, remind_days,
-           date('now') as today,
-           date('now', '+' || remind_days || ' days') as remind_until,
+           ? as today,
+           date(?, '+' || remind_days || ' days') as remind_until,
            CASE 
-             WHEN date(end_date) < date('now') THEN 'expired'
-             WHEN date(end_date) <= date('now', '+' || remind_days || ' days') THEN 'expiring'
+             WHEN date(end_date) < date(?) THEN 'expired'
+             WHEN date(end_date) <= date(?, '+' || remind_days || ' days') THEN 'expiring'
              ELSE 'ok'
            END as notify_status
     FROM subscriptions 
     WHERE user_id = ? AND status = 'active' AND one_time = 0
     ORDER BY end_date ASC
   `)
-    .bind(payload.userId)
+    .bind(beijingDate, beijingDate, beijingDate, beijingDate, payload.userId)
     .all();
 
   return jsonResponse({
@@ -147,15 +150,19 @@ export async function forceNotify(
 
   if (!user) return errorResponse('用户不存在', 404);
 
+  // 使用北京时间进行日期比较
+  const now = new Date();
+  const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   const { results: subscriptions } = await env.DB.prepare(`
     SELECT * FROM subscriptions 
     WHERE user_id = ? 
       AND status = 'active' 
       AND one_time = 0
-      AND date(end_date) >= date('now')
-      AND date(end_date) <= date('now', '+' || remind_days || ' days')
+      AND date(end_date) >= date(?)
+      AND date(end_date) <= date(?, '+' || remind_days || ' days')
   `)
-    .bind(payload.userId)
+    .bind(payload.userId, beijingDate, beijingDate)
     .all();
 
   const results: { email?: boolean; serverchan?: boolean } = {};
