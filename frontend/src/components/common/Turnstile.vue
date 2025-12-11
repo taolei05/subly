@@ -80,10 +80,20 @@ function renderWidget() {
 }
 
 function loadScript() {
+  // 如果脚本已加载且 turnstile 可用，直接渲染
+  if (window.turnstile) {
+    renderWidget();
+    return;
+  }
+
+  // 如果脚本标签已存在，等待加载完成
   if (document.getElementById('turnstile-script')) {
-    if (window.turnstile) {
-      renderWidget();
-    }
+    const checkInterval = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(checkInterval);
+        renderWidget();
+      }
+    }, 100);
     return;
   }
 
