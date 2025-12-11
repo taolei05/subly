@@ -6,11 +6,15 @@ import {
 import type { Env } from "./types/index";
 import { corsHeaders, logger, setJwtSecret } from "./utils";
 
+// 开发环境默认密钥（仅用于本地开发，生产环境必须设置 JWT_SECRET）
+const DEV_JWT_SECRET = "subly-dev-secret-key-do-not-use-in-production!!";
+
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		try {
-			// 初始化 JWT Secret
-			setJwtSecret(env.JWT_SECRET);
+			// 初始化 JWT Secret（生产环境必须设置，开发环境使用默认值）
+			const jwtSecret = env.JWT_SECRET || (env.ENVIRONMENT !== "production" ? DEV_JWT_SECRET : "");
+			setJwtSecret(jwtSecret);
 
 			// 处理 CORS 预检请求
 			if (request.method === "OPTIONS") {
