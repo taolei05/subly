@@ -22,29 +22,15 @@
         />
       </n-form-item>
 
-      <n-form-item path="serverchan_notify_time">
+      <n-form-item path="serverchan_notify_hours">
         <template #label>
-          自动发送时间 (北京时间)
-        </template>
-        <n-time-picker
-          v-model:value="notifyTimeValue"
-          format="HH:mm"
-          :hours="Array.from({ length: 24 }, (_, i) => i)"
-          :minutes="[0]"
-          :actions="null"
-          style="width: 100%"
-          @update:value="handleTimeChange"
-        />
-      </n-form-item>
-
-      <n-form-item path="serverchan_notify_interval">
-        <template #label>
-          发送频率
+          指定发送时间（北京时间24小时制，可多选）
         </template>
         <n-select
-          v-model:value="formData.serverchan_notify_interval"
-          :options="intervalOptions"
-          placeholder="请选择频率 (默认每24小时)"
+          v-model:value="formData.serverchan_notify_hours"
+          :options="hourOptions"
+          multiple
+          placeholder="选择发送时间点"
         />
       </n-form-item>
 
@@ -66,7 +52,7 @@
 
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
-import { computed, h, ref } from 'vue';
+import { h, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
 import Icon from '../common/Icon.vue';
@@ -77,32 +63,11 @@ const message = useMessage();
 const authStore = useAuthStore();
 const testingServerChan = ref(false);
 
-// 将小时数转换为时间戳（毫秒）- 使用本地时间
-const notifyTimeValue = computed(() => {
-  const hour = props.formData.serverchan_notify_time ?? 8;
-  // 创建一个今天的日期，设置为指定小时
-  const date = new Date();
-  date.setHours(hour, 0, 0, 0);
-  return date.getTime();
-});
-
-function handleTimeChange(value: number | null) {
-  if (value !== null) {
-    // 从时间戳中提取本地小时数
-    const date = new Date(value);
-    const hour = date.getHours();
-    props.formData.serverchan_notify_time = hour;
-  }
-}
-
-const intervalOptions = [
-  { label: '每1小时', value: 1 },
-  { label: '每2小时', value: 2 },
-  { label: '每3小时', value: 3 },
-  { label: '每6小时', value: 6 },
-  { label: '每12小时', value: 12 },
-  { label: '每24小时 (每天)', value: 24 },
-];
+// 生成 0-23 小时选项
+const hourOptions = Array.from({ length: 24 }, (_, i) => ({
+  label: `${i.toString().padStart(2, '0')}:00`,
+  value: i,
+}));
 
 function showServerChanHelp() {
   dialog.info({

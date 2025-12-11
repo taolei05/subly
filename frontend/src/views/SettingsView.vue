@@ -116,6 +116,15 @@ import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import type { UserProfileUpdate, UserSettings } from '../types';
 
+// 解析通知时间字符串为数组
+function parseNotifyHours(hoursStr?: string): number[] {
+  if (!hoursStr) return [8];
+  return hoursStr
+    .split(',')
+    .map((h) => Number.parseInt(h.trim(), 10))
+    .filter((h) => !Number.isNaN(h));
+}
+
 const router = useRouter();
 const message = useMessage();
 const themeStore = useThemeStore();
@@ -130,11 +139,9 @@ const formData = reactive<UserSettings>({
   resend_domain: '',
   exchangerate_api_key: '',
   email: '',
-  resend_notify_time: 8,
-  resend_notify_interval: 24,
+  resend_notify_hours: [8],
   serverchan_api_key: '',
-  serverchan_notify_time: 8,
-  serverchan_notify_interval: 24,
+  serverchan_notify_hours: [8],
   site_url: '',
   resend_enabled: true,
   serverchan_enabled: true,
@@ -146,9 +153,7 @@ const rules: FormRules = {
   resend_domain: [],
   exchangerate_api_key: [],
   email: [{ type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }],
-  resend_notify_time: [],
   serverchan_api_key: [],
-  serverchan_notify_time: [],
 };
 
 // 个人信息修改相关状态
@@ -176,14 +181,13 @@ onMounted(async () => {
     formData.resend_domain = authStore.user.resend_domain || '';
     formData.exchangerate_api_key = authStore.user.exchangerate_api_key || '';
     formData.email = authStore.user.email || '';
-    formData.resend_notify_time = authStore.user.resend_notify_time ?? 8;
-    formData.resend_notify_interval =
-      authStore.user.resend_notify_interval ?? 24;
+    formData.resend_notify_hours = parseNotifyHours(
+      authStore.user.resend_notify_hours,
+    );
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
-    formData.serverchan_notify_time =
-      authStore.user.serverchan_notify_time ?? 8;
-    formData.serverchan_notify_interval =
-      authStore.user.serverchan_notify_interval ?? 24;
+    formData.serverchan_notify_hours = parseNotifyHours(
+      authStore.user.serverchan_notify_hours,
+    );
     formData.site_url = authStore.user.site_url || '';
     // SQLite 返回数字 0/1，需要转换为布尔值
     formData.resend_enabled =

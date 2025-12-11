@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS resend_config (
     email TEXT NOT NULL,
     api_key TEXT,
     domain TEXT,
-    notify_time INTEGER DEFAULT 8,
-    notify_interval INTEGER DEFAULT 24,
+    notify_hours TEXT DEFAULT '8',
     last_sent_at TEXT,
     enabled INTEGER DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -27,8 +26,7 @@ CREATE TABLE IF NOT EXISTS serverchan_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL UNIQUE,
     api_key TEXT,
-    notify_time INTEGER DEFAULT 8,
-    notify_interval INTEGER DEFAULT 24,
+    notify_hours TEXT DEFAULT '8',
     last_sent_at TEXT,
     enabled INTEGER DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

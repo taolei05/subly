@@ -72,11 +72,9 @@ export interface User {
   resend_api_key?: string;
   exchangerate_api_key?: string;
   resend_domain?: string;
-  resend_notify_time?: number;
-  resend_notify_interval?: number;
+  resend_notify_hours?: string;
   serverchan_api_key?: string;
-  serverchan_notify_time?: number;
-  serverchan_notify_interval?: number;
+  serverchan_notify_hours?: string;
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
@@ -88,11 +86,9 @@ export interface UserSettings {
   exchangerate_api_key: string;
   resend_domain: string;
   email?: string;
-  resend_notify_time?: number;
-  resend_notify_interval?: number;
+  resend_notify_hours?: number[];
   serverchan_api_key: string;
-  serverchan_notify_time?: number;
-  serverchan_notify_interval?: number;
+  serverchan_notify_hours?: number[];
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;

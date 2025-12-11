@@ -246,7 +246,7 @@ export async function updateSettings(
 		// 更新 Resend 配置
 		await env.DB.prepare(`
       UPDATE resend_config SET 
-        email = ?, api_key = ?, domain = ?, enabled = ?, notify_time = ?, notify_interval = ?
+        email = ?, api_key = ?, domain = ?, enabled = ?, notify_hours = ?
       WHERE user_id = ?
     `)
 			.bind(
@@ -258,10 +258,7 @@ export async function updateSettings(
 						? 1
 						: 0
 					: (current?.resend_enabled ?? 1),
-				settings.resend_notify_time ?? current?.resend_notify_time ?? 8,
-				settings.resend_notify_interval ??
-					current?.resend_notify_interval ??
-					24,
+				settings.resend_notify_hours ?? current?.resend_notify_hours ?? "8",
 				payload.userId,
 			)
 			.run();
@@ -269,7 +266,7 @@ export async function updateSettings(
 		// 更新 Server酱 配置
 		await env.DB.prepare(`
       UPDATE serverchan_config SET 
-        api_key = ?, enabled = ?, notify_time = ?, notify_interval = ?
+        api_key = ?, enabled = ?, notify_hours = ?
       WHERE user_id = ?
     `)
 			.bind(
@@ -279,10 +276,9 @@ export async function updateSettings(
 						? 1
 						: 0
 					: (current?.serverchan_enabled ?? 1),
-				settings.serverchan_notify_time ?? current?.serverchan_notify_time ?? 8,
-				settings.serverchan_notify_interval ??
-					current?.serverchan_notify_interval ??
-					24,
+				settings.serverchan_notify_hours ??
+					current?.serverchan_notify_hours ??
+					"8",
 				payload.userId,
 			)
 			.run();

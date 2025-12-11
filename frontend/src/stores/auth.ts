@@ -73,7 +73,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function updateSettings(settings: UserSettings): Promise<ApiResponse> {
     try {
-      const response = await authApi.updateSettings(settings);
+      // 将 notify_hours 数组转换为逗号分隔的字符串
+      const payload = {
+        ...settings,
+        resend_notify_hours: settings.resend_notify_hours?.join(',') || '8',
+        serverchan_notify_hours:
+          settings.serverchan_notify_hours?.join(',') || '8',
+      };
+      const response = await authApi.updateSettings(payload);
       if (response.success && response.data) {
         user.value = response.data;
       }

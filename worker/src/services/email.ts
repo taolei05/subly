@@ -114,18 +114,19 @@ export function generateReminderEmail(
 // ==================== 定时任务 ====================
 
 function shouldSendNotification(
-	notifyTime: number | null | undefined,
-	notifyInterval: number | null | undefined,
+	notifyHours: string | null | undefined,
 	lastSentAt: string | null | undefined,
 	beijingHour: number,
 ): { should: boolean; reason: string } {
-	const targetHour = notifyTime ?? 8;
-	const intervalHours = notifyInterval ?? 24;
+	const hoursStr = notifyHours ?? "8";
+	const targetHours = hoursStr
+		.split(",")
+		.map((h) => Number.parseInt(h.trim(), 10));
 
-	if (beijingHour !== targetHour) {
+	if (!targetHours.includes(beijingHour)) {
 		return {
 			should: false,
-			reason: `当前时间 ${beijingHour} 点，通知时间 ${targetHour} 点`,
+			reason: `当前时间 ${beijingHour} 点，不在通知时间 [${hoursStr}] 内`,
 		};
 	}
 
@@ -133,22 +134,25 @@ function shouldSendNotification(
 		return { should: true, reason: "首次发送" };
 	}
 
+	// 检查今天这个小时是否已发送过
 	const lastSent = new Date(lastSentAt);
 	const now = new Date();
-	const hoursSinceLastSent =
-		(now.getTime() - lastSent.getTime()) / (1000 * 60 * 60);
+	const lastSentBeijing = new Date(lastSent.getTime() + 8 * 60 * 60 * 1000);
+	const nowBeijing = new Date(now.getTime() + 8 * 60 * 60 * 1000);
 
-	if (hoursSinceLastSent >= intervalHours) {
+	const sameDay =
+		lastSentBeijing.toISOString().split("T")[0] ===
+		nowBeijing.toISOString().split("T")[0];
+	const sameHour = lastSentBeijing.getUTCHours() === beijingHour;
+
+	if (sameDay && sameHour) {
 		return {
-			should: true,
-			reason: `距上次发送 ${hoursSinceLastSent.toFixed(1)} 小时，超过间隔 ${intervalHours} 小时`,
+			should: false,
+			reason: `今天 ${beijingHour} 点已发送过`,
 		};
 	}
 
-	return {
-		should: false,
-		reason: `距上次发送 ${hoursSinceLastSent.toFixed(1)} 小时，未达间隔 ${intervalHours} 小时`,
-	};
+	return { should: true, reason: `${beijingHour} 点触发发送` };
 }
 
 // 用于定时任务的聚合查询结果类型
@@ -158,8 +162,7 @@ interface UserResendConfig {
 	email: string;
 	api_key: string;
 	domain?: string;
-	notify_time: number;
-	notify_interval: number;
+	notify_hours?: string;
 	last_sent_at?: string;
 	enabled: number;
 }
@@ -179,7 +182,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 		// 查询启用了 Resend 且有 API Key 的用户
 		const { results: configs } = await env.DB.prepare(`
       SELECT r.user_id, u.site_url, r.email, r.api_key, r.domain, 
-             r.notify_time, r.notify_interval, r.last_sent_at, r.enabled
+             r.notify_hours, r.last_sent_at, r.enabled
       FROM resend_config r
       JOIN users u ON r.user_id = u.id
       WHERE r.api_key IS NOT NULL AND r.api_key != ''
@@ -192,8 +195,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 
 		for (const config of configs) {
 			const checkResult = shouldSendNotification(
-				config.notify_time,
-				config.notify_interval,
+				config.notify_hours,
 				config.last_sent_at,
 				beijingHour,
 			);
@@ -202,7 +204,7 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 				userId: config.user_id,
 				should: checkResult.should,
 				reason: checkResult.reason,
-				notifyTime: config.notify_time ?? 8,
+				notifyHours: config.notify_hours ?? "8",
 				lastSentAt: config.last_sent_at,
 			});
 

@@ -24,8 +24,7 @@ export interface ResendConfig {
 	email: string;
 	api_key?: string;
 	domain?: string;
-	notify_time: number;
-	notify_interval: number;
+	notify_hours?: string;
 	last_sent_at?: string;
 	enabled: number;
 }
@@ -34,8 +33,7 @@ export interface ServerChanConfig {
 	id: number;
 	user_id: number;
 	api_key?: string;
-	notify_time: number;
-	notify_interval: number;
+	notify_hours?: string;
 	last_sent_at?: string;
 	enabled: number;
 }
@@ -57,14 +55,12 @@ export interface UserWithConfig {
 	resend_api_key?: string;
 	resend_domain?: string;
 	resend_enabled?: number;
-	resend_notify_time?: number;
-	resend_notify_interval?: number;
+	resend_notify_hours?: string;
 	resend_last_sent_at?: string;
 	// Server酱配置
 	serverchan_api_key?: string;
 	serverchan_enabled?: number;
-	serverchan_notify_time?: number;
-	serverchan_notify_interval?: number;
+	serverchan_notify_hours?: string;
 	serverchan_last_sent_at?: string;
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
@@ -122,13 +118,11 @@ export interface UpdateSettingsRequest {
 	resend_api_key?: string;
 	resend_domain?: string;
 	resend_enabled?: boolean;
-	resend_notify_time?: number;
-	resend_notify_interval?: number;
+	resend_notify_hours?: string;
 	// Server酱配置
 	serverchan_api_key?: string;
 	serverchan_enabled?: boolean;
-	serverchan_notify_time?: number;
-	serverchan_notify_interval?: number;
+	serverchan_notify_hours?: string;
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
 	exchangerate_enabled?: boolean;

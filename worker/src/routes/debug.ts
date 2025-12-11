@@ -33,28 +33,40 @@ export async function getNotifyStatus(
 
 	// 获取 Resend 配置
 	const resendConfig = await env.DB.prepare(
-		"SELECT email, api_key, notify_time, notify_interval, last_sent_at FROM resend_config WHERE user_id = ?",
+		"SELECT email, api_key, notify_hours, last_sent_at FROM resend_config WHERE user_id = ?",
 	)
 		.bind(payload.userId)
 		.first<{
 			email: string;
 			api_key: string;
-			notify_time: number;
-			notify_interval: number;
+			notify_hours: string;
 			last_sent_at: string;
 		}>();
 
 	// 获取 ServerChan 配置
 	const serverchanConfig = await env.DB.prepare(
-		"SELECT api_key, notify_time, notify_interval, last_sent_at FROM serverchan_config WHERE user_id = ?",
+		"SELECT api_key, notify_hours, last_sent_at FROM serverchan_config WHERE user_id = ?",
 	)
 		.bind(payload.userId)
 		.first<{
 			api_key: string;
-			notify_time: number;
-			notify_interval: number;
+			notify_hours: string;
 			last_sent_at: string;
 		}>();
+
+	// 解析 notify_hours 字符串为数组
+	const parseNotifyHours = (hours?: string): number[] => {
+		if (!hours) return [8];
+		return hours
+			.split(",")
+			.map((h) => Number.parseInt(h.trim(), 10))
+			.filter((h) => !Number.isNaN(h));
+	};
+
+	const resendNotifyHours = parseNotifyHours(resendConfig?.notify_hours);
+	const serverchanNotifyHours = parseNotifyHours(
+		serverchanConfig?.notify_hours,
+	);
 
 	const resendLastSent = resendConfig?.last_sent_at
 		? new Date(resendConfig.last_sent_at)
@@ -113,27 +125,20 @@ export async function getNotifyStatus(
 			},
 			resend: {
 				configured: !!resendConfig?.api_key,
-				notifyTime: resendConfig?.notify_time ?? 8,
-				notifyInterval: resendConfig?.notify_interval ?? 24,
+				notifyHours: resendNotifyHours,
 				lastSentAt: resendConfig?.last_sent_at || null,
 				hoursSinceLastSent: resendHoursSince?.toFixed(2) || null,
 				wouldSendNow:
-					!!resendConfig?.api_key &&
-					beijingHour === (resendConfig?.notify_time ?? 8) &&
-					(resendHoursSince === null ||
-						resendHoursSince >= (resendConfig?.notify_interval ?? 24)),
+					!!resendConfig?.api_key && resendNotifyHours.includes(beijingHour),
 			},
 			serverchan: {
 				configured: !!serverchanConfig?.api_key,
-				notifyTime: serverchanConfig?.notify_time ?? 8,
-				notifyInterval: serverchanConfig?.notify_interval ?? 24,
+				notifyHours: serverchanNotifyHours,
 				lastSentAt: serverchanConfig?.last_sent_at || null,
 				hoursSinceLastSent: serverchanHoursSince?.toFixed(2) || null,
 				wouldSendNow:
 					!!serverchanConfig?.api_key &&
-					beijingHour === (serverchanConfig?.notify_time ?? 8) &&
-					(serverchanHoursSince === null ||
-						serverchanHoursSince >= (serverchanConfig?.notify_interval ?? 24)),
+					serverchanNotifyHours.includes(beijingHour),
 			},
 			subscriptions: {
 				expiringCount: expiringSubscriptions.length,
