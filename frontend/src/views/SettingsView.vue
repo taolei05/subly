@@ -58,6 +58,19 @@
         </template>
       </n-card>
 
+      <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
+        <n-form-item label="允许用户注册" label-placement="left">
+          <n-switch
+            v-model:value="registrationEnabled"
+            :loading="updatingSystemConfig"
+            @update:value="handleRegistrationToggle"
+          />
+        </n-form-item>
+        <n-text depth="3" style="font-size: 12px;">
+          关闭后，新用户将无法注册账号。适用于单用户场景，首次注册后可关闭此选项。
+        </n-text>
+      </n-card>
+
       <!-- 修改个人信息弹窗 -->
       <n-modal
         v-model:show="showProfileModal"
@@ -106,7 +119,7 @@
 
 <script setup lang="ts">
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
-import { onMounted, reactive, ref } from 'vue';
+import { h, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../components/common/Icon.vue';
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
@@ -130,6 +143,8 @@ const message = useMessage();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
+const formRef = ref<FormInst | null>(null);
+const serverChanFormRef = ref<FormInst | null>(null);
 const saving = ref(false);
 
 const formData = reactive<UserSettings>({
@@ -164,6 +179,10 @@ const profileFormData = reactive<UserProfileUpdate>({
   password: '',
 });
 
+// 系统配置
+const registrationEnabled = ref(true);
+const updatingSystemConfig = ref(false);
+
 const profileRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -174,6 +193,8 @@ const profileRules: FormRules = {
 
 onMounted(async () => {
   await authStore.fetchUser();
+  await authStore.fetchSystemConfig();
+  registrationEnabled.value = authStore.registrationEnabled;
   if (authStore.user) {
     formData.resend_api_key = authStore.user.resend_api_key || '';
     formData.resend_domain = authStore.user.resend_domain || '';
@@ -257,6 +278,27 @@ async function handleUpdateProfile() {
       }
     }
   });
+}
+
+async function handleRegistrationToggle(value: boolean) {
+  updatingSystemConfig.value = true;
+  try {
+    const result = await authStore.updateSystemConfig({
+      registration_enabled: value,
+    });
+    if (result.success) {
+      message.success(value ? '已开启用户注册' : '已关闭用户注册');
+    } else {
+      // 恢复原值
+      registrationEnabled.value = !value;
+      message.error(result.message || '更新失败');
+    }
+  } catch {
+    registrationEnabled.value = !value;
+    message.error('更新失败');
+  } finally {
+    updatingSystemConfig.value = false;
+  }
 }
 </script>
 

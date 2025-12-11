@@ -49,6 +49,16 @@ const loginSchema = {
  */
 export async function register(request: Request, env: Env): Promise<Response> {
 	try {
+		// 检查是否允许注册
+		const config = await env.DB.prepare(
+			"SELECT registration_enabled FROM system_config WHERE id = 1",
+		).first<{ registration_enabled: number }>();
+
+		// 如果配置存在且禁用注册，则拒绝
+		if (config && !config.registration_enabled) {
+			return errorResponse("注册功能已关闭");
+		}
+
 		const body = await request.json();
 		const validation = validateRequest<{
 			username: string;

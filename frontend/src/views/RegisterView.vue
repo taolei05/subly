@@ -7,8 +7,22 @@
           <p>创建您的订阅管理账号</p>
         </div>
       </template>
+
+      <n-spin :show="checkingConfig">
+        <n-result
+          v-if="!checkingConfig && !registrationEnabled"
+          status="warning"
+          title="注册功能已关闭"
+          description="管理员已关闭用户注册功能"
+        >
+          <template #footer>
+            <router-link to="/login">
+              <n-button type="primary">返回登录</n-button>
+            </router-link>
+          </template>
+        </n-result>
       
-      <n-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleRegister">
+        <n-form v-else ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleRegister">
         <n-form-item path="username" label="用户名">
           <n-input 
             v-model:value="formData.username" 
@@ -47,19 +61,20 @@
         >
           注册
         </n-button>
-      </n-form>
+        </n-form>
       
-      <div class="auth-footer">
-        <span>已有账号？</span>
-        <router-link to="/login">立即登录</router-link>
-      </div>
+        <div v-if="registrationEnabled" class="auth-footer">
+          <span>已有账号？</span>
+          <router-link to="/login">立即登录</router-link>
+        </div>
+      </n-spin>
     </n-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
@@ -69,11 +84,19 @@ const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
+const checkingConfig = ref(true);
+const registrationEnabled = ref(true);
 
 const formData = reactive({
   username: '',
   password: '',
   confirmPassword: '',
+});
+
+onMounted(async () => {
+  await authStore.fetchSystemConfig();
+  registrationEnabled.value = authStore.registrationEnabled;
+  checkingConfig.value = false;
 });
 
 const rules: FormRules = {

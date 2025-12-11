@@ -139,6 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
         systemConfig.value = response.data;
       }
     } catch (error) {
+      // 默认允许注册
       systemConfig.value = { registration_enabled: true };
     }
   }

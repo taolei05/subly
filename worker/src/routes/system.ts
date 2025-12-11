@@ -13,6 +13,7 @@ export async function getSystemConfig(
 			"SELECT registration_enabled FROM system_config WHERE id = 1",
 		).first<{ registration_enabled: number }>();
 
+		// 如果没有配置记录，返回默认值
 		if (!config) {
 			return successResponse({ registration_enabled: true });
 		}
@@ -45,22 +46,13 @@ export async function updateSystemConfig(
 			return errorResponse("Token 无效或已过期", 401);
 		}
 
-		const body = (await request.json()) as {
+		const { registration_enabled } = (await request.json()) as {
 			registration_enabled?: boolean;
 		};
 
-		const current = await env.DB.prepare(
-			"SELECT * FROM system_config WHERE id = 1",
-		).first<{ registration_enabled: number }>();
-
-		const newConfig = {
-			registration_enabled:
-				body.registration_enabled !== undefined
-					? body.registration_enabled
-						? 1
-						: 0
-					: (current?.registration_enabled ?? 1),
-		};
+		if (registration_enabled === undefined) {
+			return errorResponse("缺少必要参数");
+		}
 
 		await env.DB.prepare(`
 			INSERT INTO system_config (id, registration_enabled, updated_at)
@@ -69,15 +61,15 @@ export async function updateSystemConfig(
 				registration_enabled = excluded.registration_enabled,
 				updated_at = excluded.updated_at
 		`)
-			.bind(newConfig.registration_enabled)
+			.bind(registration_enabled ? 1 : 0)
 			.run();
 
-		logger.info("System config updated", { userId: payload.userId });
+		logger.info("System config updated", {
+			userId: payload.userId,
+			registration_enabled,
+		});
 
-		return successResponse(
-			{ registration_enabled: Boolean(newConfig.registration_enabled) },
-			"系统配置已更新",
-		);
+		return successResponse({ registration_enabled }, "系统配置已更新");
 	} catch (error) {
 		logger.error("UpdateSystemConfig error", error);
 		return errorResponse("更新系统配置失败", 500);
