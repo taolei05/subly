@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useThemeStore } from '../../stores/theme';
 
 interface TurnstileInstance {
@@ -23,14 +23,13 @@ interface TurnstileInstance {
   remove: (widgetId: string) => void;
 }
 
-const themeStore = useThemeStore();
-
 declare global {
   interface Window {
     turnstile?: TurnstileInstance;
-    onTurnstileLoad?: () => void;
   }
 }
+
+const themeStore = useThemeStore();
 
 const props = withDefaults(
   defineProps<{
@@ -38,12 +37,9 @@ const props = withDefaults(
     appearance?: 'always' | 'execute' | 'interaction-only';
   }>(),
   {
-    appearance: 'interaction-only',
+    appearance: 'always',
   },
 );
-
-// 根据 naive-ui 主题自动设置 Turnstile 主题
-const turnstileTheme = computed(() => (themeStore.isDark ? 'dark' : 'light'));
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
@@ -54,61 +50,46 @@ const emit = defineEmits<{
 
 const containerRef = ref<HTMLElement | null>(null);
 const widgetId = ref<string | null>(null);
-const scriptLoaded = ref(false);
 
 function renderWidget() {
-  if (!window.turnstile || !containerRef.value || widgetId.value) return;
+  if (!window.turnstile || !containerRef.value || widgetId.value) {
+    return;
+  }
 
-  widgetId.value = window.turnstile.render(containerRef.value, {
-    sitekey: props.siteKey,
-    theme: turnstileTheme.value,
-    size: 'flexible',
-    appearance: props.appearance,
-    callback: (token: string) => {
-      emit('update:modelValue', token);
-      emit('verify', token);
-    },
-    'expired-callback': () => {
-      emit('update:modelValue', '');
-      emit('expire');
-    },
-    'error-callback': () => {
-      emit('update:modelValue', '');
-      emit('error');
-    },
-  });
+  try {
+    const theme = themeStore.isDark ? 'dark' : 'light';
+    widgetId.value = window.turnstile.render(containerRef.value, {
+      sitekey: props.siteKey,
+      theme,
+      size: 'flexible',
+      appearance: props.appearance,
+      callback: (token: string) => {
+        emit('update:modelValue', token);
+        emit('verify', token);
+      },
+      'expired-callback': () => {
+        emit('update:modelValue', '');
+        emit('expire');
+      },
+      'error-callback': () => {
+        emit('update:modelValue', '');
+        emit('error');
+      },
+    });
+  } catch (e) {
+    console.error('Turnstile render error:', e);
+  }
 }
 
-function loadScript() {
-  // 如果脚本已加载且 turnstile 可用，直接渲染
-  if (window.turnstile) {
-    renderWidget();
-    return;
+function removeWidget() {
+  if (window.turnstile && widgetId.value) {
+    try {
+      window.turnstile.remove(widgetId.value);
+    } catch (e) {
+      // ignore
+    }
+    widgetId.value = null;
   }
-
-  // 如果脚本标签已存在，等待加载完成
-  if (document.getElementById('turnstile-script')) {
-    const checkInterval = setInterval(() => {
-      if (window.turnstile) {
-        clearInterval(checkInterval);
-        renderWidget();
-      }
-    }, 100);
-    return;
-  }
-
-  window.onTurnstileLoad = () => {
-    scriptLoaded.value = true;
-    renderWidget();
-  };
-
-  const script = document.createElement('script');
-  script.id = 'turnstile-script';
-  script.src =
-    'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
 }
 
 function reset() {
@@ -118,36 +99,51 @@ function reset() {
   }
 }
 
+function initTurnstile() {
+  if (window.turnstile) {
+    nextTick(() => renderWidget());
+    return;
+  }
+
+  // 检查脚本是否已存在
+  const existingScript = document.getElementById('cf-turnstile-script');
+  if (existingScript) {
+    // 等待脚本加载完成
+    const checkReady = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(checkReady);
+        nextTick(() => renderWidget());
+      }
+    }, 50);
+    setTimeout(() => clearInterval(checkReady), 10000);
+    return;
+  }
+
+  // 加载脚本
+  const script = document.createElement('script');
+  script.id = 'cf-turnstile-script';
+  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  script.async = true;
+  script.onload = () => {
+    nextTick(() => renderWidget());
+  };
+  document.head.appendChild(script);
+}
+
 onMounted(() => {
-  loadScript();
+  initTurnstile();
 });
 
 onUnmounted(() => {
-  if (window.turnstile && widgetId.value) {
-    window.turnstile.remove(widgetId.value);
-  }
+  removeWidget();
 });
 
-watch(
-  () => props.siteKey,
-  () => {
-    if (window.turnstile && widgetId.value) {
-      window.turnstile.remove(widgetId.value);
-      widgetId.value = null;
-      renderWidget();
-    }
-  },
-);
-
-// 监听主题变化，重新渲染组件
+// 监听主题变化
 watch(
   () => themeStore.isDark,
   () => {
-    if (window.turnstile && widgetId.value) {
-      window.turnstile.remove(widgetId.value);
-      widgetId.value = null;
-      renderWidget();
-    }
+    removeWidget();
+    nextTick(() => renderWidget());
   },
 );
 
@@ -157,9 +153,6 @@ defineExpose({ reset });
 <style scoped>
 .turnstile-container {
   width: 100%;
-}
-
-.turnstile-container :deep(iframe) {
-  width: 100% !important;
+  min-height: 65px;
 }
 </style>
