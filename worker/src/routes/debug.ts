@@ -319,7 +319,7 @@ function generateServerChanContent(
 		.join("\n");
 
 	return `
-## ⏰ 订阅到期提醒
+## ⏰ 订阅到期提醒(强制测试)
 
 您有以下订阅即将到期，请及时处理：
 
