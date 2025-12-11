@@ -4,9 +4,6 @@
 CREATE TABLE IF NOT EXISTS system_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     registration_enabled INTEGER DEFAULT 1,
-    turnstile_enabled INTEGER DEFAULT 0,
-    turnstile_site_key TEXT,
-    turnstile_secret_key TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
