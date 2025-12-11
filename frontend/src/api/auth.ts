@@ -4,7 +4,6 @@ import type {
   RegisterData,
   User,
   UserProfileUpdate,
-  UserSettings,
 } from '../types';
 import { http } from './http';
 
@@ -24,7 +23,7 @@ export const authApi = {
 
   getMe: () => http.get<ApiResponse<User>>('/auth/me'),
 
-  updateSettings: (settings: UserSettings) =>
+  updateSettings: (settings: Record<string, unknown>) =>
     http.put<ApiResponse<User>>('/settings', settings),
 
   updateProfile: (profile: UserProfileUpdate) =>
