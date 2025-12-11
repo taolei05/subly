@@ -329,10 +329,8 @@ ${tableRows}
 
 ---
 
-| 项目 | 内容 |
-| :--- | :--- |
-| 发送时间 | ${sendTime} |
-| 到期数量 | ${subscriptions.length} 个 |
+**发送时间**：${sendTime}
+**到期数量**：${subscriptions.length} 个
 
 ${siteUrl ? `[👉 查看详情](${siteUrl})` : ""}
 
