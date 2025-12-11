@@ -220,6 +220,12 @@ export async function updateSettings(
 
 		const settings = (await request.json()) as UpdateSettingsRequest;
 
+		logger.info("Received settings", {
+			userId: payload.userId,
+			resend_notify_hours: settings.resend_notify_hours,
+			serverchan_notify_hours: settings.serverchan_notify_hours,
+		});
+
 		// 验证站点 URL
 		if (
 			settings.site_url !== undefined &&
@@ -243,13 +249,19 @@ export async function updateSettings(
 				.run();
 		}
 
-		// 更新 Resend 配置
+		// 更新 Resend 配置（使用 INSERT OR REPLACE 确保记录存在）
 		await env.DB.prepare(`
-      UPDATE resend_config SET 
-        email = ?, api_key = ?, domain = ?, enabled = ?, notify_hours = ?
-      WHERE user_id = ?
+      INSERT INTO resend_config (user_id, email, api_key, domain, enabled, notify_hours)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        email = excluded.email,
+        api_key = excluded.api_key,
+        domain = excluded.domain,
+        enabled = excluded.enabled,
+        notify_hours = excluded.notify_hours
     `)
 			.bind(
+				payload.userId,
 				settings.email ?? current?.email ?? "",
 				settings.resend_api_key ?? current?.resend_api_key ?? "",
 				settings.resend_domain ?? current?.resend_domain ?? "",
@@ -259,17 +271,20 @@ export async function updateSettings(
 						: 0
 					: (current?.resend_enabled ?? 1),
 				settings.resend_notify_hours ?? current?.resend_notify_hours ?? "8",
-				payload.userId,
 			)
 			.run();
 
 		// 更新 Server酱 配置
 		await env.DB.prepare(`
-      UPDATE serverchan_config SET 
-        api_key = ?, enabled = ?, notify_hours = ?
-      WHERE user_id = ?
+      INSERT INTO serverchan_config (user_id, api_key, enabled, notify_hours)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        api_key = excluded.api_key,
+        enabled = excluded.enabled,
+        notify_hours = excluded.notify_hours
     `)
 			.bind(
+				payload.userId,
 				settings.serverchan_api_key ?? current?.serverchan_api_key ?? "",
 				settings.serverchan_enabled !== undefined
 					? settings.serverchan_enabled
@@ -279,22 +294,25 @@ export async function updateSettings(
 				settings.serverchan_notify_hours ??
 					current?.serverchan_notify_hours ??
 					"8",
-				payload.userId,
 			)
 			.run();
 
 		// 更新 ExchangeRate 配置
 		await env.DB.prepare(`
-      UPDATE exchangerate_config SET api_key = ?, enabled = ? WHERE user_id = ?
+      INSERT INTO exchangerate_config (user_id, api_key, enabled)
+      VALUES (?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        api_key = excluded.api_key,
+        enabled = excluded.enabled
     `)
 			.bind(
+				payload.userId,
 				settings.exchangerate_api_key ?? current?.exchangerate_api_key ?? "",
 				settings.exchangerate_enabled !== undefined
 					? settings.exchangerate_enabled
 						? 1
 						: 0
 					: (current?.exchangerate_enabled ?? 1),
-				payload.userId,
 			)
 			.run();
 
