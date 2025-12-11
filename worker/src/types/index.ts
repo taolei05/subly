@@ -97,6 +97,14 @@ export interface Subscription {
 	updated_at: string;
 }
 
+// ==================== 系统配置 ====================
+export interface SystemConfig {
+	id: number;
+	registration_enabled: number;
+	created_at?: string;
+	updated_at?: string;
+}
+
 // ==================== JWT 相关 ====================
 export interface JWTPayload {
 	userId: number;

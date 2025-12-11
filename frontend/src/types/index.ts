@@ -112,6 +112,10 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+export interface SystemConfig {
+  registration_enabled: boolean;
+}
+
 export interface ExchangeRates {
   base: Currency;
   rates: Record<Currency, number>;

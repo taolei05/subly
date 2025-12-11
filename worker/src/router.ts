@@ -10,6 +10,7 @@ import {
 	getNotifyStatus,
 	getSubscription,
 	getSubscriptions,
+	getSystemConfig,
 	importSubscriptions,
 	login,
 	register,
@@ -20,6 +21,7 @@ import {
 	updateSettings,
 	updateSubscription,
 	updateSubscriptionStatus,
+	updateSystemConfig,
 } from "./routes";
 import {
 	checkAndSendEmailReminders,
@@ -63,6 +65,10 @@ const routes: Route[] = [
 
 	// 设置路由
 	{ pattern: "/settings", method: "PUT", handler: updateSettings },
+
+	// 系统配置路由
+	{ pattern: "/system/config", method: "GET", handler: getSystemConfig },
+	{ pattern: "/system/config", method: "PUT", handler: updateSystemConfig },
 
 	// 订阅路由
 	{ pattern: "/subscriptions", method: "GET", handler: getSubscriptions },
