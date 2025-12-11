@@ -1,5 +1,19 @@
 <template>
   <div class="auth-container">
+    <div class="theme-toggle">
+      <n-button quaternary circle @click="themeStore.toggleTheme">
+        <template #icon>
+          <n-icon :size="20">
+            <svg v-if="themeStore.isDark" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5s5-2.24 5-5s-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0a.996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0a.996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 0 0 0-1.41a.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 0 0 0-1.41a.996.996 0 0 0-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/>
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26a5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+            </svg>
+          </n-icon>
+        </template>
+      </n-button>
+    </div>
     <n-card class="auth-card" :bordered="false">
       <template #header>
         <div class="auth-header">
@@ -51,7 +65,12 @@
           />
         </n-form-item>
         
-        
+        <n-form-item v-if="authStore.turnstileEnabled && authStore.turnstileSiteKey" label="人机验证">
+          <Turnstile
+            :site-key="authStore.turnstileSiteKey"
+            v-model="turnstileToken"
+          />
+        </n-form-item>
         
         <n-button 
           type="primary" 
@@ -76,7 +95,11 @@
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Turnstile from '../components/common/Turnstile.vue';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
+
+const themeStore = useThemeStore();
 
 const router = useRouter();
 const message = useMessage();
@@ -86,6 +109,7 @@ const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 const checkingConfig = ref(true);
 const registrationEnabled = ref(true);
+const turnstileToken = ref('');
 
 const formData = reactive({
   username: '',
@@ -125,9 +149,21 @@ async function handleRegister() {
     await formRef.value?.validate();
     loading.value = true;
 
+    // 如果启用了 Turnstile 但没有 token，提示用户
+    if (
+      authStore.turnstileEnabled &&
+      authStore.turnstileSiteKey &&
+      !turnstileToken.value
+    ) {
+      message.error('请完成人机验证');
+      loading.value = false;
+      return;
+    }
+
     const result = await authStore.register({
       username: formData.username,
       password: formData.password,
+      turnstile_token: turnstileToken.value || undefined,
     });
 
     if (result.success) {
@@ -161,6 +197,13 @@ async function handleRegister() {
   justify-content: center;
   background-color: var(--bg-color);
   padding: 16px;
+  position: relative;
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .auth-card {

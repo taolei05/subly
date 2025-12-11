@@ -59,16 +59,56 @@
       </n-card>
 
       <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
-        <n-form-item label="允许用户注册" label-placement="left">
-          <n-switch
-            v-model:value="registrationEnabled"
-            :loading="updatingSystemConfig"
-            @update:value="handleRegistrationToggle"
-          />
-        </n-form-item>
-        <n-text depth="3" style="font-size: 12px;">
-          关闭后，新用户将无法注册账号。适用于单用户场景，首次注册后可关闭此选项。
-        </n-text>
+        <n-form label-placement="left">
+          <n-form-item label="允许用户注册">
+            <n-switch
+              v-model:value="registrationEnabled"
+              :loading="updatingSystemConfig"
+              @update:value="handleRegistrationToggle"
+            />
+          </n-form-item>
+          <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 16px;">
+            关闭后，新用户将无法注册账号。适用于单用户场景，首次注册后可关闭此选项。
+          </n-text>
+
+          <n-divider />
+
+          <n-form-item label="启用 Turnstile 人机验证">
+            <n-switch
+              v-model:value="turnstileEnabled"
+              :loading="updatingSystemConfig"
+              @update:value="handleTurnstileToggle"
+            />
+          </n-form-item>
+          <n-text depth="3" style="font-size: 12px; display: block; margin-bottom: 16px;">
+            启用后，用户注册时需要完成 Cloudflare Turnstile 人机验证。
+          </n-text>
+
+          <template v-if="turnstileEnabled">
+            <n-form-item label="Site Key">
+              <n-input
+                v-model:value="turnstileSiteKey"
+                placeholder="请输入 Turnstile Site Key"
+              />
+            </n-form-item>
+            <n-form-item label="Secret Key">
+              <n-input
+                v-model:value="turnstileSecretKey"
+                type="password"
+                show-password-on="click"
+                placeholder="请输入 Turnstile Secret Key"
+              />
+            </n-form-item>
+            <n-button
+              type="primary"
+              :loading="savingTurnstile"
+              @click="handleSaveTurnstile"
+              style="width: 100%;"
+            >
+              保存 Turnstile 配置
+            </n-button>
+          </template>
+        </n-form>
       </n-card>
 
       <!-- 修改个人信息弹窗 -->
@@ -182,6 +222,10 @@ const profileFormData = reactive<UserProfileUpdate>({
 // 系统配置
 const registrationEnabled = ref(true);
 const updatingSystemConfig = ref(false);
+const turnstileEnabled = ref(false);
+const turnstileSiteKey = ref('');
+const turnstileSecretKey = ref('');
+const savingTurnstile = ref(false);
 
 const profileRules: FormRules = {
   username: [
@@ -195,6 +239,8 @@ onMounted(async () => {
   await authStore.fetchUser();
   await authStore.fetchSystemConfig();
   registrationEnabled.value = authStore.registrationEnabled;
+  turnstileEnabled.value = authStore.turnstileEnabled;
+  turnstileSiteKey.value = authStore.turnstileSiteKey;
   if (authStore.user) {
     formData.resend_api_key = authStore.user.resend_api_key || '';
     formData.resend_domain = authStore.user.resend_domain || '';
@@ -298,6 +344,51 @@ async function handleRegistrationToggle(value: boolean) {
     message.error('更新失败');
   } finally {
     updatingSystemConfig.value = false;
+  }
+}
+
+async function handleTurnstileToggle(value: boolean) {
+  updatingSystemConfig.value = true;
+  try {
+    const result = await authStore.updateSystemConfig({
+      turnstile_enabled: value,
+    });
+    if (result.success) {
+      message.success(
+        value ? '已开启 Turnstile 验证' : '已关闭 Turnstile 验证',
+      );
+    } else {
+      turnstileEnabled.value = !value;
+      message.error(result.message || '更新失败');
+    }
+  } catch {
+    turnstileEnabled.value = !value;
+    message.error('更新失败');
+  } finally {
+    updatingSystemConfig.value = false;
+  }
+}
+
+async function handleSaveTurnstile() {
+  if (!turnstileSiteKey.value || !turnstileSecretKey.value) {
+    message.error('请填写 Site Key 和 Secret Key');
+    return;
+  }
+  savingTurnstile.value = true;
+  try {
+    const result = await authStore.updateSystemConfig({
+      turnstile_site_key: turnstileSiteKey.value,
+      turnstile_secret_key: turnstileSecretKey.value,
+    });
+    if (result.success) {
+      message.success('Turnstile 配置已保存');
+    } else {
+      message.error(result.message || '保存失败');
+    }
+  } catch {
+    message.error('保存失败');
+  } finally {
+    savingTurnstile.value = false;
   }
 }
 </script>

@@ -26,4 +26,4 @@ export {
 	updateSubscriptionStatus,
 } from "./subscriptions";
 // 系统配置
-export { getSystemConfig, updateSystemConfig } from "./system";
+export { getSystemConfig, updateSystemConfig, verifyTurnstile } from "./system";

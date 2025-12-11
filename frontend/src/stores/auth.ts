@@ -20,6 +20,12 @@ export const useAuthStore = defineStore('auth', () => {
   const registrationEnabled = computed(
     () => systemConfig.value?.registration_enabled ?? true,
   );
+  const turnstileEnabled = computed(
+    () => systemConfig.value?.turnstile_enabled ?? false,
+  );
+  const turnstileSiteKey = computed(
+    () => systemConfig.value?.turnstile_site_key ?? '',
+  );
 
   async function login(credentials: LoginCredentials): Promise<ApiResponse> {
     try {
@@ -139,8 +145,11 @@ export const useAuthStore = defineStore('auth', () => {
         systemConfig.value = response.data;
       }
     } catch (error) {
-      // 默认允许注册
-      systemConfig.value = { registration_enabled: true };
+      // 默认允许注册，关闭 Turnstile
+      systemConfig.value = {
+        registration_enabled: true,
+        turnstile_enabled: false,
+      };
     }
   }
 
@@ -164,6 +173,8 @@ export const useAuthStore = defineStore('auth', () => {
     systemConfig,
     isAuthenticated,
     registrationEnabled,
+    turnstileEnabled,
+    turnstileSiteKey,
     login,
     register,
     logout,

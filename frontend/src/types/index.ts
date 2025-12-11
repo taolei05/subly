@@ -98,12 +98,14 @@ export interface UserSettings {
 export interface LoginCredentials {
   username: string;
   password: string;
+  turnstile_token?: string;
 }
 
 export interface RegisterData {
   username: string;
   password: string;
   email?: string;
+  turnstile_token?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -114,6 +116,9 @@ export interface ApiResponse<T = unknown> {
 
 export interface SystemConfig {
   registration_enabled: boolean;
+  turnstile_enabled: boolean;
+  turnstile_site_key?: string;
+  turnstile_secret_key?: string;
 }
 
 export interface ExchangeRates {
