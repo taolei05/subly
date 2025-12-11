@@ -5,6 +5,7 @@ import type {
   ApiResponse,
   LoginCredentials,
   RegisterData,
+  SystemConfig,
   User,
   UserProfileUpdate,
   UserSettings,
@@ -13,8 +14,12 @@ import type {
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const token = ref<string | null>(localStorage.getItem('token'));
+  const systemConfig = ref<SystemConfig | null>(null);
 
   const isAuthenticated = computed(() => !!token.value);
+  const registrationEnabled = computed(
+    () => systemConfig.value?.registration_enabled ?? true,
+  );
 
   async function login(credentials: LoginCredentials): Promise<ApiResponse> {
     try {
@@ -127,10 +132,37 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function fetchSystemConfig(): Promise<void> {
+    try {
+      const response = await authApi.getSystemConfig();
+      if (response.success && response.data) {
+        systemConfig.value = response.data;
+      }
+    } catch (error) {
+      systemConfig.value = { registration_enabled: true };
+    }
+  }
+
+  async function updateSystemConfig(
+    config: Partial<SystemConfig>,
+  ): Promise<ApiResponse> {
+    try {
+      const response = await authApi.updateSystemConfig(config);
+      if (response.success && response.data) {
+        systemConfig.value = response.data;
+      }
+      return response;
+    } catch (error) {
+      return { success: false, message: '更新系统配置失败' };
+    }
+  }
+
   return {
     user,
     token,
+    systemConfig,
     isAuthenticated,
+    registrationEnabled,
     login,
     register,
     logout,
@@ -139,5 +171,7 @@ export const useAuthStore = defineStore('auth', () => {
     updateProfile,
     sendTestEmail,
     sendTestServerChan,
+    fetchSystemConfig,
+    updateSystemConfig,
   };
 });

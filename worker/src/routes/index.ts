@@ -26,3 +26,5 @@ export {
 	updateSubscription,
 	updateSubscriptionStatus,
 } from "./subscriptions";
+// 系统配置
+export { getSystemConfig, updateSystemConfig } from "./system";

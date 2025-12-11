@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
-import { h, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../components/common/Icon.vue';
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
@@ -130,8 +130,6 @@ const message = useMessage();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
-const formRef = ref<FormInst | null>(null);
-const serverChanFormRef = ref<FormInst | null>(null);
 const saving = ref(false);
 
 const formData = reactive<UserSettings>({

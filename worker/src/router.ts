@@ -10,6 +10,7 @@ import {
 	getNotifyStatus,
 	getSubscription,
 	getSubscriptions,
+	getSystemConfig,
 	importSubscriptions,
 	login,
 	register,
@@ -20,6 +21,7 @@ import {
 	updateSettings,
 	updateSubscription,
 	updateSubscriptionStatus,
+	updateSystemConfig,
 } from "./routes";
 import {
 	checkAndSendEmailReminders,
