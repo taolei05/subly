@@ -3,7 +3,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useThemeStore } from '../../stores/theme';
 
 interface TurnstileInstance {
   render: (
@@ -11,6 +12,8 @@ interface TurnstileInstance {
     options: {
       sitekey: string;
       theme?: 'light' | 'dark' | 'auto';
+      size?: 'normal' | 'flexible' | 'compact';
+      appearance?: 'always' | 'execute' | 'interaction-only';
       callback?: (token: string) => void;
       'expired-callback'?: () => void;
       'error-callback'?: () => void;
@@ -19,6 +22,8 @@ interface TurnstileInstance {
   reset: (widgetId: string) => void;
   remove: (widgetId: string) => void;
 }
+
+const themeStore = useThemeStore();
 
 declare global {
   interface Window {
@@ -30,12 +35,15 @@ declare global {
 const props = withDefaults(
   defineProps<{
     siteKey: string;
-    theme?: 'light' | 'dark' | 'auto';
+    appearance?: 'always' | 'execute' | 'interaction-only';
   }>(),
   {
-    theme: 'auto',
+    appearance: 'interaction-only',
   },
 );
+
+// 根据 naive-ui 主题自动设置 Turnstile 主题
+const turnstileTheme = computed(() => (themeStore.isDark ? 'dark' : 'light'));
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
@@ -53,7 +61,9 @@ function renderWidget() {
 
   widgetId.value = window.turnstile.render(containerRef.value, {
     sitekey: props.siteKey,
-    theme: props.theme,
+    theme: turnstileTheme.value,
+    size: 'flexible',
+    appearance: props.appearance,
     callback: (token: string) => {
       emit('update:modelValue', token);
       emit('verify', token);
@@ -119,11 +129,27 @@ watch(
   },
 );
 
+// 监听主题变化，重新渲染组件
+watch(
+  () => themeStore.isDark,
+  () => {
+    if (window.turnstile && widgetId.value) {
+      window.turnstile.remove(widgetId.value);
+      widgetId.value = null;
+      renderWidget();
+    }
+  },
+);
+
 defineExpose({ reset });
 </script>
 
 <style scoped>
 .turnstile-container {
-  min-height: 65px;
+  width: 100%;
+}
+
+.turnstile-container :deep(iframe) {
+  width: 100% !important;
 }
 </style>
