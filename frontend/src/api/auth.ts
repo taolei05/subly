@@ -2,7 +2,6 @@ import type {
   ApiResponse,
   LoginCredentials,
   RegisterData,
-  SystemConfig,
   User,
   UserProfileUpdate,
 } from '../types';
@@ -35,10 +34,4 @@ export const authApi = {
 
   sendTestServerChan: (data: { serverchan_api_key: string }) =>
     http.post<ApiResponse>('/auth/test-serverchan', data),
-
-  // 系统配置
-  getSystemConfig: () => http.get<ApiResponse<SystemConfig>>('/system/config'),
-
-  updateSystemConfig: (config: Partial<SystemConfig>) =>
-    http.put<ApiResponse<SystemConfig>>('/system/config', config),
 };

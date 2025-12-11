@@ -1,16 +1,5 @@
 -- Subly D1 数据库 Schema
 
--- 系统配置表（全局配置，单行）
-CREATE TABLE IF NOT EXISTS system_config (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    registration_enabled INTEGER DEFAULT 1,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
-);
-
--- 初始化系统配置（确保只有一行）
-INSERT OR IGNORE INTO system_config (id, registration_enabled, turnstile_enabled) VALUES (1, 1, 0);
-
 -- 用户表（核心信息）
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

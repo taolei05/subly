@@ -44,50 +44,12 @@ const loginSchema = {
 
 // ==================== 用户认证 ====================
 
-import { verifyTurnstile } from "./system";
-
 /**
  * 用户注册
  */
 export async function register(request: Request, env: Env): Promise<Response> {
 	try {
-		// 检查系统配置
-		const config = await env.DB.prepare(
-			"SELECT registration_enabled, turnstile_enabled, turnstile_secret_key FROM system_config WHERE id = 1",
-		).first<{
-			registration_enabled: number;
-			turnstile_enabled: number;
-			turnstile_secret_key?: string;
-		}>();
-
-		// 如果配置存在且禁用注册，则拒绝
-		if (config && !config.registration_enabled) {
-			return errorResponse("注册功能已关闭");
-		}
-
-		const body = (await request.json()) as {
-			username: string;
-			password: string;
-			email?: string;
-			turnstile_token?: string;
-		};
-
-		// 如果启用了 Turnstile，验证 token
-		if (config?.turnstile_enabled && config.turnstile_secret_key) {
-			if (!body.turnstile_token) {
-				return errorResponse("请完成人机验证");
-			}
-			const ip = request.headers.get("CF-Connecting-IP") || undefined;
-			const isValid = await verifyTurnstile(
-				body.turnstile_token,
-				config.turnstile_secret_key,
-				ip,
-			);
-			if (!isValid) {
-				return errorResponse("人机验证失败，请重试");
-			}
-		}
-
+		const body = await request.json();
 		const validation = validateRequest<{
 			username: string;
 			password: string;
@@ -147,36 +109,7 @@ export async function register(request: Request, env: Env): Promise<Response> {
  */
 export async function login(request: Request, env: Env): Promise<Response> {
 	try {
-		// 检查 Turnstile 配置
-		const config = await env.DB.prepare(
-			"SELECT turnstile_enabled, turnstile_secret_key FROM system_config WHERE id = 1",
-		).first<{
-			turnstile_enabled: number;
-			turnstile_secret_key?: string;
-		}>();
-
-		const body = (await request.json()) as {
-			username: string;
-			password: string;
-			turnstile_token?: string;
-		};
-
-		// 如果启用了 Turnstile，验证 token
-		if (config?.turnstile_enabled && config.turnstile_secret_key) {
-			if (!body.turnstile_token) {
-				return errorResponse("请完成人机验证");
-			}
-			const ip = request.headers.get("CF-Connecting-IP") || undefined;
-			const isValid = await verifyTurnstile(
-				body.turnstile_token,
-				config.turnstile_secret_key,
-				ip,
-			);
-			if (!isValid) {
-				return errorResponse("人机验证失败，请重试");
-			}
-		}
-
+		const body = await request.json();
 		const validation = validateRequest<{ username: string; password: string }>(
 			body,
 			loginSchema,

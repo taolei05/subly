@@ -10,6 +10,7 @@ export {
 } from "./auth";
 // 调试相关
 export { forceNotify, getNotifyStatus, resetLastSent } from "./debug";
+
 // 汇率相关
 export { getExchangeRate } from "./exchange-rate";
 // 订阅相关
@@ -25,5 +26,3 @@ export {
 	updateSubscription,
 	updateSubscriptionStatus,
 } from "./subscriptions";
-// 系统配置
-export { getSystemConfig, updateSystemConfig, verifyTurnstile } from "./system";

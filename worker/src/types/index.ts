@@ -97,17 +97,6 @@ export interface Subscription {
 	updated_at: string;
 }
 
-// ==================== 系统配置 ====================
-export interface SystemConfig {
-	id: number;
-	registration_enabled: number;
-	turnstile_enabled: number;
-	turnstile_site_key?: string;
-	turnstile_secret_key?: string;
-	created_at?: string;
-	updated_at?: string;
-}
-
 // ==================== JWT 相关 ====================
 export interface JWTPayload {
 	userId: number;
