@@ -346,6 +346,10 @@ function generateTestEmailHtml(
 	subscriptions: Subscription[],
 	siteUrl?: string,
 ): string {
+	const sendTime = new Date().toLocaleString("zh-CN", {
+		timeZone: "Asia/Shanghai",
+	});
+
 	const items = subscriptions
 		.map(
 			(sub) => `
@@ -383,6 +387,16 @@ function generateTestEmailHtml(
             </tr>
           </thead>
           <tbody>${items}</tbody>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; margin-top: 16px;">
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">发送时间</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">${sendTime}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; color: #999;">到期数量</td>
+            <td style="padding: 12px;">${subscriptions.length} 个</td>
+          </tr>
         </table>
         ${viewDetailsButton}
         <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封强制发送的测试邮件。</p>
