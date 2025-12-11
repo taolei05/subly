@@ -4,12 +4,15 @@
 CREATE TABLE IF NOT EXISTS system_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     registration_enabled INTEGER DEFAULT 1,
+    turnstile_enabled INTEGER DEFAULT 0,
+    turnstile_site_key TEXT,
+    turnstile_secret_key TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
 
 -- 初始化系统配置（确保只有一行）
-INSERT OR IGNORE INTO system_config (id, registration_enabled) VALUES (1, 1);
+INSERT OR IGNORE INTO system_config (id, registration_enabled, turnstile_enabled) VALUES (1, 1, 0);
 
 -- 用户表（核心信息）
 CREATE TABLE IF NOT EXISTS users (

@@ -26,6 +26,14 @@
             :input-props="{ autocomplete: 'current-password' }"
           />
         </n-form-item>
+
+        <n-form-item v-if="authStore.turnstileEnabled && authStore.turnstileSiteKey" label="人机验证">
+          <vue-turnstile
+            :site-key="authStore.turnstileSiteKey"
+            v-model="turnstileToken"
+            theme="auto"
+          />
+        </n-form-item>
         
         <n-button 
           type="primary" 
@@ -47,8 +55,9 @@
 
 <script setup lang="ts">
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import VueTurnstile from 'vue-turnstile';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -57,10 +66,15 @@ const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
+const turnstileToken = ref('');
 
 const formData = reactive({
   username: '',
   password: '',
+});
+
+onMounted(async () => {
+  await authStore.fetchSystemConfig();
 });
 
 const rules: FormRules = {
@@ -73,7 +87,21 @@ async function handleLogin() {
     await formRef.value?.validate();
     loading.value = true;
 
-    const result = await authStore.login(formData);
+    // 如果启用了 Turnstile 但没有 token，提示用户
+    if (
+      authStore.turnstileEnabled &&
+      authStore.turnstileSiteKey &&
+      !turnstileToken.value
+    ) {
+      message.error('请完成人机验证');
+      loading.value = false;
+      return;
+    }
+
+    const result = await authStore.login({
+      ...formData,
+      turnstile_token: turnstileToken.value || undefined,
+    });
 
     if (result.success) {
       message.success('登录成功');

@@ -51,7 +51,13 @@
           />
         </n-form-item>
         
-        
+        <n-form-item v-if="authStore.turnstileEnabled && authStore.turnstileSiteKey" label="人机验证">
+          <vue-turnstile
+            :site-key="authStore.turnstileSiteKey"
+            v-model="turnstileToken"
+            theme="auto"
+          />
+        </n-form-item>
         
         <n-button 
           type="primary" 
@@ -76,6 +82,7 @@
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import VueTurnstile from 'vue-turnstile';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -86,6 +93,7 @@ const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 const checkingConfig = ref(true);
 const registrationEnabled = ref(true);
+const turnstileToken = ref('');
 
 const formData = reactive({
   username: '',
@@ -125,9 +133,21 @@ async function handleRegister() {
     await formRef.value?.validate();
     loading.value = true;
 
+    // 如果启用了 Turnstile 但没有 token，提示用户
+    if (
+      authStore.turnstileEnabled &&
+      authStore.turnstileSiteKey &&
+      !turnstileToken.value
+    ) {
+      message.error('请完成人机验证');
+      loading.value = false;
+      return;
+    }
+
     const result = await authStore.register({
       username: formData.username,
       password: formData.password,
+      turnstile_token: turnstileToken.value || undefined,
     });
 
     if (result.success) {
