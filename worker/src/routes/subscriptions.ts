@@ -299,6 +299,9 @@ export async function deleteSubscription(
 	}
 }
 
+// 有效的订阅状态
+const VALID_STATUSES = ["active", "inactive", "expiring", "expired"] as const;
+
 /**
  * 更新订阅状态
  */
@@ -312,6 +315,14 @@ export async function updateSubscriptionStatus(
 		if (!userId) return errorResponse("未授权", 401);
 
 		const { status } = (await request.json()) as { status: string };
+
+		// 验证状态值是否有效
+		if (!VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
+			return errorResponse(
+				`无效的状态值，必须是: ${VALID_STATUSES.join(", ")}`,
+				400,
+			);
+		}
 
 		await env.DB.prepare(
 			"UPDATE subscriptions SET status = ?, updated_at = datetime('now') WHERE id = ? AND user_id = ?",

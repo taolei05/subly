@@ -6,6 +6,7 @@ export {
 	base64UrlDecode,
 	generateToken,
 	hashPassword,
+	setJwtSecret,
 	shouldRefreshToken,
 	verifyPassword,
 	verifyToken,

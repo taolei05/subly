@@ -4,11 +4,14 @@ import {
 	checkAndSendServerChanReminders,
 } from "./services";
 import type { Env } from "./types/index";
-import { corsHeaders, logger } from "./utils";
+import { corsHeaders, logger, setJwtSecret } from "./utils";
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		try {
+			// 初始化 JWT Secret
+			setJwtSecret(env.JWT_SECRET);
+
 			// 处理 CORS 预检请求
 			if (request.method === "OPTIONS") {
 				return new Response(null, { headers: corsHeaders });

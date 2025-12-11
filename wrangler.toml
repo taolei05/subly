@@ -17,3 +17,6 @@ crons = ["0 * * * *"]
 
 [vars]
 ENVIRONMENT = "production"
+# JWT_SECRET 必须通过 wrangler secret 设置，不要在此处明文配置
+# 运行: wrangler secret put JWT_SECRET
+# 然后输入一个至少 32 字符的随机字符串

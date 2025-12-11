@@ -1,8 +1,29 @@
 import type { JWTPayload } from "../types/index";
 
-const JWT_SECRET = "subly-secret-key-change-in-production";
+// JWT 密钥从环境变量获取，运行时通过 setJwtSecret 设置
+let JWT_SECRET = "";
 const JWT_EXPIRY = 7 * 24 * 60 * 60; // 7 天
 const TOKEN_REFRESH_THRESHOLD = 24 * 60 * 60; // 24小时内过期则刷新
+
+/**
+ * 设置 JWT 密钥（应在 worker 启动时调用）
+ */
+export function setJwtSecret(secret: string): void {
+	if (!secret || secret.length < 32) {
+		throw new Error("JWT_SECRET 必须至少 32 个字符");
+	}
+	JWT_SECRET = secret;
+}
+
+/**
+ * 获取 JWT 密钥（内部使用）
+ */
+function getJwtSecret(): string {
+	if (!JWT_SECRET) {
+		throw new Error("JWT_SECRET 未设置，请在环境变量中配置");
+	}
+	return JWT_SECRET;
+}
 
 // 简单的 Base64 URL 编码
 function base64UrlEncode(str: string): string {
@@ -20,7 +41,7 @@ async function createSignature(data: string): Promise<string> {
 	const encoder = new TextEncoder();
 	const key = await crypto.subtle.importKey(
 		"raw",
-		encoder.encode(JWT_SECRET),
+		encoder.encode(getJwtSecret()),
 		{ name: "HMAC", hash: "SHA-256" },
 		false,
 		["sign"],
@@ -95,20 +116,98 @@ export async function shouldRefreshToken(token: string): Promise<boolean> {
 	}
 }
 
-// 简易密码哈希 (生产环境应使用 bcrypt 或 argon2)
+// 密码哈希使用 PBKDF2（Cloudflare Workers 支持）
+const PBKDF2_ITERATIONS = 100000;
+const SALT_LENGTH = 16;
+
 export async function hashPassword(password: string): Promise<string> {
 	const encoder = new TextEncoder();
-	const data = encoder.encode(password + JWT_SECRET);
-	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+	// 生成随机盐值
+	const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+
+	// 导入密码作为密钥
+	const keyMaterial = await crypto.subtle.importKey(
+		"raw",
+		encoder.encode(password),
+		"PBKDF2",
+		false,
+		["deriveBits"],
+	);
+
+	// 使用 PBKDF2 派生密钥
+	const derivedBits = await crypto.subtle.deriveBits(
+		{
+			name: "PBKDF2",
+			salt: salt,
+			iterations: PBKDF2_ITERATIONS,
+			hash: "SHA-256",
+		},
+		keyMaterial,
+		256,
+	);
+
+	// 将盐值和哈希值组合存储
+	const hashArray = Array.from(new Uint8Array(derivedBits));
+	const saltHex = Array.from(salt)
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+	const hashHex = hashArray
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+
+	return `${saltHex}:${hashHex}`;
 }
 
 // 验证密码
 export async function verifyPassword(
 	password: string,
-	hash: string,
+	storedHash: string,
 ): Promise<boolean> {
-	const computedHash = await hashPassword(password);
-	return computedHash === hash;
+	const encoder = new TextEncoder();
+
+	// 检查是否是新格式（包含盐值）
+	if (storedHash.includes(":")) {
+		const [saltHex, hashHex] = storedHash.split(":");
+		const saltBytes = saltHex.match(/.{2}/g);
+		if (!saltBytes) {
+			return false;
+		}
+		const salt = new Uint8Array(
+			saltBytes.map((byte) => Number.parseInt(byte, 16)),
+		);
+
+		const keyMaterial = await crypto.subtle.importKey(
+			"raw",
+			encoder.encode(password),
+			"PBKDF2",
+			false,
+			["deriveBits"],
+		);
+
+		const derivedBits = await crypto.subtle.deriveBits(
+			{
+				name: "PBKDF2",
+				salt: salt,
+				iterations: PBKDF2_ITERATIONS,
+				hash: "SHA-256",
+			},
+			keyMaterial,
+			256,
+		);
+
+		const computedHashHex = Array.from(new Uint8Array(derivedBits))
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+
+		return computedHashHex === hashHex;
+	}
+
+	// 兼容旧格式（无盐值的 SHA-256）- 用于迁移期间
+	const data = encoder.encode(password + getJwtSecret());
+	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+	const computedHash = Array.from(new Uint8Array(hashBuffer))
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+
+	return computedHash === storedHash;
 }
