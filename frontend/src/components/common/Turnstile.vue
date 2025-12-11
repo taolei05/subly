@@ -37,7 +37,7 @@ const props = withDefaults(
     appearance?: 'always' | 'execute' | 'interaction-only';
   }>(),
   {
-    appearance: 'always',
+    appearance: 'interaction-only',
   },
 );
 
@@ -155,5 +155,15 @@ defineExpose({ reset });
 .turnstile-container {
   width: 100%;
   min-height: 65px;
+}
+
+.turnstile-container :deep(iframe) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.turnstile-container :deep(div) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 </style>
