@@ -210,7 +210,7 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
 // ==================== 用户设置 ====================
 
 /**
- * 更新用户设置（包含所有 API 配置）
+ * 更新用户设置（API 配置仅限管理员修改，普通用户只能修改通知邮箱）
  */
 export async function updateSettings(
 	request: Request,
@@ -230,8 +230,37 @@ export async function updateSettings(
 
 		const settings = (await request.json()) as UpdateSettingsRequest;
 
-		// 验证站点 URL
+		// 检查是否为管理员（第一个注册的用户）
+		const firstUser = await env.DB.prepare(
+			"SELECT id FROM users ORDER BY id ASC LIMIT 1",
+		).first<{ id: number }>();
+		const isAdmin = firstUser?.id === payload.userId;
+
+		// 非管理员尝试修改受限配置时返回错误
+		if (!isAdmin) {
+			const restrictedFields = [
+				"resend_api_key",
+				"resend_domain",
+				"resend_enabled",
+				"resend_notify_hours",
+				"serverchan_api_key",
+				"serverchan_enabled",
+				"serverchan_notify_hours",
+				"exchangerate_api_key",
+				"exchangerate_enabled",
+				"site_url",
+			];
+			const hasRestrictedField = restrictedFields.some(
+				(field) => settings[field as keyof UpdateSettingsRequest] !== undefined,
+			);
+			if (hasRestrictedField) {
+				return errorResponse("仅管理员可修改 API 配置", 403);
+			}
+		}
+
+		// 验证站点 URL（仅管理员可修改）
 		if (
+			isAdmin &&
 			settings.site_url !== undefined &&
 			settings.site_url !== "" &&
 			!isValidSiteUrl(settings.site_url)
@@ -246,79 +275,93 @@ export async function updateSettings(
 			.bind(payload.userId)
 			.first<UserWithConfig>();
 
-		// 更新用户表
-		if (settings.site_url !== undefined) {
+		// 更新用户表（仅管理员可修改 site_url）
+		if (isAdmin && settings.site_url !== undefined) {
 			await env.DB.prepare("UPDATE users SET site_url = ? WHERE id = ?")
 				.bind(settings.site_url, payload.userId)
 				.run();
 		}
 
-		// 更新 Resend 配置（使用 INSERT OR REPLACE 确保记录存在）
-		await env.DB.prepare(`
-      INSERT INTO resend_config (user_id, email, api_key, domain, enabled, notify_hours)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        email = excluded.email,
-        api_key = excluded.api_key,
-        domain = excluded.domain,
-        enabled = excluded.enabled,
-        notify_hours = excluded.notify_hours
-    `)
-			.bind(
-				payload.userId,
-				settings.email ?? current?.email ?? "",
-				settings.resend_api_key ?? current?.resend_api_key ?? "",
-				settings.resend_domain ?? current?.resend_domain ?? "",
-				settings.resend_enabled !== undefined
-					? settings.resend_enabled
-						? 1
-						: 0
-					: (current?.resend_enabled ?? 1),
-				settings.resend_notify_hours ?? current?.resend_notify_hours ?? "8",
+		// 更新 Resend 配置
+		if (isAdmin) {
+			// 管理员可修改所有字段
+			await env.DB.prepare(`
+				INSERT INTO resend_config (user_id, email, api_key, domain, enabled, notify_hours)
+				VALUES (?, ?, ?, ?, ?, ?)
+				ON CONFLICT(user_id) DO UPDATE SET
+					email = excluded.email,
+					api_key = excluded.api_key,
+					domain = excluded.domain,
+					enabled = excluded.enabled,
+					notify_hours = excluded.notify_hours
+			`)
+				.bind(
+					payload.userId,
+					settings.email ?? current?.email ?? "",
+					settings.resend_api_key ?? current?.resend_api_key ?? "",
+					settings.resend_domain ?? current?.resend_domain ?? "",
+					settings.resend_enabled !== undefined
+						? settings.resend_enabled
+							? 1
+							: 0
+						: (current?.resend_enabled ?? 1),
+					settings.resend_notify_hours ?? current?.resend_notify_hours ?? "8",
+				)
+				.run();
+		} else if (settings.email !== undefined) {
+			// 普通用户只能修改通知邮箱
+			await env.DB.prepare(
+				"UPDATE resend_config SET email = ? WHERE user_id = ?",
 			)
-			.run();
+				.bind(settings.email, payload.userId)
+				.run();
+		}
 
-		// 更新 Server酱 配置
-		await env.DB.prepare(`
-      INSERT INTO serverchan_config (user_id, api_key, enabled, notify_hours)
-      VALUES (?, ?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        api_key = excluded.api_key,
-        enabled = excluded.enabled,
-        notify_hours = excluded.notify_hours
-    `)
-			.bind(
-				payload.userId,
-				settings.serverchan_api_key ?? current?.serverchan_api_key ?? "",
-				settings.serverchan_enabled !== undefined
-					? settings.serverchan_enabled
-						? 1
-						: 0
-					: (current?.serverchan_enabled ?? 1),
-				settings.serverchan_notify_hours ??
-					current?.serverchan_notify_hours ??
-					"8",
-			)
-			.run();
+		// 更新 Server酱 配置（仅管理员）
+		if (isAdmin) {
+			await env.DB.prepare(`
+				INSERT INTO serverchan_config (user_id, api_key, enabled, notify_hours)
+				VALUES (?, ?, ?, ?)
+				ON CONFLICT(user_id) DO UPDATE SET
+					api_key = excluded.api_key,
+					enabled = excluded.enabled,
+					notify_hours = excluded.notify_hours
+			`)
+				.bind(
+					payload.userId,
+					settings.serverchan_api_key ?? current?.serverchan_api_key ?? "",
+					settings.serverchan_enabled !== undefined
+						? settings.serverchan_enabled
+							? 1
+							: 0
+						: (current?.serverchan_enabled ?? 1),
+					settings.serverchan_notify_hours ??
+						current?.serverchan_notify_hours ??
+						"8",
+				)
+				.run();
+		}
 
-		// 更新 ExchangeRate 配置
-		await env.DB.prepare(`
-      INSERT INTO exchangerate_config (user_id, api_key, enabled)
-      VALUES (?, ?, ?)
-      ON CONFLICT(user_id) DO UPDATE SET
-        api_key = excluded.api_key,
-        enabled = excluded.enabled
-    `)
-			.bind(
-				payload.userId,
-				settings.exchangerate_api_key ?? current?.exchangerate_api_key ?? "",
-				settings.exchangerate_enabled !== undefined
-					? settings.exchangerate_enabled
-						? 1
-						: 0
-					: (current?.exchangerate_enabled ?? 1),
-			)
-			.run();
+		// 更新 ExchangeRate 配置（仅管理员）
+		if (isAdmin) {
+			await env.DB.prepare(`
+				INSERT INTO exchangerate_config (user_id, api_key, enabled)
+				VALUES (?, ?, ?)
+				ON CONFLICT(user_id) DO UPDATE SET
+					api_key = excluded.api_key,
+					enabled = excluded.enabled
+			`)
+				.bind(
+					payload.userId,
+					settings.exchangerate_api_key ?? current?.exchangerate_api_key ?? "",
+					settings.exchangerate_enabled !== undefined
+						? settings.exchangerate_enabled
+							? 1
+							: 0
+						: (current?.exchangerate_enabled ?? 1),
+				)
+				.run();
+		}
 
 		const user = await env.DB.prepare(
 			`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`,
@@ -326,7 +369,7 @@ export async function updateSettings(
 			.bind(payload.userId)
 			.first<UserWithConfig>();
 
-		logger.info("Settings updated", { userId: payload.userId });
+		logger.info("Settings updated", { userId: payload.userId, isAdmin });
 		return successResponse(user, "设置已更新");
 	} catch (error) {
 		logger.error("UpdateSettings error", error);
