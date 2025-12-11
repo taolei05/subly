@@ -28,7 +28,7 @@
         </n-form-item>
 
         <n-form-item v-if="authStore.turnstileEnabled && authStore.turnstileSiteKey" label="人机验证">
-          <vue-turnstile
+          <Turnstile
             :site-key="authStore.turnstileSiteKey"
             v-model="turnstileToken"
             theme="auto"
@@ -57,7 +57,7 @@
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import VueTurnstile from 'vue-turnstile';
+import Turnstile from '../components/common/Turnstile.vue';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
