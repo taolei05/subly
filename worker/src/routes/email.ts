@@ -1,6 +1,14 @@
 import { sendEmail } from "../services/email";
-import type { Env } from "../types/index";
+import type { Env, Subscription } from "../types/index";
 import { errorResponse, logger, successResponse, verifyToken } from "../utils";
+
+const TYPE_LABELS: Record<string, string> = {
+	domain: "域名",
+	server: "服务器",
+	membership: "会员",
+	software: "软件",
+	other: "其他",
+};
 
 export async function sendTestEmail(
 	request: Request,
@@ -52,11 +60,67 @@ export async function sendTestEmail(
 
 		if (!config) return errorResponse("用户不存在", 404);
 
+		// 获取即将到期的订阅
+		const now = new Date();
+		const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+			.toISOString()
+			.split("T")[0];
+		const { results: subscriptions } = await env.DB.prepare(`
+      SELECT * FROM subscriptions 
+      WHERE user_id = ? 
+        AND status = 'active' 
+        AND one_time = 0
+        AND date(end_date) >= date(?)
+        AND date(end_date) <= date(?, '+' || remind_days || ' days')
+      ORDER BY end_date ASC
+      LIMIT 5
+    `)
+			.bind(payload.userId, beijingDate, beijingDate)
+			.all<Subscription>();
+
 		const viewDetailsButton = config.site_url
 			? `<div style="margin-top: 20px; text-align: center;">
           <a href="${config.site_url}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
         </div>`
 			: "";
+
+		// 生成订阅列表 HTML
+		let subscriptionHtml = "";
+		if (subscriptions.length > 0) {
+			const rows = subscriptions
+				.map(
+					(sub) => `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.name}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">${TYPE_LABELS[sub.type] || sub.type}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">${sub.end_date}</td>
+        </tr>
+      `,
+				)
+				.join("");
+
+			subscriptionHtml = `
+        <div style="margin-top: 24px;">
+          <h3 style="color: #333; font-size: 16px; margin-bottom: 12px;">📋 即将到期的订阅预览</h3>
+          <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+            <thead>
+              <tr style="background: #f8f8f8;">
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">服务名称</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">类型</th>
+                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">到期日期</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+		} else {
+			subscriptionHtml = `
+        <div style="margin-top: 24px; padding: 16px; background: #e8f5e9; border-radius: 8px;">
+          <p style="margin: 0; color: #2e7d32;">✅ 当前没有即将到期的订阅</p>
+        </div>
+      `;
+		}
 
 		const success = await sendEmail(apiKeyToUse, resend_domain || "", {
 			to: config.email,
@@ -82,6 +146,7 @@ export async function sendTestEmail(
                 <td style="padding: 12px;">${config.email}</td>
               </tr>
             </table>
+            ${subscriptionHtml}
             ${viewDetailsButton}
             <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封测试邮件，请勿直接回复。</p>
           </div>

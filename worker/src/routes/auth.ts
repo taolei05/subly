@@ -220,12 +220,6 @@ export async function updateSettings(
 
 		const settings = (await request.json()) as UpdateSettingsRequest;
 
-		logger.info("Received settings", {
-			userId: payload.userId,
-			resend_notify_hours: settings.resend_notify_hours,
-			serverchan_notify_hours: settings.serverchan_notify_hours,
-		});
-
 		// 验证站点 URL
 		if (
 			settings.site_url !== undefined &&

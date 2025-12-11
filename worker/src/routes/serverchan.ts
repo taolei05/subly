@@ -1,6 +1,14 @@
 import { sendServerChanMessage } from "../services/serverchan";
-import type { Env } from "../types/index";
+import type { Env, Subscription } from "../types/index";
 import { errorResponse, logger, successResponse, verifyToken } from "../utils";
+
+const TYPE_LABELS: Record<string, string> = {
+	domain: "域名",
+	server: "服务器",
+	membership: "会员",
+	software: "软件",
+	other: "其他",
+};
 
 export async function sendTestServerChan(
 	request: Request,
@@ -49,10 +57,56 @@ export async function sendTestServerChan(
 			.bind(payload.userId)
 			.first<{ site_url?: string }>();
 
+		// 获取即将到期的订阅
+		const now = new Date();
+		const beijingDate = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+			.toISOString()
+			.split("T")[0];
+		const { results: subscriptions } = await env.DB.prepare(`
+      SELECT * FROM subscriptions 
+      WHERE user_id = ? 
+        AND status = 'active' 
+        AND one_time = 0
+        AND date(end_date) >= date(?)
+        AND date(end_date) <= date(?, '+' || remind_days || ' days')
+      ORDER BY end_date ASC
+      LIMIT 5
+    `)
+			.bind(payload.userId, beijingDate, beijingDate)
+			.all<Subscription>();
+
+		// 生成订阅列表
+		let subscriptionContent = "";
+		if (subscriptions.length > 0) {
+			const tableRows = subscriptions
+				.map(
+					(sub) =>
+						`| ${sub.name} | ${TYPE_LABELS[sub.type] || sub.type} | ${sub.end_date} |`,
+				)
+				.join("\n");
+
+			subscriptionContent = `
+## 📋 即将到期的订阅预览
+
+| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+${tableRows}
+`;
+		} else {
+			subscriptionContent = `
+## 📋 订阅状态
+
+✅ 当前没有即将到期的订阅
+`;
+		}
+
 		const content = `
 ## 🎉 配置测试成功
 
 这条消息证明您的 Server酱 SendKey 配置正确，订阅到期提醒将会推送到此。
+
+---
+${subscriptionContent}
 ${config?.site_url ? `\n[👉 查看详情](${config.site_url})` : ""}
 
 ---
