@@ -19,3 +19,18 @@ declare module 'markdown-it' {
   const MarkdownIt: MarkdownItConstructor;
   export default MarkdownIt;
 }
+
+declare module 'vue-json-pretty' {
+  import type { DefineComponent } from 'vue';
+  const VueJsonPretty: DefineComponent<{
+    data?: unknown;
+    deep?: number;
+    showLength?: boolean;
+    showLine?: boolean;
+    showDoubleQuotes?: boolean;
+    virtual?: boolean;
+    height?: number;
+    itemHeight?: number;
+  }>;
+  export default VueJsonPretty;
+}

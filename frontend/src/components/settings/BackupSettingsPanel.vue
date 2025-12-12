@@ -58,7 +58,10 @@
 
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
+import Papa from 'papaparse';
 import { computed, h, ref } from 'vue';
+import VueJsonPretty from 'vue-json-pretty';
+import 'vue-json-pretty/lib/styles.css';
 import { downloadBackup, getBackupList, triggerBackup } from '../../api/backup';
 import type { BackupFile, UserSettings } from '../../types';
 
@@ -159,7 +162,16 @@ async function showBackupList() {
                     'a',
                     {
                       style:
-                        'color: #18a058; cursor: pointer; margin-right: 12px;',
+                        'color: #18a058; cursor: pointer; margin-right: 8px;',
+                      onClick: () => handlePreview(backup.date, 'json'),
+                    },
+                    '预览',
+                  ),
+                  h(
+                    'a',
+                    {
+                      style:
+                        'color: #18a058; cursor: pointer; margin-right: 8px;',
                       onClick: () => handleDownload(backup.date, 'json'),
                     },
                     'JSON',
@@ -208,5 +220,123 @@ async function handleDownload(date: string, format: 'json' | 'csv' = 'json') {
   } catch {
     message.error('下载失败');
   }
+}
+
+// 预览状态
+const previewFormat = ref<'json' | 'csv'>('json');
+const previewData = ref<unknown>(null);
+const csvData = ref<Record<string, unknown>[]>([]);
+const csvHeaders = ref<string[]>([]);
+
+async function handlePreview(date: string, format: 'json' | 'csv' = 'json') {
+  try {
+    const content = await downloadBackup(date, format);
+    if (!content) {
+      message.error('获取备份数据失败');
+      return;
+    }
+
+    previewFormat.value = format;
+
+    if (format === 'json') {
+      previewData.value = JSON.parse(content);
+      showJsonPreviewDialog(date);
+    } else {
+      const parsed = Papa.parse(content, { header: true });
+      csvData.value = parsed.data as Record<string, unknown>[];
+      csvHeaders.value = parsed.meta.fields || [];
+      showCsvPreviewDialog(date);
+    }
+  } catch {
+    message.error('预览失败');
+  }
+}
+
+function showJsonPreviewDialog(date: string) {
+  dialog.info({
+    title: `JSON 预览 - ${date}`,
+    style: { width: '800px', maxWidth: '90vw' },
+    content: () => {
+      return h('div', { style: 'max-height: 500px; overflow: auto;' }, [
+        h(VueJsonPretty, {
+          data: previewData.value,
+          deep: 3,
+          showLength: true,
+          showLine: true,
+          showDoubleQuotes: true,
+        }),
+      ]);
+    },
+    positiveText: '关闭',
+    negativeText: '下载',
+    onNegativeClick: () => {
+      handleDownload(date, 'json');
+      return false;
+    },
+  });
+}
+
+function showCsvPreviewDialog(date: string) {
+  dialog.info({
+    title: `CSV 预览 - ${date}`,
+    style: { width: '900px', maxWidth: '95vw' },
+    content: () => {
+      return h('div', { style: 'max-height: 500px; overflow: auto;' }, [
+        h(
+          'table',
+          { style: 'width: 100%; border-collapse: collapse; font-size: 12px;' },
+          [
+            h('thead', [
+              h(
+                'tr',
+                { style: 'background: #f5f5f5; position: sticky; top: 0;' },
+                csvHeaders.value.map((header) =>
+                  h(
+                    'th',
+                    {
+                      style:
+                        'padding: 8px; text-align: left; border: 1px solid #e0e0e0; white-space: nowrap;',
+                    },
+                    header,
+                  ),
+                ),
+              ),
+            ]),
+            h(
+              'tbody',
+              csvData.value.slice(0, 100).map((row) =>
+                h(
+                  'tr',
+                  csvHeaders.value.map((header) =>
+                    h(
+                      'td',
+                      {
+                        style:
+                          'padding: 6px 8px; border: 1px solid #e0e0e0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
+                      },
+                      String(row[header] ?? ''),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        csvData.value.length > 100
+          ? h(
+              'p',
+              { style: 'color: #999; font-size: 12px; margin-top: 8px;' },
+              `显示前 100 条，共 ${csvData.value.length} 条记录`,
+            )
+          : null,
+      ]);
+    },
+    positiveText: '关闭',
+    negativeText: '下载',
+    onNegativeClick: () => {
+      handleDownload(date, 'csv');
+      return false;
+    },
+  });
 }
 </script>
