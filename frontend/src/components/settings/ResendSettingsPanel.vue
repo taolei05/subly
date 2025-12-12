@@ -66,16 +66,25 @@
             <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showTemplateHelp" />
           </div>
         </template>
-        <n-button
-          secondary
-          :disabled="disabled"
-          @click="openTemplateDialog"
-        >
-          {{ formData.resend_template_subject || formData.resend_template_body ? '编辑模板' : '配置模板' }}
-        </n-button>
-        <n-text v-if="formData.resend_template_subject || formData.resend_template_body" depth="3" style="margin-left: 12px; font-size: 12px;">
-          已配置自定义模板
-        </n-text>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <n-button
+            secondary
+            :disabled="disabled"
+            @click="openTemplateDialog"
+          >
+            {{ formData.resend_template_subject || formData.resend_template_body ? '编辑模板' : '配置模板' }}
+          </n-button>
+          <n-button
+            quaternary
+            size="small"
+            @click="showDefaultTemplate"
+          >
+            查看默认模板
+          </n-button>
+          <n-text v-if="formData.resend_template_subject || formData.resend_template_body" depth="3" style="font-size: 12px;">
+            已配置自定义模板
+          </n-text>
+        </div>
       </n-form-item>
 
       <n-form-item>
@@ -207,6 +216,68 @@ function showTemplateHelp() {
         h('p', '• {{subscriptions}} - 订阅列表（HTML表格格式）'),
         h('p', '• {{time}} - 发送时间'),
         h('p', '• {{site_url}} - 站点链接'),
+      ]);
+    },
+    positiveText: '知道了',
+  });
+}
+
+function showDefaultTemplate() {
+  dialog.info({
+    title: '默认邮件模板',
+    style: { width: '650px' },
+    content: () => {
+      return h('div', [
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'p',
+            { style: 'font-weight: 600; margin-bottom: 8px;' },
+            '默认标题：',
+          ),
+          h(
+            'code',
+            {
+              style:
+                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px;',
+            },
+            '[Subly] 您有 {{count}} 个订阅即将到期',
+          ),
+        ]),
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'p',
+            { style: 'font-weight: 600; margin-bottom: 8px;' },
+            '默认内容预览：',
+          ),
+          h('div', {
+            style:
+              'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;',
+            innerHTML: `
+              <div style="background: #18a058; color: white; padding: 16px;">
+                <h3 style="margin: 0; font-size: 18px;">Subly 订阅提醒</h3>
+              </div>
+              <div style="background: #f5f5f5; padding: 16px;">
+                <p style="margin: 0 0 12px 0;">您有以下订阅即将到期，请及时处理：</p>
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px;">
+                  <thead>
+                    <tr style="background: #f8f8f8;">
+                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">服务名称</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">类型</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">到期日期</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">示例服务</td><td style="padding: 8px; border-bottom: 1px solid #eee;">会员</td><td style="padding: 8px; border-bottom: 1px solid #eee;">2024-12-20</td></tr>
+                  </tbody>
+                </table>
+                <div style="margin-top: 12px; text-align: center;">
+                  <span style="display: inline-block; background: #18a058; color: white; padding: 8px 16px; border-radius: 4px; font-size: 12px;">查看详情</span>
+                </div>
+                <p style="margin-top: 12px; color: #666; font-size: 12px;">这是一封自动发送的邮件，请勿直接回复。</p>
+              </div>
+            `,
+          }),
+        ]),
       ]);
     },
     positiveText: '知道了',

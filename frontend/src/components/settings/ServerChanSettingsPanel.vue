@@ -43,16 +43,25 @@
             <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showTemplateHelp" />
           </div>
         </template>
-        <n-button
-          secondary
-          :disabled="disabled"
-          @click="openTemplateDialog"
-        >
-          {{ formData.serverchan_template_title || formData.serverchan_template_body ? '编辑模板' : '配置模板' }}
-        </n-button>
-        <n-text v-if="formData.serverchan_template_title || formData.serverchan_template_body" depth="3" style="margin-left: 12px; font-size: 12px;">
-          已配置自定义模板
-        </n-text>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <n-button
+            secondary
+            :disabled="disabled"
+            @click="openTemplateDialog"
+          >
+            {{ formData.serverchan_template_title || formData.serverchan_template_body ? '编辑模板' : '配置模板' }}
+          </n-button>
+          <n-button
+            quaternary
+            size="small"
+            @click="showDefaultTemplate"
+          >
+            查看默认模板
+          </n-button>
+          <n-text v-if="formData.serverchan_template_title || formData.serverchan_template_body" depth="3" style="font-size: 12px;">
+            已配置自定义模板
+          </n-text>
+        </div>
       </n-form-item>
 
       <n-form-item>
@@ -168,6 +177,65 @@ function showTemplateHelp() {
         h('p', '• {{subscriptions}} - 订阅列表（Markdown表格格式）'),
         h('p', '• {{time}} - 发送时间'),
         h('p', '• {{site_url}} - 站点链接'),
+      ]);
+    },
+    positiveText: '知道了',
+  });
+}
+
+function showDefaultTemplate() {
+  dialog.info({
+    title: '默认通知模板',
+    style: { width: '600px' },
+    content: () => {
+      return h('div', [
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'p',
+            { style: 'font-weight: 600; margin-bottom: 8px;' },
+            '默认标题：',
+          ),
+          h(
+            'code',
+            {
+              style:
+                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px;',
+            },
+            '[Subly] 您有 {{count}} 个订阅即将到期',
+          ),
+        ]),
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'p',
+            { style: 'font-weight: 600; margin-bottom: 8px;' },
+            '默认内容（Markdown）：',
+          ),
+          h(
+            'pre',
+            {
+              style:
+                'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto; white-space: pre-wrap;',
+            },
+            `## ⏰ 订阅到期提醒
+
+您有以下订阅即将到期，请及时处理：
+
+| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+| 示例服务 | 会员 | 2024-12-20 |
+
+---
+
+**发送时间**：2024-12-15 08:00:00
+**到期数量**：1 个
+
+[👉 查看详情]({{site_url}})
+
+---
+
+*这是一条自动发送的消息，请勿直接回复。*`,
+          ),
+        ]),
       ]);
     },
     positiveText: '知道了',
