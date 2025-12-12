@@ -26,7 +26,13 @@
     </n-layout-header>
     
     <n-layout-content class="content-wrapper">
-      <n-card title="系统配置" :bordered="false">
+      <!-- Demo 用户提示 -->
+      <n-alert v-if="authStore.isDemo" type="warning" style="margin-bottom: 24px;">
+        您正在使用演示账户，无法修改任何设置。
+      </n-alert>
+
+      <!-- 系统配置（仅管理员可见） -->
+      <n-card v-if="authStore.isAdmin" title="系统配置" :bordered="false">
         <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
           <!-- 辅助功能：隐藏的用户名输入框，消除浏览器关于密码表单缺少用户名的警告 -->
           <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
@@ -45,20 +51,24 @@
         </n-form>
       </n-card>
       
-      <n-card title="账户管理" :bordered="false" style="margin-top: 24px;">
+      <n-card title="账户管理" :bordered="false" :style="authStore.isAdmin ? 'margin-top: 24px;' : ''">
         <n-descriptions label-placement="left" :column="1">
           <n-descriptions-item label="用户名">
             {{ authStore.user?.username || '-' }}
           </n-descriptions-item>
+          <n-descriptions-item label="角色">
+            <n-tag :type="roleTagType">{{ roleLabel }}</n-tag>
+          </n-descriptions-item>
         </n-descriptions>
-        <template #action>
+        <template v-if="!authStore.isDemo" #action>
           <n-button block secondary type="primary" @click="openProfileModal">
              修改账户信息 (用户名/邮箱/密码)
           </n-button>
         </template>
       </n-card>
 
-      <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
+      <!-- 安全设置（仅管理员可见） -->
+      <n-card v-if="authStore.isAdmin" title="安全设置" :bordered="false" style="margin-top: 24px;">
         <n-form-item label="允许用户注册" label-placement="left">
           <n-switch
             v-model:value="registrationEnabled"
@@ -119,7 +129,7 @@
 
 <script setup lang="ts">
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
-import { h, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../components/common/Icon.vue';
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
@@ -143,8 +153,6 @@ const message = useMessage();
 const themeStore = useThemeStore();
 const authStore = useAuthStore();
 
-const formRef = ref<FormInst | null>(null);
-const serverChanFormRef = ref<FormInst | null>(null);
 const saving = ref(false);
 
 const formData = reactive<UserSettings>({
@@ -190,6 +198,25 @@ const profileRules: FormRules = {
   ],
   password: [{ min: 6, message: '密码至少6个字符', trigger: 'blur' }],
 };
+
+// 角色显示
+const roleLabel = computed(() => {
+  const roleMap: Record<string, string> = {
+    admin: '管理员',
+    user: '普通用户',
+    demo: '演示用户',
+  };
+  return roleMap[authStore.userRole] || '未知';
+});
+
+const roleTagType = computed(() => {
+  const typeMap: Record<string, 'success' | 'info' | 'warning'> = {
+    admin: 'success',
+    user: 'info',
+    demo: 'warning',
+  };
+  return typeMap[authStore.userRole] || 'info';
+});
 
 onMounted(async () => {
   await authStore.fetchUser();

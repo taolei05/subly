@@ -28,7 +28,7 @@ export async function getSystemConfig(
 }
 
 /**
- * 更新系统配置（仅限第一个注册的用户）
+ * 更新系统配置（仅限管理员）
  */
 export async function updateSystemConfig(
 	request: Request,
@@ -46,12 +46,12 @@ export async function updateSystemConfig(
 			return errorResponse("Token 无效或已过期", 401);
 		}
 
-		// 检查是否为第一个注册的用户（管理员）
-		const firstUser = await env.DB.prepare(
-			"SELECT id FROM users ORDER BY id ASC LIMIT 1",
-		).first<{ id: number }>();
+		// 检查用户角色是否为管理员
+		const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?")
+			.bind(payload.userId)
+			.first<{ role: string }>();
 
-		if (!firstUser || firstUser.id !== payload.userId) {
+		if (!user || user.role !== "admin") {
 			return errorResponse("仅管理员可修改系统配置", 403);
 		}
 

@@ -12,10 +12,12 @@ CREATE TABLE IF NOT EXISTS system_config (
 INSERT OR IGNORE INTO system_config (id, registration_enabled) VALUES (1, 1);
 
 -- 用户表（核心信息）
+-- role: admin(管理员), user(普通用户), demo(演示用户)
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'demo')),
     site_url TEXT
 );
 

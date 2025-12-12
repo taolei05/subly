@@ -65,9 +65,12 @@ export interface SubscriptionStats {
   monthlyAverage: number;
 }
 
+export type UserRole = 'admin' | 'user' | 'demo';
+
 export interface User {
   id: number;
   username: string;
+  role: UserRole;
   email: string;
   resend_api_key?: string;
   exchangerate_api_key?: string;

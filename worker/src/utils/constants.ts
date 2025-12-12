@@ -1,10 +1,10 @@
 // 用户查询字段常量（仅用户表字段）
-export const USER_PUBLIC_FIELDS = "id, username, site_url";
+export const USER_PUBLIC_FIELDS = "id, username, role, site_url";
 
 // 聚合查询：用户 + 所有配置
 export const USER_WITH_CONFIG_QUERY = `
   SELECT 
-    u.id, u.username, u.site_url,
+    u.id, u.username, u.role, u.site_url,
     r.email, r.api_key as resend_api_key, r.domain as resend_domain, 
     r.enabled as resend_enabled, r.notify_hours as resend_notify_hours,
     r.last_sent_at as resend_last_sent_at,

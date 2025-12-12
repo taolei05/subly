@@ -84,11 +84,17 @@ export async function register(request: Request, env: Env): Promise<Response> {
 
 		const hashedPassword = await hashPassword(password);
 
+		// 检查是否为第一个用户（自动成为管理员）
+		const userCount = await env.DB.prepare(
+			"SELECT COUNT(*) as count FROM users",
+		).first<{ count: number }>();
+		const role = userCount?.count === 0 ? "admin" : "user";
+
 		// 创建用户
 		const result = await env.DB.prepare(
-			"INSERT INTO users (username, password) VALUES (?, ?)",
+			"INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
 		)
-			.bind(username, hashedPassword)
+			.bind(username, hashedPassword, role)
 			.run();
 
 		const userId = result.meta.last_row_id;
@@ -210,7 +216,10 @@ export async function getMe(request: Request, env: Env): Promise<Response> {
 // ==================== 用户设置 ====================
 
 /**
- * 更新用户设置（API 配置仅限管理员修改，普通用户只能修改通知邮箱）
+ * 更新用户设置
+ * - admin: 可修改所有配置
+ * - user: 只能修改通知邮箱
+ * - demo: 不能修改任何设置
  */
 export async function updateSettings(
 	request: Request,
@@ -228,13 +237,26 @@ export async function updateSettings(
 			return errorResponse("Token 无效或已过期", 401);
 		}
 
-		const settings = (await request.json()) as UpdateSettingsRequest;
+		// 获取用户角色
+		const currentUser = await env.DB.prepare(
+			"SELECT role FROM users WHERE id = ?",
+		)
+			.bind(payload.userId)
+			.first<{ role: string }>();
 
-		// 检查是否为管理员（第一个注册的用户）
-		const firstUser = await env.DB.prepare(
-			"SELECT id FROM users ORDER BY id ASC LIMIT 1",
-		).first<{ id: number }>();
-		const isAdmin = firstUser?.id === payload.userId;
+		if (!currentUser) {
+			return errorResponse("用户不存在", 404);
+		}
+
+		const { role } = currentUser;
+
+		// demo 用户不能修改任何设置
+		if (role === "demo") {
+			return errorResponse("演示账户不能修改设置", 403);
+		}
+
+		const settings = (await request.json()) as UpdateSettingsRequest;
+		const isAdmin = role === "admin";
 
 		// 非管理员尝试修改受限配置时返回错误
 		if (!isAdmin) {
@@ -369,7 +391,7 @@ export async function updateSettings(
 			.bind(payload.userId)
 			.first<UserWithConfig>();
 
-		logger.info("Settings updated", { userId: payload.userId, isAdmin });
+		logger.info("Settings updated", { userId: payload.userId, role });
 		return successResponse(user, "设置已更新");
 	} catch (error) {
 		logger.error("UpdateSettings error", error);
@@ -379,6 +401,7 @@ export async function updateSettings(
 
 /**
  * 更新用户个人信息（用户名、邮箱、密码）
+ * - demo 用户不能修改个人信息
  */
 export async function updateProfile(
 	request: Request,
@@ -394,6 +417,22 @@ export async function updateProfile(
 		const payload = await verifyToken(token);
 		if (!payload) {
 			return errorResponse("Token 无效或已过期", 401);
+		}
+
+		// 检查用户角色
+		const currentUser = await env.DB.prepare(
+			"SELECT role FROM users WHERE id = ?",
+		)
+			.bind(payload.userId)
+			.first<{ role: string }>();
+
+		if (!currentUser) {
+			return errorResponse("用户不存在", 404);
+		}
+
+		// demo 用户不能修改个人信息
+		if (currentUser.role === "demo") {
+			return errorResponse("演示账户不能修改个人信息", 403);
 		}
 
 		const { username, email, password } = (await request.json()) as {

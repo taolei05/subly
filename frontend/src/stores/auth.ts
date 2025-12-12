@@ -20,6 +20,9 @@ export const useAuthStore = defineStore('auth', () => {
   const registrationEnabled = computed(
     () => systemConfig.value?.registration_enabled ?? true,
   );
+  const isAdmin = computed(() => user.value?.role === 'admin');
+  const isDemo = computed(() => user.value?.role === 'demo');
+  const userRole = computed(() => user.value?.role ?? 'user');
 
   async function login(credentials: LoginCredentials): Promise<ApiResponse> {
     try {
@@ -164,6 +167,9 @@ export const useAuthStore = defineStore('auth', () => {
     systemConfig,
     isAuthenticated,
     registrationEnabled,
+    isAdmin,
+    isDemo,
+    userRole,
     login,
     register,
     logout,

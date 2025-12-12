@@ -16,7 +16,9 @@ export default {
 			// ⚠️ 生产环境请务必通过 wrangler secret put JWT_SECRET 设置安全密钥
 			const jwtSecret = env.JWT_SECRET || DEV_JWT_SECRET;
 			if (!env.JWT_SECRET && env.ENVIRONMENT === "production") {
-				logger.warn("JWT_SECRET not set in production! Using insecure default key.");
+				logger.warn(
+					"JWT_SECRET not set in production! Using insecure default key.",
+				);
 			}
 			setJwtSecret(jwtSecret);
 

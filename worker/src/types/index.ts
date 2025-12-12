@@ -9,10 +9,13 @@ export interface Env {
 }
 
 // ==================== 用户相关 ====================
+export type UserRole = "admin" | "user" | "demo";
+
 export interface User {
 	id: number;
 	username: string;
 	password: string;
+	role: UserRole;
 	site_url?: string;
 }
 
@@ -50,6 +53,7 @@ export interface ExchangeRateConfig {
 export interface UserWithConfig {
 	id: number;
 	username: string;
+	role: UserRole;
 	site_url?: string;
 	// Resend 配置
 	email?: string;
