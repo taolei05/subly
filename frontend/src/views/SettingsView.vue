@@ -178,8 +178,12 @@ const formData = reactive<UserSettings>({
   exchangerate_api_key: '',
   email: '',
   resend_notify_hours: [8],
+  resend_template_subject: '',
+  resend_template_body: '',
   serverchan_api_key: '',
   serverchan_notify_hours: [8],
+  serverchan_template_title: '',
+  serverchan_template_body: '',
   site_url: '',
   resend_enabled: true,
   serverchan_enabled: true,
@@ -247,10 +251,14 @@ onMounted(async () => {
     formData.resend_notify_hours = parseNotifyHours(
       authStore.user.resend_notify_hours,
     );
+    formData.resend_template_subject = authStore.user.resend_template_subject || '';
+    formData.resend_template_body = authStore.user.resend_template_body || '';
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
     formData.serverchan_notify_hours = parseNotifyHours(
       authStore.user.serverchan_notify_hours,
     );
+    formData.serverchan_template_title = authStore.user.serverchan_template_title || '';
+    formData.serverchan_template_body = authStore.user.serverchan_template_body || '';
     formData.site_url = authStore.user.site_url || '';
     // SQLite 返回数字 0/1，需要转换为布尔值
     formData.resend_enabled =

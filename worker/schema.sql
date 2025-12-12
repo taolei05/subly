@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS resend_config (
     notify_hours TEXT DEFAULT '8',
     last_sent_at TEXT,
     enabled INTEGER DEFAULT 1,
+    template_subject TEXT,
+    template_body TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -42,6 +44,8 @@ CREATE TABLE IF NOT EXISTS serverchan_config (
     notify_hours TEXT DEFAULT '8',
     last_sent_at TEXT,
     enabled INTEGER DEFAULT 1,
+    template_title TEXT,
+    template_body TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

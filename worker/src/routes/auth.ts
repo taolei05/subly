@@ -283,14 +283,16 @@ export async function updateSettings(
 
 		// 更新 Resend 配置（admin 和 user 都可以修改）
 		await env.DB.prepare(`
-			INSERT INTO resend_config (user_id, email, api_key, domain, enabled, notify_hours)
-			VALUES (?, ?, ?, ?, ?, ?)
+			INSERT INTO resend_config (user_id, email, api_key, domain, enabled, notify_hours, template_subject, template_body)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(user_id) DO UPDATE SET
 				email = excluded.email,
 				api_key = excluded.api_key,
 				domain = excluded.domain,
 				enabled = excluded.enabled,
-				notify_hours = excluded.notify_hours
+				notify_hours = excluded.notify_hours,
+				template_subject = excluded.template_subject,
+				template_body = excluded.template_body
 		`)
 			.bind(
 				payload.userId,
@@ -303,17 +305,23 @@ export async function updateSettings(
 						: 0
 					: (current?.resend_enabled ?? 1),
 				settings.resend_notify_hours ?? current?.resend_notify_hours ?? "8",
+				settings.resend_template_subject ??
+					current?.resend_template_subject ??
+					null,
+				settings.resend_template_body ?? current?.resend_template_body ?? null,
 			)
 			.run();
 
 		// 更新 Server酱 配置（admin 和 user 都可以修改）
 		await env.DB.prepare(`
-			INSERT INTO serverchan_config (user_id, api_key, enabled, notify_hours)
-			VALUES (?, ?, ?, ?)
+			INSERT INTO serverchan_config (user_id, api_key, enabled, notify_hours, template_title, template_body)
+			VALUES (?, ?, ?, ?, ?, ?)
 			ON CONFLICT(user_id) DO UPDATE SET
 				api_key = excluded.api_key,
 				enabled = excluded.enabled,
-				notify_hours = excluded.notify_hours
+				notify_hours = excluded.notify_hours,
+				template_title = excluded.template_title,
+				template_body = excluded.template_body
 		`)
 			.bind(
 				payload.userId,
@@ -326,6 +334,12 @@ export async function updateSettings(
 				settings.serverchan_notify_hours ??
 					current?.serverchan_notify_hours ??
 					"8",
+				settings.serverchan_template_title ??
+					current?.serverchan_template_title ??
+					null,
+				settings.serverchan_template_body ??
+					current?.serverchan_template_body ??
+					null,
 			)
 			.run();
 

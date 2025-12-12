@@ -66,14 +66,7 @@ const TYPE_LABELS: Record<string, string> = {
 	other: "其他",
 };
 
-function generateReminderContent(
-	subscriptions: Subscription[],
-	siteUrl?: string,
-): string {
-	const sendTime = new Date().toLocaleString("zh-CN", {
-		timeZone: "Asia/Shanghai",
-	});
-
+function generateSubscriptionsMarkdown(subscriptions: Subscription[]): string {
 	const tableRows = subscriptions
 		.map(
 			(sub) =>
@@ -81,14 +74,62 @@ function generateReminderContent(
 		)
 		.join("\n");
 
+	return `| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+${tableRows}`;
+}
+
+function replaceTemplateVariables(
+	template: string,
+	variables: Record<string, string>,
+): string {
+	let result = template;
+	for (const [key, value] of Object.entries(variables)) {
+		result = result.replace(new RegExp(`{{${key}}}`, "g"), value);
+	}
+	return result;
+}
+
+export function generateServerChanTitle(
+	subscriptions: Subscription[],
+	templateTitle?: string,
+): string {
+	if (templateTitle) {
+		return replaceTemplateVariables(templateTitle, {
+			count: String(subscriptions.length),
+		});
+	}
+	return `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
+}
+
+function generateReminderContent(
+	subscriptions: Subscription[],
+	siteUrl?: string,
+	templateBody?: string,
+): string {
+	const sendTime = new Date().toLocaleString("zh-CN", {
+		timeZone: "Asia/Shanghai",
+	});
+
+	const subscriptionsTable = generateSubscriptionsMarkdown(subscriptions);
+
+	// 如果有自定义模板，使用自定义模板
+	if (templateBody) {
+		return replaceTemplateVariables(templateBody, {
+			subscriptions: subscriptionsTable,
+			count: String(subscriptions.length),
+			time: sendTime,
+			site_url: siteUrl || "",
+		});
+	}
+
+	// 默认模板
 	return `
 ## ⏰ 订阅到期提醒
 
 您有以下订阅即将到期，请及时处理：
 
-| 服务名称 | 类型 | 到期日期 |
-| :--- | :--- | :--- |
-${tableRows}
+${subscriptionsTable}
 
 ---
 
@@ -155,6 +196,8 @@ interface UserServerChanConfig {
 	notify_hours?: string;
 	last_sent_at?: string;
 	enabled: number;
+	template_title?: string;
+	template_body?: string;
 }
 
 export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
@@ -170,7 +213,8 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
 		});
 
 		const { results: configs } = await env.DB.prepare(`
-      SELECT s.user_id, u.site_url, s.api_key, s.notify_hours, s.last_sent_at, s.enabled
+      SELECT s.user_id, u.site_url, s.api_key, s.notify_hours, s.last_sent_at, s.enabled,
+             s.template_title, s.template_body
       FROM serverchan_config s
       JOIN users u ON s.user_id = u.id
       WHERE s.api_key IS NOT NULL AND s.api_key != ''
@@ -224,12 +268,20 @@ export async function checkAndSendServerChanReminders(env: Env): Promise<void> {
 			});
 
 			if (subscriptions.length > 0) {
-				const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
-				const content = generateReminderContent(subscriptions, config.site_url);
+				const title = generateServerChanTitle(
+					subscriptions,
+					config.template_title || undefined,
+				);
+				const content = generateReminderContent(
+					subscriptions,
+					config.site_url,
+					config.template_body || undefined,
+				);
 
 				logger.info("[ServerChan] Sending reminder", {
 					userId: config.user_id,
 					count: subscriptions.length,
+					hasCustomTemplate: !!(config.template_title || config.template_body),
 				});
 
 				const result = await sendServerChanMessage(

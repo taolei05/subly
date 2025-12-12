@@ -11,10 +11,13 @@ const TYPE_LABELS: Record<string, string> = {
 	other: "其他",
 };
 
-export async function getNotifyStatus(
+/**
+ * 验证管理员权限
+ */
+async function verifyAdmin(
 	request: Request,
 	env: Env,
-): Promise<Response> {
+): Promise<{ userId: number } | Response> {
 	const authHeader = request.headers.get("Authorization");
 	if (!authHeader?.startsWith("Bearer ")) {
 		return errorResponse("未授权", 401);
@@ -23,6 +26,27 @@ export async function getNotifyStatus(
 	const token = authHeader.slice(7);
 	const payload = await verifyToken(token);
 	if (!payload) return errorResponse("无效的 Token", 401);
+
+	// 检查是否为管理员
+	const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?")
+		.bind(payload.userId)
+		.first<{ role: string }>();
+
+	if (!user || user.role !== "admin") {
+		return errorResponse("仅管理员可访问调试接口", 403);
+	}
+
+	return { userId: payload.userId };
+}
+
+export async function getNotifyStatus(
+	request: Request,
+	env: Env,
+): Promise<Response> {
+	const authResult = await verifyAdmin(request, env);
+	if (authResult instanceof Response) return authResult;
+
+	const payload = authResult;
 
 	const now = new Date();
 	const utcHour = now.getUTCHours();
@@ -153,14 +177,10 @@ export async function forceNotify(
 	request: Request,
 	env: Env,
 ): Promise<Response> {
-	const authHeader = request.headers.get("Authorization");
-	if (!authHeader?.startsWith("Bearer ")) {
-		return errorResponse("未授权", 401);
-	}
+	const authResult = await verifyAdmin(request, env);
+	if (authResult instanceof Response) return authResult;
 
-	const token = authHeader.slice(7);
-	const payload = await verifyToken(token);
-	if (!payload) return errorResponse("无效的 Token", 401);
+	const payload = authResult;
 
 	const body = (await request.json()) as {
 		type?: "email" | "serverchan" | "all";
@@ -268,14 +288,10 @@ export async function resetLastSent(
 	request: Request,
 	env: Env,
 ): Promise<Response> {
-	const authHeader = request.headers.get("Authorization");
-	if (!authHeader?.startsWith("Bearer ")) {
-		return errorResponse("未授权", 401);
-	}
+	const authResult = await verifyAdmin(request, env);
+	if (authResult instanceof Response) return authResult;
 
-	const token = authHeader.slice(7);
-	const payload = await verifyToken(token);
-	if (!payload) return errorResponse("无效的 Token", 401);
+	const payload = authResult;
 
 	const body = (await request.json()) as {
 		type?: "email" | "serverchan" | "all";

@@ -61,14 +61,7 @@ export async function sendEmail(
 
 // ==================== 邮件模板 ====================
 
-export function generateReminderEmail(
-	subscriptions: Subscription[],
-	siteUrl?: string,
-): string {
-	const sendTime = new Date().toLocaleString("zh-CN", {
-		timeZone: "Asia/Shanghai",
-	});
-
+function generateSubscriptionsTable(subscriptions: Subscription[]): string {
 	const items = subscriptions
 		.map(
 			(sub) => `
@@ -81,6 +74,80 @@ export function generateReminderEmail(
 		)
 		.join("");
 
+	return `<table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+      <thead>
+        <tr style="background: #f8f8f8;">
+          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">服务名称</th>
+          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">类型</th>
+          <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">到期日期</th>
+        </tr>
+      </thead>
+      <tbody>${items}</tbody>
+    </table>`;
+}
+
+function replaceTemplateVariables(
+	template: string,
+	variables: Record<string, string>,
+): string {
+	let result = template;
+	for (const [key, value] of Object.entries(variables)) {
+		result = result.replace(new RegExp(`{{${key}}}`, "g"), value);
+	}
+	return result;
+}
+
+export function generateEmailSubject(
+	subscriptions: Subscription[],
+	templateSubject?: string,
+): string {
+	if (templateSubject) {
+		return replaceTemplateVariables(templateSubject, {
+			count: String(subscriptions.length),
+		});
+	}
+	return `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
+}
+
+export function generateReminderEmail(
+	subscriptions: Subscription[],
+	siteUrl?: string,
+	templateBody?: string,
+): string {
+	const sendTime = new Date().toLocaleString("zh-CN", {
+		timeZone: "Asia/Shanghai",
+	});
+
+	const subscriptionsTable = generateSubscriptionsTable(subscriptions);
+
+	// 如果有自定义模板，使用自定义模板
+	if (templateBody) {
+		const variables = {
+			subscriptions: subscriptionsTable,
+			count: String(subscriptions.length),
+			time: sendTime,
+			site_url: siteUrl || "",
+		};
+		const customContent = replaceTemplateVariables(templateBody, variables);
+
+		return `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>订阅到期提醒</title></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #18a058; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px;">Subly 订阅提醒</h1>
+      </div>
+      <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
+        ${customContent}
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的邮件，请勿直接回复。</p>
+      </div>
+    </body>
+    </html>
+  `;
+	}
+
+	// 默认模板
 	const viewDetailsButton = siteUrl
 		? `<div style="margin-top: 20px; text-align: center;">
         <a href="${siteUrl}" style="display: inline-block; background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 14px;">查看详情</a>
@@ -97,16 +164,7 @@ export function generateReminderEmail(
       </div>
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
         <p>您有以下订阅即将到期，请及时处理：</p>
-        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
-          <thead>
-            <tr style="background: #f8f8f8;">
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">服务名称</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">类型</th>
-              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #eee;">到期日期</th>
-            </tr>
-          </thead>
-          <tbody>${items}</tbody>
-        </table>
+        ${subscriptionsTable}
         <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 16px;">
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">发送时间</td>
@@ -179,6 +237,8 @@ interface UserResendConfig {
 	notify_hours?: string;
 	last_sent_at?: string;
 	enabled: number;
+	template_subject?: string;
+	template_body?: string;
 }
 
 export async function checkAndSendEmailReminders(env: Env): Promise<void> {
@@ -196,7 +256,8 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 		// 查询启用了 Resend 且有 API Key 的用户
 		const { results: configs } = await env.DB.prepare(`
       SELECT r.user_id, u.site_url, r.email, r.api_key, r.domain, 
-             r.notify_hours, r.last_sent_at, r.enabled
+             r.notify_hours, r.last_sent_at, r.enabled,
+             r.template_subject, r.template_body
       FROM resend_config r
       JOIN users u ON r.user_id = u.id
       WHERE r.api_key IS NOT NULL AND r.api_key != ''
@@ -250,16 +311,23 @@ export async function checkAndSendEmailReminders(env: Env): Promise<void> {
 			});
 
 			if (subscriptions.length > 0) {
-				const title = `[Subly] 您有 ${subscriptions.length} 个订阅即将到期`;
+				const title = generateEmailSubject(
+					subscriptions,
+					config.template_subject || undefined,
+				);
 				const html = generateReminderEmail(
 					subscriptions,
 					config.site_url || undefined,
+					config.template_body || undefined,
 				);
 
 				logger.info("[Email] Sending reminder", {
 					userId: config.user_id,
 					email: config.email,
 					count: subscriptions.length,
+					hasCustomTemplate: !!(
+						config.template_subject || config.template_body
+					),
 				});
 
 				const success = await sendEmail(config.api_key, config.domain || "", {

@@ -74,6 +74,35 @@
 
       <n-divider />
 
+      <n-form-item path="resend_template_subject">
+        <template #label>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            自定义邮件标题（可选）
+            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showTemplateHelp" />
+          </div>
+        </template>
+        <n-input
+          v-model:value="formData.resend_template_subject"
+          placeholder="留空使用默认标题，支持变量：{{count}}"
+          :disabled="disabled"
+        />
+      </n-form-item>
+
+      <n-form-item path="resend_template_body">
+        <template #label>
+          自定义邮件内容（可选，支持 HTML）
+        </template>
+        <n-input
+          v-model:value="formData.resend_template_body"
+          type="textarea"
+          placeholder="留空使用默认模板，支持 HTML 和变量：{{subscriptions}}、{{count}}、{{time}}、{{site_url}}"
+          :autosize="{ minRows: 3, maxRows: 6 }"
+          :disabled="disabled"
+        />
+      </n-form-item>
+
+      <n-divider />
+
       <n-form-item path="site_url">
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
@@ -199,6 +228,49 @@ function showSiteUrlHelp() {
           'p',
           { style: 'color: #666;' },
           '提示：此字段为只读，系统会自动更新为您当前访问的站点地址。',
+        ),
+      ]);
+    },
+    positiveText: '知道了',
+  });
+}
+
+function showTemplateHelp() {
+  dialog.info({
+    title: '自定义邮件模板',
+    content: () => {
+      return h('div', [
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '支持 HTML 格式',
+        ),
+        h(
+          'p',
+          { style: 'margin-bottom: 12px; color: #666;' },
+          '邮件内容支持 HTML 标签，可以自定义样式和布局。',
+        ),
+        h(
+          'p',
+          { style: 'font-weight: 600; margin-bottom: 8px;' },
+          '可用变量：',
+        ),
+        h('p', '• {{count}} - 即将到期的订阅数量'),
+        h('p', '• {{subscriptions}} - 订阅列表（HTML表格格式）'),
+        h('p', '• {{time}} - 发送时间'),
+        h('p', '• {{site_url}} - 站点链接'),
+        h(
+          'p',
+          { style: 'margin-top: 12px; font-weight: 600; margin-bottom: 8px;' },
+          '内容示例：',
+        ),
+        h(
+          'pre',
+          {
+            style:
+              'background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto;',
+          },
+          '<p>您好，您有 <strong>{{count}}</strong> 个订阅即将到期：</p>\n{{subscriptions}}\n<p><a href="{{site_url}}">查看详情</a></p>',
         ),
       ]);
     },

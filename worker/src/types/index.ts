@@ -62,11 +62,15 @@ export interface UserWithConfig {
 	resend_enabled?: number;
 	resend_notify_hours?: string;
 	resend_last_sent_at?: string;
+	resend_template_subject?: string;
+	resend_template_body?: string;
 	// Server酱配置
 	serverchan_api_key?: string;
 	serverchan_enabled?: number;
 	serverchan_notify_hours?: string;
 	serverchan_last_sent_at?: string;
+	serverchan_template_title?: string;
+	serverchan_template_body?: string;
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
 	exchangerate_enabled?: number;
@@ -132,10 +136,14 @@ export interface UpdateSettingsRequest {
 	resend_domain?: string;
 	resend_enabled?: boolean;
 	resend_notify_hours?: string;
+	resend_template_subject?: string;
+	resend_template_body?: string;
 	// Server酱配置
 	serverchan_api_key?: string;
 	serverchan_enabled?: boolean;
 	serverchan_notify_hours?: string;
+	serverchan_template_title?: string;
+	serverchan_template_body?: string;
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
 	exchangerate_enabled?: boolean;

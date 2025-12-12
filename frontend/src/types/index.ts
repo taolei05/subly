@@ -76,8 +76,12 @@ export interface User {
   exchangerate_api_key?: string;
   resend_domain?: string;
   resend_notify_hours?: string;
+  resend_template_subject?: string;
+  resend_template_body?: string;
   serverchan_api_key?: string;
   serverchan_notify_hours?: string;
+  serverchan_template_title?: string;
+  serverchan_template_body?: string;
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
@@ -90,8 +94,12 @@ export interface UserSettings {
   resend_domain: string;
   email?: string;
   resend_notify_hours?: number[];
+  resend_template_subject?: string;
+  resend_template_body?: string;
   serverchan_api_key: string;
   serverchan_notify_hours?: number[];
+  serverchan_template_title?: string;
+  serverchan_template_body?: string;
   site_url?: string;
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
