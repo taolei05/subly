@@ -37,21 +37,6 @@
       </n-form-item>
 
       <n-form-item>
-        <n-button
-          size="small"
-          secondary
-          type="primary"
-          :loading="testingServerChan"
-          :disabled="disabled || !formData.serverchan_api_key"
-          @click="handleTestServerChan"
-        >
-          发送测试消息
-        </n-button>
-      </n-form-item>
-
-      <n-divider />
-
-      <n-form-item>
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             自定义通知模板
@@ -68,6 +53,19 @@
         <n-text v-if="formData.serverchan_template_title || formData.serverchan_template_body" depth="3" style="margin-left: 12px; font-size: 12px;">
           已配置自定义模板
         </n-text>
+      </n-form-item>
+
+      <n-form-item>
+        <n-button
+          size="small"
+          secondary
+          type="primary"
+          :loading="testingServerChan"
+          :disabled="disabled || !formData.serverchan_api_key"
+          @click="handleTestServerChan"
+        >
+          发送测试消息
+        </n-button>
       </n-form-item>
     </div>
   </n-collapse-item>

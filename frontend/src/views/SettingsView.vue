@@ -39,7 +39,9 @@
           
           <n-collapse accordion>
             <ResendSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <n-divider style="margin: 0;" />
             <ExchangeRateSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <n-divider style="margin: 0;" />
             <ServerChanSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
           </n-collapse>
 
@@ -82,6 +84,27 @@
 
       <!-- 安全设置 -->
       <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
+        <n-form-item label="本站链接" label-placement="top">
+          <template #label>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              本站链接
+              <n-tooltip trigger="hover">
+                <template #trigger>
+                  <n-icon size="16" style="cursor: pointer; color: var(--primary-color);">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                  </n-icon>
+                </template>
+                此链接会自动获取当前站点地址，用于在通知中添加"查看详情"按钮。
+              </n-tooltip>
+            </div>
+          </template>
+          <n-input
+            :value="formData.site_url"
+            disabled
+            placeholder="自动获取当前站点地址"
+          />
+        </n-form-item>
+
         <n-form-item label="允许用户注册" label-placement="left">
           <n-switch
             v-model:value="registrationEnabled"
@@ -251,14 +274,17 @@ onMounted(async () => {
     formData.resend_notify_hours = parseNotifyHours(
       authStore.user.resend_notify_hours,
     );
-    formData.resend_template_subject = authStore.user.resend_template_subject || '';
+    formData.resend_template_subject =
+      authStore.user.resend_template_subject || '';
     formData.resend_template_body = authStore.user.resend_template_body || '';
     formData.serverchan_api_key = authStore.user.serverchan_api_key || '';
     formData.serverchan_notify_hours = parseNotifyHours(
       authStore.user.serverchan_notify_hours,
     );
-    formData.serverchan_template_title = authStore.user.serverchan_template_title || '';
-    formData.serverchan_template_body = authStore.user.serverchan_template_body || '';
+    formData.serverchan_template_title =
+      authStore.user.serverchan_template_title || '';
+    formData.serverchan_template_body =
+      authStore.user.serverchan_template_body || '';
     formData.site_url = authStore.user.site_url || '';
     // SQLite 返回数字 0/1，需要转换为布尔值
     formData.resend_enabled =

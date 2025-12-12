@@ -60,21 +60,6 @@
       </n-form-item>
 
       <n-form-item>
-        <n-button
-          size="small"
-          secondary
-          type="primary"
-          :loading="testingEmail"
-          :disabled="disabled || !formData.resend_api_key"
-          @click="handleTestEmail"
-        >
-          发送测试邮件
-        </n-button>
-      </n-form-item>
-
-      <n-divider />
-
-      <n-form-item>
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
             自定义邮件模板
@@ -93,20 +78,17 @@
         </n-text>
       </n-form-item>
 
-      <n-divider />
-
-      <n-form-item path="site_url">
-        <template #label>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            本站链接
-            <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showSiteUrlHelp" />
-          </div>
-        </template>
-        <n-input
-          :value="formData.site_url"
-          disabled
-          placeholder="自动获取当前站点地址"
-        />
+      <n-form-item>
+        <n-button
+          size="small"
+          secondary
+          type="primary"
+          :loading="testingEmail"
+          :disabled="disabled || !formData.resend_api_key"
+          @click="handleTestEmail"
+        >
+          发送测试邮件
+        </n-button>
       </n-form-item>
     </div>
   </n-collapse-item>
@@ -199,32 +181,6 @@ async function handleTestEmail() {
   } finally {
     testingEmail.value = false;
   }
-}
-
-function showSiteUrlHelp() {
-  dialog.info({
-    title: '本站链接',
-    content: () => {
-      return h('div', [
-        h(
-          'p',
-          { style: 'margin-bottom: 12px;' },
-          '此链接会自动获取您当前访问的站点地址，用于在邮件提醒中添加"查看详情"按钮。',
-        ),
-        h(
-          'p',
-          { style: 'margin-bottom: 12px;' },
-          '点击邮件中的"查看详情"按钮后，将跳转到此地址查看订阅详情。',
-        ),
-        h(
-          'p',
-          { style: 'color: #666;' },
-          '提示：此字段为只读，系统会自动更新为您当前访问的站点地址。',
-        ),
-      ]);
-    },
-    positiveText: '知道了',
-  });
 }
 
 function showTemplateHelp() {
