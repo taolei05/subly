@@ -278,14 +278,35 @@ function updatePreview() {
   previewHtml.value = generateMarkdownPreview(tempBody.value);
 }
 
+function showPreviewDialog() {
+  updatePreview();
+  dialog.info({
+    title: '消息预览',
+    style: { width: '90vw', maxWidth: '500px' },
+    content: () =>
+      h('div', {
+        style:
+          'border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; max-height: 60vh; overflow-y: auto; background: white;',
+        innerHTML: previewHtml.value,
+      }),
+    positiveText: '关闭',
+  });
+}
+
+function isMobile(): boolean {
+  return window.innerWidth < 768;
+}
+
 function openTemplateDialog() {
   tempTitle.value = props.formData.serverchan_template_title || '';
   tempBody.value = props.formData.serverchan_template_body || '';
   updatePreview();
 
+  const mobile = isMobile();
+
   dialog.create({
     title: '自定义通知模板',
-    style: { width: '950px' },
+    style: { width: mobile ? '95vw' : '950px', maxWidth: '950px' },
     content: () => {
       return h('div', { style: 'padding: 8px 0;' }, [
         h('div', { style: 'margin-bottom: 12px;' }, [
@@ -298,47 +319,78 @@ function openTemplateDialog() {
             value: tempTitle.value,
             placeholder: '留空使用默认标题，支持变量：{{count}}',
             style:
-              'width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px;',
+              'width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; box-sizing: border-box;',
             onInput: (e: Event) => {
               tempTitle.value = (e.target as HTMLInputElement).value;
             },
           }),
         ]),
-        h('div', { style: 'display: flex; gap: 16px;' }, [
-          h('div', { style: 'flex: 1; min-width: 0;' }, [
-            h(
-              'label',
-              {
-                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
-              },
-              '消息内容（支持 Markdown）',
-            ),
-            h('textarea', {
-              value: tempBody.value,
-              placeholder: '留空使用默认模板，支持 Markdown 和变量',
-              style:
-                'width: 100%; height: 280px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; font-family: monospace; resize: none;',
-              onInput: (e: Event) => {
-                tempBody.value = (e.target as HTMLTextAreaElement).value;
-                updatePreview();
-              },
-            }),
-          ]),
-          h('div', { style: 'flex: 1; min-width: 0;' }, [
-            h(
-              'label',
-              {
-                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
-              },
-              '预览',
-            ),
-            h('div', {
-              style:
-                'border: 1px solid #e0e0e0; border-radius: 4px; height: 280px; overflow-y: auto; padding: 12px; background: white;',
-              innerHTML: previewHtml.value,
-            }),
-          ]),
-        ]),
+        mobile
+          ? h('div', [
+              h(
+                'label',
+                {
+                  style:
+                    'display: block; margin-bottom: 8px; font-weight: 500;',
+                },
+                '消息内容（支持 Markdown）',
+              ),
+              h('textarea', {
+                value: tempBody.value,
+                placeholder: '留空使用默认模板，支持 Markdown 和变量',
+                style:
+                  'width: 100%; height: 200px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; font-family: monospace; resize: none; box-sizing: border-box;',
+                onInput: (e: Event) => {
+                  tempBody.value = (e.target as HTMLTextAreaElement).value;
+                },
+              }),
+              h(
+                'button',
+                {
+                  style:
+                    'margin-top: 12px; padding: 8px 16px; background: #18a058; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;',
+                  onClick: showPreviewDialog,
+                },
+                '预览效果',
+              ),
+            ])
+          : h('div', { style: 'display: flex; gap: 16px;' }, [
+              h('div', { style: 'flex: 1; min-width: 0;' }, [
+                h(
+                  'label',
+                  {
+                    style:
+                      'display: block; margin-bottom: 8px; font-weight: 500;',
+                  },
+                  '消息内容（支持 Markdown）',
+                ),
+                h('textarea', {
+                  value: tempBody.value,
+                  placeholder: '留空使用默认模板，支持 Markdown 和变量',
+                  style:
+                    'width: 100%; height: 280px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; font-family: monospace; resize: none; box-sizing: border-box;',
+                  onInput: (e: Event) => {
+                    tempBody.value = (e.target as HTMLTextAreaElement).value;
+                    updatePreview();
+                  },
+                }),
+              ]),
+              h('div', { style: 'flex: 1; min-width: 0;' }, [
+                h(
+                  'label',
+                  {
+                    style:
+                      'display: block; margin-bottom: 8px; font-weight: 500;',
+                  },
+                  '预览',
+                ),
+                h('div', {
+                  style:
+                    'border: 1px solid #e0e0e0; border-radius: 4px; height: 280px; overflow-y: auto; padding: 12px; background: white;',
+                  innerHTML: previewHtml.value,
+                }),
+              ]),
+            ]),
         h(
           'div',
           {
@@ -354,8 +406,9 @@ function openTemplateDialog() {
             h(
               'div',
               {
-                style:
-                  'display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;',
+                style: mobile
+                  ? 'display: flex; flex-direction: column; gap: 4px;'
+                  : 'display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;',
               },
               [
                 h('span', [h('code', '{{count}}'), ' - 即将到期的订阅数量']),
