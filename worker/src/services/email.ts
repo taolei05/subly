@@ -140,7 +140,6 @@ export function generateReminderEmail(
       </div>
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
         ${customContent}
-        <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的邮件，请勿直接回复。</p>
       </div>
     </body>
     </html>
