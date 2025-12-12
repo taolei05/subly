@@ -130,7 +130,7 @@ async function showBackupList() {
 
   dialog.info({
     title: '历史备份',
-    style: { width: '600px' },
+    style: { width: '700px' },
     content: () => {
       return h('div', { style: 'max-height: 400px; overflow-y: auto;' }, [
         h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
@@ -139,6 +139,7 @@ async function showBackupList() {
               h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
               h('th', { style: 'padding: 8px; text-align: right;' }, 'JSON'),
               h('th', { style: 'padding: 8px; text-align: right;' }, 'CSV'),
+              h('th', { style: 'padding: 8px; text-align: center;' }, '预览'),
               h('th', { style: 'padding: 8px; text-align: center;' }, '下载'),
             ]),
           ]),
@@ -165,8 +166,18 @@ async function showBackupList() {
                         'color: #18a058; cursor: pointer; margin-right: 8px;',
                       onClick: () => handlePreview(backup.date, 'json'),
                     },
-                    '预览',
+                    'JSON',
                   ),
+                  h(
+                    'a',
+                    {
+                      style: 'color: #18a058; cursor: pointer;',
+                      onClick: () => handlePreview(backup.date, 'csv'),
+                    },
+                    'CSV',
+                  ),
+                ]),
+                h('td', { style: 'padding: 8px; text-align: center;' }, [
                   h(
                     'a',
                     {
