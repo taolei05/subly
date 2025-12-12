@@ -116,12 +116,13 @@ export interface UserSettings {
   backup_frequency?: BackupFrequency;
   backup_to_email?: boolean;
   backup_to_r2?: boolean;
+  backup_last_at?: string;
 }
 
 export interface BackupFile {
-  key: string;
   date: string;
-  size: number;
+  jsonSize: number;
+  csvSize: number;
 }
 
 export interface LoginCredentials {

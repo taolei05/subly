@@ -50,7 +50,7 @@
       </n-form-item>
 
       <n-text depth="3" style="font-size: 12px; display: block; margin-top: 8px;">
-        备份数据包含所有订阅信息，以 JSON 格式存储。邮箱备份需要先配置 Resend API Key。
+        备份数据包含所有订阅信息，同时保存 JSON 和 CSV 两种格式。邮箱备份需要先配置 Resend API Key。
       </n-text>
     </div>
   </n-collapse-item>
@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { useDialog, useMessage } from 'naive-ui';
-import { computed, h, ref, watch } from 'vue';
+import { computed, h, ref } from 'vue';
 import { downloadBackup, getBackupList, triggerBackup } from '../../api/backup';
 import type { BackupFile, UserSettings } from '../../types';
 
@@ -127,15 +127,16 @@ async function showBackupList() {
 
   dialog.info({
     title: '历史备份',
-    style: { width: '500px' },
+    style: { width: '600px' },
     content: () => {
       return h('div', { style: 'max-height: 400px; overflow-y: auto;' }, [
         h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
           h('thead', [
             h('tr', { style: 'background: #f5f5f5;' }, [
               h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
-              h('th', { style: 'padding: 8px; text-align: right;' }, '大小'),
-              h('th', { style: 'padding: 8px; text-align: center;' }, '操作'),
+              h('th', { style: 'padding: 8px; text-align: right;' }, 'JSON'),
+              h('th', { style: 'padding: 8px; text-align: right;' }, 'CSV'),
+              h('th', { style: 'padding: 8px; text-align: center;' }, '下载'),
             ]),
           ]),
           h(
@@ -146,16 +147,30 @@ async function showBackupList() {
                 h(
                   'td',
                   { style: 'padding: 8px; text-align: right;' },
-                  formatSize(backup.size),
+                  formatSize(backup.jsonSize),
+                ),
+                h(
+                  'td',
+                  { style: 'padding: 8px; text-align: right;' },
+                  formatSize(backup.csvSize),
                 ),
                 h('td', { style: 'padding: 8px; text-align: center;' }, [
                   h(
                     'a',
                     {
-                      style: 'color: #18a058; cursor: pointer;',
-                      onClick: () => handleDownload(backup.date),
+                      style:
+                        'color: #18a058; cursor: pointer; margin-right: 12px;',
+                      onClick: () => handleDownload(backup.date, 'json'),
                     },
-                    '下载',
+                    'JSON',
+                  ),
+                  h(
+                    'a',
+                    {
+                      style: 'color: #18a058; cursor: pointer;',
+                      onClick: () => handleDownload(backup.date, 'csv'),
+                    },
+                    'CSV',
                   ),
                 ]),
               ]),
@@ -174,19 +189,20 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-async function handleDownload(date: string) {
+async function handleDownload(date: string, format: 'json' | 'csv' = 'json') {
   try {
-    const content = await downloadBackup(date);
+    const content = await downloadBackup(date, format);
     if (!content) {
       message.error('下载失败');
       return;
     }
 
-    const blob = new Blob([content], { type: 'application/json' });
+    const mimeType = format === 'json' ? 'application/json' : 'text/csv';
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `subly-backup-${date}.json`;
+    a.download = `subly-backup-${date}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
   } catch {

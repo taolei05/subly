@@ -112,21 +112,28 @@ export async function downloadBackup(
 
 		const url = new URL(request.url);
 		const date = url.searchParams.get("date");
+		const format = (url.searchParams.get("format") || "json") as "json" | "csv";
 
 		if (!date) {
 			return errorResponse("缺少日期参数");
 		}
 
-		const content = await downloadR2Backup(env, payload.userId, date);
+		if (format !== "json" && format !== "csv") {
+			return errorResponse("格式参数无效，仅支持 json 或 csv");
+		}
+
+		const content = await downloadR2Backup(env, payload.userId, date, format);
 
 		if (!content) {
 			return errorResponse("备份文件不存在", 404);
 		}
 
+		const contentType = format === "json" ? "application/json" : "text/csv";
+
 		return new Response(content, {
 			headers: {
-				"Content-Type": "application/json",
-				"Content-Disposition": `attachment; filename="subly-backup-${date}.json"`,
+				"Content-Type": contentType,
+				"Content-Disposition": `attachment; filename="subly-backup-${date}.${format}"`,
 			},
 		});
 	} catch (error) {

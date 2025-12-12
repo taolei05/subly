@@ -29,10 +29,16 @@ export async function getBackupList(): Promise<ApiResponse<BackupFile[]>> {
   return response.json();
 }
 
-export async function downloadBackup(date: string): Promise<string | null> {
-  const response = await fetch(`${API_BASE}/backup/download?date=${date}`, {
-    headers: getAuthHeaders(),
-  });
+export async function downloadBackup(
+  date: string,
+  format: 'json' | 'csv' = 'json',
+): Promise<string | null> {
+  const response = await fetch(
+    `${API_BASE}/backup/download?date=${date}&format=${format}`,
+    {
+      headers: getAuthHeaders(),
+    },
+  );
 
   if (!response.ok) {
     return null;

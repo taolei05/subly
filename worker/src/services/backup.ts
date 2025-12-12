@@ -75,6 +75,61 @@ function generateBackupData(
 	};
 }
 
+// CSV 字段转义
+function escapeCsvField(
+	field: string | number | boolean | null | undefined,
+): string {
+	if (field === null || field === undefined) return "";
+	const str = String(field);
+	if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+		return `"${str.replace(/"/g, '""')}"`;
+	}
+	return str;
+}
+
+// 生成 CSV 格式备份
+function generateBackupCsv(subscriptions: Subscription[]): string {
+	const headers = [
+		"id",
+		"name",
+		"type",
+		"type_detail",
+		"price",
+		"currency",
+		"start_date",
+		"end_date",
+		"remind_days",
+		"renew_type",
+		"one_time",
+		"status",
+		"notes",
+		"created_at",
+		"updated_at",
+	];
+
+	const rows = subscriptions.map((sub) =>
+		[
+			sub.id,
+			escapeCsvField(sub.name),
+			sub.type,
+			escapeCsvField(sub.type_detail),
+			sub.price,
+			sub.currency,
+			sub.start_date,
+			sub.end_date,
+			sub.remind_days,
+			sub.renew_type,
+			sub.one_time ? 1 : 0,
+			sub.status,
+			escapeCsvField(sub.notes),
+			sub.created_at,
+			sub.updated_at,
+		].join(","),
+	);
+
+	return [headers.join(","), ...rows].join("\n");
+}
+
 function generateBackupEmailHtml(
 	username: string,
 	subscriptionCount: number,
@@ -90,15 +145,19 @@ function generateBackupEmailHtml(
       </div>
       <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
         <p>您好，${username}！</p>
-        <p>您的 Subly 订阅数据已成功备份，请查收附件中的 JSON 文件。</p>
+        <p>您的 Subly 订阅数据已成功备份，请查收附件中的备份文件（JSON 和 CSV 格式）。</p>
         <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 16px;">
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">备份时间</td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">${backupTime}</td>
           </tr>
           <tr>
-            <td style="padding: 12px; color: #999;">订阅数量</td>
-            <td style="padding: 12px;">${subscriptionCount} 个</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999;">订阅数量</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">${subscriptionCount} 个</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; color: #999;">附件格式</td>
+            <td style="padding: 12px;">JSON（完整数据）、CSV（表格数据）</td>
           </tr>
         </table>
         <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的备份邮件，请妥善保管备份文件。</p>
@@ -106,6 +165,17 @@ function generateBackupEmailHtml(
     </body>
     </html>
   `;
+}
+
+// 将字符串转为 base64（支持 UTF-8）
+function toBase64(str: string): string {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(str);
+	let binary = "";
+	for (let i = 0; i < data.length; i++) {
+		binary += String.fromCharCode(data[i]);
+	}
+	return btoa(binary);
 }
 
 async function sendBackupEmail(
@@ -124,6 +194,9 @@ async function sendBackupEmail(
 			timeZone: "Asia/Shanghai",
 		});
 
+		const dateStr = backupData.exported_at.split("T")[0];
+		const csvContent = generateBackupCsv(backupData.subscriptions);
+
 		const response = await fetch("https://api.resend.com/emails", {
 			method: "POST",
 			headers: {
@@ -141,12 +214,12 @@ async function sendBackupEmail(
 				),
 				attachments: [
 					{
-						filename: `subly-backup-${backupData.exported_at.split("T")[0]}.json`,
-						content: btoa(
-							unescape(
-								encodeURIComponent(JSON.stringify(backupData, null, 2)),
-							),
-						),
+						filename: `subly-backup-${dateStr}.json`,
+						content: toBase64(JSON.stringify(backupData, null, 2)),
+					},
+					{
+						filename: `subly-backup-${dateStr}.csv`,
+						content: toBase64(csvContent),
 					},
 				],
 			}),
@@ -175,13 +248,21 @@ async function saveBackupToR2(
 ): Promise<boolean> {
 	try {
 		const date = backupData.exported_at.split("T")[0];
-		const key = `backups/${userId}/${date}.json`;
+		const jsonKey = `backups/${userId}/${date}.json`;
+		const csvKey = `backups/${userId}/${date}.csv`;
 
-		await bucket.put(key, JSON.stringify(backupData, null, 2), {
+		// 保存 JSON 格式
+		await bucket.put(jsonKey, JSON.stringify(backupData, null, 2), {
 			httpMetadata: { contentType: "application/json" },
 		});
 
-		logger.info("[Backup] Saved to R2", { userId, key });
+		// 保存 CSV 格式
+		const csvContent = generateBackupCsv(backupData.subscriptions);
+		await bucket.put(csvKey, csvContent, {
+			httpMetadata: { contentType: "text/csv" },
+		});
+
+		logger.info("[Backup] Saved to R2", { userId, jsonKey, csvKey });
 		return true;
 	} catch (error) {
 		logger.error("[Backup] R2 save error", error);
@@ -384,7 +465,7 @@ export async function manualBackup(
 export async function listR2Backups(
 	env: Env,
 	userId: number,
-): Promise<{ key: string; date: string; size: number }[]> {
+): Promise<{ date: string; jsonSize: number; csvSize: number }[]> {
 	if (!env.BACKUP_BUCKET) {
 		return [];
 	}
@@ -393,11 +474,31 @@ export async function listR2Backups(
 		const prefix = `backups/${userId}/`;
 		const listed = await env.BACKUP_BUCKET.list({ prefix });
 
-		return listed.objects.map((obj) => ({
-			key: obj.key,
-			date: obj.key.replace(prefix, "").replace(".json", ""),
-			size: obj.size,
-		}));
+		// 按日期分组
+		const backupMap = new Map<string, { jsonSize: number; csvSize: number }>();
+
+		for (const obj of listed.objects) {
+			const filename = obj.key.replace(prefix, "");
+			const date = filename.replace(/\.(json|csv)$/, "");
+			const isJson = filename.endsWith(".json");
+
+			if (!backupMap.has(date)) {
+				backupMap.set(date, { jsonSize: 0, csvSize: 0 });
+			}
+
+			const entry = backupMap.get(date);
+			if (entry) {
+				if (isJson) {
+					entry.jsonSize = obj.size;
+				} else {
+					entry.csvSize = obj.size;
+				}
+			}
+		}
+
+		return Array.from(backupMap.entries())
+			.map(([date, sizes]) => ({ date, ...sizes }))
+			.sort((a, b) => b.date.localeCompare(a.date));
 	} catch (error) {
 		logger.error("[Backup] List R2 backups error", error);
 		return [];
@@ -410,13 +511,14 @@ export async function downloadR2Backup(
 	env: Env,
 	userId: number,
 	date: string,
+	format: "json" | "csv" = "json",
 ): Promise<string | null> {
 	if (!env.BACKUP_BUCKET) {
 		return null;
 	}
 
 	try {
-		const key = `backups/${userId}/${date}.json`;
+		const key = `backups/${userId}/${date}.${format}`;
 		const object = await env.BACKUP_BUCKET.get(key);
 
 		if (!object) {
