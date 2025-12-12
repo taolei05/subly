@@ -6,6 +6,7 @@ export interface Env {
 	ENVIRONMENT: string;
 	JWT_SECRET: string;
 	ASSETS?: Fetcher;
+	BACKUP_BUCKET?: R2Bucket;
 }
 
 // ==================== 用户相关 ====================
@@ -17,7 +18,15 @@ export interface User {
 	password: string;
 	role: UserRole;
 	site_url?: string;
+	// 备份配置
+	backup_enabled?: number;
+	backup_frequency?: BackupFrequency;
+	backup_to_email?: number;
+	backup_to_r2?: number;
+	backup_last_at?: string;
 }
+
+export type BackupFrequency = "daily" | "weekly" | "monthly";
 
 export type UserPublic = Omit<User, "password">;
 
@@ -74,6 +83,12 @@ export interface UserWithConfig {
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
 	exchangerate_enabled?: number;
+	// 备份配置
+	backup_enabled?: number;
+	backup_frequency?: BackupFrequency;
+	backup_to_email?: number;
+	backup_to_r2?: number;
+	backup_last_at?: string;
 }
 
 // ==================== 订阅相关 ====================
@@ -147,6 +162,11 @@ export interface UpdateSettingsRequest {
 	// ExchangeRate 配置
 	exchangerate_api_key?: string;
 	exchangerate_enabled?: boolean;
+	// 备份配置
+	backup_enabled?: boolean;
+	backup_frequency?: BackupFrequency;
+	backup_to_email?: boolean;
+	backup_to_r2?: boolean;
 	// 其他
 	site_url?: string;
 }

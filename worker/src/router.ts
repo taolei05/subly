@@ -3,8 +3,10 @@ import {
 	batchUpdateRemindDays,
 	createSubscription,
 	deleteSubscription,
+	downloadBackup,
 	exportSubscriptions,
 	forceNotify,
+	getBackupList,
 	getExchangeRate,
 	getMe,
 	getNotifyStatus,
@@ -17,6 +19,7 @@ import {
 	resetLastSent,
 	sendTestEmail,
 	sendTestServerChan,
+	triggerBackup,
 	updateProfile,
 	updateSettings,
 	updateSubscription,
@@ -96,6 +99,11 @@ const routes: Route[] = [
 
 	// 汇率路由
 	{ pattern: "/exchange-rate", method: "GET", handler: getExchangeRate },
+
+	// 备份路由
+	{ pattern: "/backup/trigger", method: "POST", handler: triggerBackup },
+	{ pattern: "/backup/list", method: "GET", handler: getBackupList },
+	{ pattern: "/backup/download", method: "GET", handler: downloadBackup },
 
 	// 调试路由
 	{

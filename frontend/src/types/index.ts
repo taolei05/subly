@@ -66,6 +66,7 @@ export interface SubscriptionStats {
 }
 
 export type UserRole = 'admin' | 'user' | 'demo';
+export type BackupFrequency = 'daily' | 'weekly' | 'monthly';
 
 export interface User {
   id: number;
@@ -86,6 +87,12 @@ export interface User {
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
   exchangerate_enabled?: boolean;
+  // 备份配置
+  backup_enabled?: boolean;
+  backup_frequency?: BackupFrequency;
+  backup_to_email?: boolean;
+  backup_to_r2?: boolean;
+  backup_last_at?: string;
 }
 
 export interface UserSettings {
@@ -104,6 +111,17 @@ export interface UserSettings {
   resend_enabled?: boolean;
   serverchan_enabled?: boolean;
   exchangerate_enabled?: boolean;
+  // 备份配置
+  backup_enabled?: boolean;
+  backup_frequency?: BackupFrequency;
+  backup_to_email?: boolean;
+  backup_to_r2?: boolean;
+}
+
+export interface BackupFile {
+  key: string;
+  date: string;
+  size: number;
 }
 
 export interface LoginCredentials {

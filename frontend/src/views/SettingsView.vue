@@ -41,6 +41,7 @@
             <ResendSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
             <ExchangeRateSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
             <ServerChanSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <BackupSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
           </n-collapse>
 
           <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
@@ -170,6 +171,7 @@ import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../components/common/Icon.vue';
+import BackupSettingsPanel from '../components/settings/BackupSettingsPanel.vue';
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
 import ResendSettingsPanel from '../components/settings/ResendSettingsPanel.vue';
 import ServerChanSettingsPanel from '../components/settings/ServerChanSettingsPanel.vue';
@@ -209,6 +211,11 @@ const formData = reactive<UserSettings>({
   resend_enabled: true,
   serverchan_enabled: true,
   exchangerate_enabled: true,
+  // 备份配置
+  backup_enabled: false,
+  backup_frequency: 'weekly',
+  backup_to_email: true,
+  backup_to_r2: false,
 });
 
 const rules: FormRules = {
@@ -297,6 +304,14 @@ onMounted(async () => {
       authStore.user.exchangerate_enabled === undefined
         ? true
         : Boolean(authStore.user.exchangerate_enabled);
+    // 备份配置
+    formData.backup_enabled = Boolean(authStore.user.backup_enabled);
+    formData.backup_frequency = authStore.user.backup_frequency || 'weekly';
+    formData.backup_to_email =
+      authStore.user.backup_to_email === undefined
+        ? true
+        : Boolean(authStore.user.backup_to_email);
+    formData.backup_to_r2 = Boolean(authStore.user.backup_to_r2);
   }
 
   // Auto-capture site URL from current browser origin and update if different

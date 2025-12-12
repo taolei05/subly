@@ -18,7 +18,13 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'demo')),
-    site_url TEXT
+    site_url TEXT,
+    -- 备份配置
+    backup_enabled INTEGER DEFAULT 0,
+    backup_frequency TEXT DEFAULT 'weekly' CHECK (backup_frequency IN ('daily', 'weekly', 'monthly')),
+    backup_to_email INTEGER DEFAULT 1,
+    backup_to_r2 INTEGER DEFAULT 0,
+    backup_last_at TEXT
 );
 
 -- Resend 邮件配置表

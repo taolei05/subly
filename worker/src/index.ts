@@ -1,5 +1,6 @@
 import { handleApiRoute } from "./router";
 import {
+	checkAndRunBackups,
 	checkAndSendEmailReminders,
 	checkAndSendServerChanReminders,
 } from "./services";
@@ -59,5 +60,6 @@ export default {
 	): Promise<void> {
 		await checkAndSendEmailReminders(env);
 		await checkAndSendServerChanReminders(env);
+		await checkAndRunBackups(env);
 	},
 };

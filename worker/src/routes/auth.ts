@@ -256,7 +256,7 @@ export async function updateSettings(
 		}
 
 		const settings = (await request.json()) as UpdateSettingsRequest;
-		const isAdmin = role === "admin";
+		const _isAdmin = role === "admin";
 
 		// 验证站点 URL
 		if (
@@ -274,10 +274,37 @@ export async function updateSettings(
 			.bind(payload.userId)
 			.first<UserWithConfig>();
 
-		// 更新用户表 site_url
+		// 更新用户表字段（site_url 和备份配置）
+		const userUpdates: string[] = [];
+		const userParams: (string | number)[] = [];
+
 		if (settings.site_url !== undefined) {
-			await env.DB.prepare("UPDATE users SET site_url = ? WHERE id = ?")
-				.bind(settings.site_url, payload.userId)
+			userUpdates.push("site_url = ?");
+			userParams.push(settings.site_url);
+		}
+		if (settings.backup_enabled !== undefined) {
+			userUpdates.push("backup_enabled = ?");
+			userParams.push(settings.backup_enabled ? 1 : 0);
+		}
+		if (settings.backup_frequency !== undefined) {
+			userUpdates.push("backup_frequency = ?");
+			userParams.push(settings.backup_frequency);
+		}
+		if (settings.backup_to_email !== undefined) {
+			userUpdates.push("backup_to_email = ?");
+			userParams.push(settings.backup_to_email ? 1 : 0);
+		}
+		if (settings.backup_to_r2 !== undefined) {
+			userUpdates.push("backup_to_r2 = ?");
+			userParams.push(settings.backup_to_r2 ? 1 : 0);
+		}
+
+		if (userUpdates.length > 0) {
+			userParams.push(payload.userId);
+			await env.DB.prepare(
+				`UPDATE users SET ${userUpdates.join(", ")} WHERE id = ?`,
+			)
+				.bind(...userParams)
 				.run();
 		}
 
