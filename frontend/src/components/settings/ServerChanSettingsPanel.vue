@@ -346,8 +346,27 @@ function openTemplateDialog() {
               'background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 12px;',
           },
           [
-            h('span', { style: 'font-weight: 600;' }, '可用变量：'),
-            h('span', ' {{count}} {{subscriptions}} {{time}} {{site_url}}'),
+            h(
+              'p',
+              { style: 'font-weight: 600; margin: 0 0 6px 0;' },
+              '可用变量：',
+            ),
+            h(
+              'div',
+              {
+                style:
+                  'display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;',
+              },
+              [
+                h('span', [h('code', '{{count}}'), ' - 即将到期的订阅数量']),
+                h('span', [h('code', '{{time}}'), ' - 发送时间']),
+                h('span', [
+                  h('code', '{{subscriptions}}'),
+                  ' - 订阅列表（Markdown表格）',
+                ]),
+                h('span', [h('code', '{{site_url}}'), ' - 站点链接']),
+              ],
+            ),
           ],
         ),
       ]);
