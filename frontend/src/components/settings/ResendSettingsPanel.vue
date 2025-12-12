@@ -3,13 +3,14 @@
     <div style="padding: 16px 0;">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <span>启用邮件提醒</span>
-        <n-switch v-model:value="formData.resend_enabled" />
+        <n-switch v-model:value="formData.resend_enabled" :disabled="disabled" />
       </div>
 
       <n-form-item path="email" label="通知邮箱">
         <n-input
           v-model:value="formData.email"
           placeholder="用于接收订阅提醒"
+          :disabled="disabled"
           :input-props="{ autocomplete: 'email' }"
         />
       </n-form-item>
@@ -26,6 +27,7 @@
           type="password"
           placeholder="用于发送邮件通知"
           show-password-on="click"
+          :disabled="disabled"
           :input-props="{ autocomplete: 'new-password' }"
         />
       </n-form-item>
@@ -40,6 +42,7 @@
         <n-input
           v-model:value="formData.resend_domain"
           placeholder="留空使用默认域名resend.dev"
+          :disabled="disabled"
         />
       </n-form-item>
 
@@ -52,6 +55,7 @@
           :options="hourOptions"
           multiple
           placeholder="选择发送时间点"
+          :disabled="disabled"
         />
       </n-form-item>
 
@@ -61,7 +65,7 @@
           secondary
           type="primary"
           :loading="testingEmail"
-          :disabled="!formData.resend_api_key"
+          :disabled="disabled || !formData.resend_api_key"
           @click="handleTestEmail"
         >
           发送测试邮件
@@ -95,7 +99,7 @@ import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
 import Icon from '../common/Icon.vue';
 
-const props = defineProps<{ formData: UserSettings }>();
+const props = defineProps<{ formData: UserSettings; disabled?: boolean }>();
 
 const dialog = useDialog();
 const message = useMessage();

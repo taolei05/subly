@@ -3,7 +3,7 @@
     <div style="padding: 16px 0;">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
         <span>启用汇率转换</span>
-        <n-switch v-model:value="formData.exchangerate_enabled" />
+        <n-switch v-model:value="formData.exchangerate_enabled" :disabled="disabled" />
       </div>
 
       <n-alert v-if="!formData.exchangerate_enabled" type="info" :show-icon="true" style="margin-bottom: 16px;">
@@ -22,6 +22,7 @@
           type="password"
           placeholder="用于货币汇率转换"
           show-password-on="click"
+          :disabled="disabled"
           :input-props="{ autocomplete: 'new-password' }"
         />
       </n-form-item>
@@ -33,7 +34,7 @@
             secondary
             type="primary"
             :loading="testingExchangeRate"
-            :disabled="!formData.exchangerate_api_key"
+            :disabled="disabled || !formData.exchangerate_api_key"
             @click="handleTestExchangeRate"
           >
             测试汇率 API
@@ -58,7 +59,7 @@ import { subscriptionApi } from '../../api/subscription';
 import type { UserSettings } from '../../types';
 import Icon from '../common/Icon.vue';
 
-const props = defineProps<{ formData: UserSettings }>();
+const props = defineProps<{ formData: UserSettings; disabled?: boolean }>();
 const dialog = useDialog();
 const message = useMessage();
 const testingExchangeRate = ref(false);

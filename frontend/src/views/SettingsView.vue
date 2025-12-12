@@ -31,27 +31,34 @@
         您正在使用演示账户，无法修改任何设置。
       </n-alert>
 
-      <!-- 系统配置（仅管理员可见） -->
-      <n-card v-if="authStore.isAdmin" title="系统配置" :bordered="false">
-        <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
+      <!-- 系统配置 -->
+      <n-card title="系统配置" :bordered="false">
+        <n-form :model="formData" :rules="rules" label-placement="top">
           <!-- 辅助功能：隐藏的用户名输入框，消除浏览器关于密码表单缺少用户名的警告 -->
           <input type="text" autocomplete="username" style="position: absolute; opacity: 0; z-index: -1; width: 0; height: 0;" />
           
           <n-collapse accordion>
-            <ResendSettingsPanel :formData="formData" />
-            <ExchangeRateSettingsPanel :formData="formData" />
-            <ServerChanSettingsPanel :formData="formData" />
+            <ResendSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <ExchangeRateSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <ServerChanSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
           </n-collapse>
 
           <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
-            <n-button type="primary" :loading="saving" @click="handleSave" size="large" style="width: 100%;">
+            <n-button 
+              type="primary" 
+              :loading="saving" 
+              :disabled="authStore.isDemo"
+              @click="handleSave" 
+              size="large" 
+              style="width: 100%;"
+            >
               保存所有设置
             </n-button>
           </div>
         </n-form>
       </n-card>
       
-      <n-card title="账户管理" :bordered="false" :style="authStore.isAdmin ? 'margin-top: 24px;' : ''">
+      <n-card title="账户管理" :bordered="false" style="margin-top: 24px;">
         <n-descriptions label-placement="left" :column="1">
           <n-descriptions-item label="用户名">
             {{ authStore.user?.username || '-' }}
@@ -67,17 +74,21 @@
         </template>
       </n-card>
 
-      <!-- 安全设置（仅管理员可见） -->
-      <n-card v-if="authStore.isAdmin" title="安全设置" :bordered="false" style="margin-top: 24px;">
+      <!-- 安全设置 -->
+      <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
         <n-form-item label="允许用户注册" label-placement="left">
           <n-switch
             v-model:value="registrationEnabled"
             :loading="updatingSystemConfig"
+            :disabled="!authStore.isAdmin"
             @update:value="handleRegistrationToggle"
           />
         </n-form-item>
         <n-text depth="3" style="font-size: 12px;">
           关闭后，新用户将无法注册账号。适用于单用户场景，首次注册后可关闭此选项。
+          <template v-if="!authStore.isAdmin">
+            <br />（仅管理员可修改此设置）
+          </template>
         </n-text>
       </n-card>
 
