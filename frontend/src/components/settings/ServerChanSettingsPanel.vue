@@ -81,11 +81,14 @@
 </template>
 
 <script setup lang="ts">
+import MarkdownIt from 'markdown-it';
 import { useDialog, useMessage } from 'naive-ui';
 import { h, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import type { UserSettings } from '../../types';
 import Icon from '../common/Icon.vue';
+
+const md = new MarkdownIt();
 
 const props = defineProps<{ formData: UserSettings; disabled?: boolean }>();
 const dialog = useDialog();
@@ -183,40 +186,7 @@ function showTemplateHelp() {
   });
 }
 
-function showDefaultTemplate() {
-  dialog.info({
-    title: '默认通知模板',
-    style: { width: '600px' },
-    content: () => {
-      return h('div', [
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'p',
-            { style: 'font-weight: 600; margin-bottom: 8px;' },
-            '默认标题：',
-          ),
-          h(
-            'code',
-            {
-              style:
-                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px;',
-            },
-            '[Subly] 您有 {{count}} 个订阅即将到期',
-          ),
-        ]),
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'p',
-            { style: 'font-weight: 600; margin-bottom: 8px;' },
-            '默认内容（Markdown）：',
-          ),
-          h(
-            'pre',
-            {
-              style:
-                'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px; overflow-x: auto; white-space: pre-wrap;',
-            },
-            `## ⏰ 订阅到期提醒
+const defaultMarkdownTemplate = `## ⏰ 订阅到期提醒
 
 您有以下订阅即将到期，请及时处理：
 
@@ -229,12 +199,55 @@ function showDefaultTemplate() {
 **发送时间**：2024-12-15 08:00:00
 **到期数量**：1 个
 
-[👉 查看详情]({{site_url}})
+[👉 查看详情](https://example.com)
 
 ---
 
-*这是一条自动发送的消息，请勿直接回复。*`,
+*这是一条自动发送的消息，请勿直接回复。*`;
+
+function showDefaultTemplate() {
+  const renderedHtml = md.render(defaultMarkdownTemplate);
+
+  dialog.info({
+    title: '默认通知模板',
+    style: { width: '900px' },
+    content: () => {
+      return h('div', [
+        h('div', { style: 'margin-bottom: 12px;' }, [
+          h('span', { style: 'font-weight: 600;' }, '默认标题：'),
+          h(
+            'code',
+            {
+              style:
+                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px; margin-left: 8px;',
+            },
+            '[Subly] 您有 {{count}} 个订阅即将到期',
           ),
+        ]),
+        h('div', { style: 'display: flex; gap: 16px;' }, [
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h(
+              'p',
+              { style: 'font-weight: 600; margin-bottom: 8px;' },
+              '源码 (Markdown)',
+            ),
+            h(
+              'pre',
+              {
+                style:
+                  'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; margin: 0;',
+              },
+              defaultMarkdownTemplate,
+            ),
+          ]),
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '预览'),
+            h('div', {
+              style:
+                'border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; max-height: 400px; overflow-y: auto; background: white;',
+              innerHTML: renderedHtml,
+            }),
+          ]),
         ]),
       ]);
     },
@@ -245,17 +258,37 @@ function showDefaultTemplate() {
 // 临时存储模板编辑值
 const tempTitle = ref('');
 const tempBody = ref('');
+const previewHtml = ref('');
+
+function generateMarkdownPreview(body: string): string {
+  const sampleSubscriptions = `| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+| 示例服务 | 会员 | 2024-12-20 |`;
+
+  let markdown = body || defaultMarkdownTemplate;
+  markdown = markdown.replace(/\{\{subscriptions\}\}/g, sampleSubscriptions);
+  markdown = markdown.replace(/\{\{count\}\}/g, '1');
+  markdown = markdown.replace(/\{\{time\}\}/g, '2024-12-15 08:00:00');
+  markdown = markdown.replace(/\{\{site_url\}\}/g, 'https://example.com');
+
+  return md.render(markdown);
+}
+
+function updatePreview() {
+  previewHtml.value = generateMarkdownPreview(tempBody.value);
+}
 
 function openTemplateDialog() {
   tempTitle.value = props.formData.serverchan_template_title || '';
   tempBody.value = props.formData.serverchan_template_body || '';
+  updatePreview();
 
   dialog.create({
     title: '自定义通知模板',
-    style: { width: '600px' },
+    style: { width: '950px' },
     content: () => {
       return h('div', { style: 'padding: 8px 0;' }, [
-        h('div', { style: 'margin-bottom: 16px;' }, [
+        h('div', { style: 'margin-bottom: 12px;' }, [
           h(
             'label',
             { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
@@ -271,47 +304,50 @@ function openTemplateDialog() {
             },
           }),
         ]),
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'label',
-            { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
-            '消息内容（支持 Markdown）',
-          ),
-          h('textarea', {
-            value: tempBody.value,
-            placeholder:
-              '留空使用默认模板，支持 Markdown 和变量：{{subscriptions}}、{{count}}、{{time}}、{{site_url}}',
-            style:
-              'width: 100%; min-height: 150px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; resize: vertical;',
-            onInput: (e: Event) => {
-              tempBody.value = (e.target as HTMLTextAreaElement).value;
-            },
-          }),
+        h('div', { style: 'display: flex; gap: 16px;' }, [
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h(
+              'label',
+              {
+                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
+              },
+              '消息内容（支持 Markdown）',
+            ),
+            h('textarea', {
+              value: tempBody.value,
+              placeholder: '留空使用默认模板，支持 Markdown 和变量',
+              style:
+                'width: 100%; height: 280px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; font-family: monospace; resize: none;',
+              onInput: (e: Event) => {
+                tempBody.value = (e.target as HTMLTextAreaElement).value;
+                updatePreview();
+              },
+            }),
+          ]),
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h(
+              'label',
+              {
+                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
+              },
+              '预览',
+            ),
+            h('div', {
+              style:
+                'border: 1px solid #e0e0e0; border-radius: 4px; height: 280px; overflow-y: auto; padding: 12px; background: white;',
+              innerHTML: previewHtml.value,
+            }),
+          ]),
         ]),
         h(
           'div',
           {
             style:
-              'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px;',
+              'background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 12px;',
           },
           [
-            h(
-              'p',
-              { style: 'font-weight: 600; margin-bottom: 8px;' },
-              '可用变量：',
-            ),
-            h(
-              'p',
-              { style: 'margin: 4px 0;' },
-              '• {{count}} - 即将到期的订阅数量',
-            ),
-            h(
-              'p',
-              { style: 'margin: 4px 0;' },
-              '• {{subscriptions}} - 订阅列表（Markdown表格）',
-            ),
-            h('p', { style: 'margin: 4px 0;' }, '• {{time}} - 发送时间'),
-            h('p', { style: 'margin: 4px 0;' }, '• {{site_url}} - 站点链接'),
+            h('span', { style: 'font-weight: 600;' }, '可用变量：'),
+            h('span', ' {{count}} {{subscriptions}} {{time}} {{site_url}}'),
           ],
         ),
       ]);

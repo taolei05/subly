@@ -222,61 +222,88 @@ function showTemplateHelp() {
   });
 }
 
+const defaultEmailHtml = `<p>您有以下订阅即将到期，请及时处理：</p>
+{{subscriptions}}
+<table style="width: 100%; margin-top: 16px;">
+  <tr>
+    <td style="color: #999;">发送时间</td>
+    <td>{{time}}</td>
+  </tr>
+  <tr>
+    <td style="color: #999;">到期数量</td>
+    <td>{{count}} 个</td>
+  </tr>
+</table>
+<div style="margin-top: 20px; text-align: center;">
+  <a href="{{site_url}}" style="background: #18a058; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">查看详情</a>
+</div>
+<p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的邮件，请勿直接回复。</p>`;
+
+const defaultEmailPreview = `
+<div style="background: #18a058; color: white; padding: 16px;">
+  <h3 style="margin: 0; font-size: 18px;">Subly 订阅提醒</h3>
+</div>
+<div style="background: #f5f5f5; padding: 16px;">
+  <p style="margin: 0 0 12px 0;">您有以下订阅即将到期，请及时处理：</p>
+  <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px;">
+    <thead>
+      <tr style="background: #f8f8f8;">
+        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">服务名称</th>
+        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">类型</th>
+        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">到期日期</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">示例服务</td><td style="padding: 8px; border-bottom: 1px solid #eee;">会员</td><td style="padding: 8px; border-bottom: 1px solid #eee;">2024-12-20</td></tr>
+    </tbody>
+  </table>
+  <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px; margin-top: 12px;">
+    <tr><td style="padding: 8px; color: #999; width: 80px;">发送时间</td><td style="padding: 8px;">2024-12-15 08:00:00</td></tr>
+    <tr><td style="padding: 8px; color: #999;">到期数量</td><td style="padding: 8px;">1 个</td></tr>
+  </table>
+  <div style="margin-top: 12px; text-align: center;">
+    <span style="display: inline-block; background: #18a058; color: white; padding: 8px 16px; border-radius: 4px; font-size: 12px;">查看详情</span>
+  </div>
+  <p style="margin-top: 12px; color: #666; font-size: 12px;">这是一封自动发送的邮件，请勿直接回复。</p>
+</div>`;
+
 function showDefaultTemplate() {
   dialog.info({
     title: '默认邮件模板',
-    style: { width: '650px' },
+    style: { width: '900px' },
     content: () => {
       return h('div', [
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'p',
-            { style: 'font-weight: 600; margin-bottom: 8px;' },
-            '默认标题：',
-          ),
+        h('div', { style: 'margin-bottom: 12px;' }, [
+          h('span', { style: 'font-weight: 600;' }, '默认标题：'),
           h(
             'code',
             {
               style:
-                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px;',
+                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px; margin-left: 8px;',
             },
             '[Subly] 您有 {{count}} 个订阅即将到期',
           ),
         ]),
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'p',
-            { style: 'font-weight: 600; margin-bottom: 8px;' },
-            '默认内容预览：',
-          ),
-          h('div', {
-            style:
-              'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;',
-            innerHTML: `
-              <div style="background: #18a058; color: white; padding: 16px;">
-                <h3 style="margin: 0; font-size: 18px;">Subly 订阅提醒</h3>
-              </div>
-              <div style="background: #f5f5f5; padding: 16px;">
-                <p style="margin: 0 0 12px 0;">您有以下订阅即将到期，请及时处理：</p>
-                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px;">
-                  <thead>
-                    <tr style="background: #f8f8f8;">
-                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">服务名称</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">类型</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">到期日期</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee;">示例服务</td><td style="padding: 8px; border-bottom: 1px solid #eee;">会员</td><td style="padding: 8px; border-bottom: 1px solid #eee;">2024-12-20</td></tr>
-                  </tbody>
-                </table>
-                <div style="margin-top: 12px; text-align: center;">
-                  <span style="display: inline-block; background: #18a058; color: white; padding: 8px 16px; border-radius: 4px; font-size: 12px;">查看详情</span>
-                </div>
-                <p style="margin-top: 12px; color: #666; font-size: 12px;">这是一封自动发送的邮件，请勿直接回复。</p>
-              </div>
-            `,
-          }),
+        h('div', { style: 'display: flex; gap: 16px;' }, [
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '源码'),
+            h(
+              'pre',
+              {
+                style:
+                  'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; margin: 0;',
+              },
+              defaultEmailHtml,
+            ),
+          ]),
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '预览'),
+            h('div', {
+              style:
+                'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; max-height: 400px; overflow-y: auto;',
+              innerHTML: defaultEmailPreview,
+            }),
+          ]),
         ]),
       ]);
     },
@@ -287,17 +314,42 @@ function showDefaultTemplate() {
 // 临时存储模板编辑值
 const tempSubject = ref('');
 const tempBody = ref('');
+const previewHtml = ref('');
+
+function generateEmailPreview(body: string): string {
+  const sampleSubscriptions = `<table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px;">
+    <thead><tr style="background: #f8f8f8;">
+      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">服务名称</th>
+      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">类型</th>
+      <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">到期日期</th>
+    </tr></thead>
+    <tbody><tr><td style="padding: 8px;">示例服务</td><td style="padding: 8px;">会员</td><td style="padding: 8px;">2024-12-20</td></tr></tbody>
+  </table>`;
+
+  let html = body || defaultEmailHtml;
+  html = html.replace(/\{\{subscriptions\}\}/g, sampleSubscriptions);
+  html = html.replace(/\{\{count\}\}/g, '1');
+  html = html.replace(/\{\{time\}\}/g, '2024-12-15 08:00:00');
+  html = html.replace(/\{\{site_url\}\}/g, 'https://example.com');
+
+  return `<div style="background: #18a058; color: white; padding: 12px;"><h3 style="margin: 0; font-size: 16px;">Subly 订阅提醒</h3></div><div style="background: #f5f5f5; padding: 12px;">${html}</div>`;
+}
+
+function updatePreview() {
+  previewHtml.value = generateEmailPreview(tempBody.value);
+}
 
 function openTemplateDialog() {
   tempSubject.value = props.formData.resend_template_subject || '';
   tempBody.value = props.formData.resend_template_body || '';
+  updatePreview();
 
   dialog.create({
     title: '自定义邮件模板',
-    style: { width: '600px' },
+    style: { width: '950px' },
     content: () => {
       return h('div', { style: 'padding: 8px 0;' }, [
-        h('div', { style: 'margin-bottom: 16px;' }, [
+        h('div', { style: 'margin-bottom: 12px;' }, [
           h(
             'label',
             { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
@@ -313,47 +365,50 @@ function openTemplateDialog() {
             },
           }),
         ]),
-        h('div', { style: 'margin-bottom: 16px;' }, [
-          h(
-            'label',
-            { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
-            '邮件内容（支持 HTML）',
-          ),
-          h('textarea', {
-            value: tempBody.value,
-            placeholder:
-              '留空使用默认模板，支持 HTML 和变量：{{subscriptions}}、{{count}}、{{time}}、{{site_url}}',
-            style:
-              'width: 100%; min-height: 150px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; resize: vertical;',
-            onInput: (e: Event) => {
-              tempBody.value = (e.target as HTMLTextAreaElement).value;
-            },
-          }),
+        h('div', { style: 'display: flex; gap: 16px;' }, [
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h(
+              'label',
+              {
+                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
+              },
+              '邮件内容（支持 HTML）',
+            ),
+            h('textarea', {
+              value: tempBody.value,
+              placeholder: '留空使用默认模板，支持 HTML 和变量',
+              style:
+                'width: 100%; height: 280px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 12px; font-family: monospace; resize: none;',
+              onInput: (e: Event) => {
+                tempBody.value = (e.target as HTMLTextAreaElement).value;
+                updatePreview();
+              },
+            }),
+          ]),
+          h('div', { style: 'flex: 1; min-width: 0;' }, [
+            h(
+              'label',
+              {
+                style: 'display: block; margin-bottom: 8px; font-weight: 500;',
+              },
+              '预览',
+            ),
+            h('div', {
+              style:
+                'border: 1px solid #e0e0e0; border-radius: 4px; height: 280px; overflow-y: auto;',
+              innerHTML: previewHtml.value,
+            }),
+          ]),
         ]),
         h(
           'div',
           {
             style:
-              'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px;',
+              'background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 12px;',
           },
           [
-            h(
-              'p',
-              { style: 'font-weight: 600; margin-bottom: 8px;' },
-              '可用变量：',
-            ),
-            h(
-              'p',
-              { style: 'margin: 4px 0;' },
-              '• {{count}} - 即将到期的订阅数量',
-            ),
-            h(
-              'p',
-              { style: 'margin: 4px 0;' },
-              '• {{subscriptions}} - 订阅列表（HTML表格）',
-            ),
-            h('p', { style: 'margin: 4px 0;' }, '• {{time}} - 发送时间'),
-            h('p', { style: 'margin: 4px 0;' }, '• {{site_url}} - 站点链接'),
+            h('span', { style: 'font-weight: 600;' }, '可用变量：'),
+            h('span', ' {{count}} {{subscriptions}} {{time}} {{site_url}}'),
           ],
         ),
       ]);
