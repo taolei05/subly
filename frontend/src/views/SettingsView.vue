@@ -67,8 +67,14 @@
             <n-tag :type="roleTagType">{{ roleLabel }}</n-tag>
           </n-descriptions-item>
         </n-descriptions>
-        <template v-if="!authStore.isDemo" #action>
-          <n-button block secondary type="primary" @click="openProfileModal">
+        <template #action>
+          <n-button 
+            block 
+            secondary 
+            type="primary" 
+            :disabled="authStore.isDemo"
+            @click="openProfileModal"
+          >
              修改账户信息 (用户名/邮箱/密码)
           </n-button>
         </template>
