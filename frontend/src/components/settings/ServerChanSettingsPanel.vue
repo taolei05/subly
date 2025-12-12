@@ -51,31 +51,23 @@
 
       <n-divider />
 
-      <n-form-item path="serverchan_template_title">
+      <n-form-item>
         <template #label>
           <div style="display: flex; align-items: center; gap: 4px;">
-            自定义消息标题（可选）
+            自定义通知模板
             <Icon name="info" :size="18" style="cursor: pointer; color: var(--primary-color);" @click="showTemplateHelp" />
           </div>
         </template>
-        <n-input
-          v-model:value="formData.serverchan_template_title"
-          placeholder="留空使用默认标题，支持变量：{{count}}"
+        <n-button
+          secondary
           :disabled="disabled"
-        />
-      </n-form-item>
-
-      <n-form-item path="serverchan_template_body">
-        <template #label>
-          自定义消息内容（可选，支持 Markdown）
-        </template>
-        <n-input
-          v-model:value="formData.serverchan_template_body"
-          type="textarea"
-          placeholder="留空使用默认模板，支持变量：{{subscriptions}}、{{count}}、{{time}}、{{site_url}}"
-          :autosize="{ minRows: 3, maxRows: 6 }"
-          :disabled="disabled"
-        />
+          @click="openTemplateDialog"
+        >
+          {{ formData.serverchan_template_title || formData.serverchan_template_body ? '编辑模板' : '配置模板' }}
+        </n-button>
+        <n-text v-if="formData.serverchan_template_title || formData.serverchan_template_body" depth="3" style="margin-left: 12px; font-size: 12px;">
+          已配置自定义模板
+        </n-text>
       </n-form-item>
     </div>
   </n-collapse-item>
@@ -156,7 +148,7 @@ async function handleTestServerChan() {
 
 function showTemplateHelp() {
   dialog.info({
-    title: '自定义消息模板',
+    title: '模板变量说明',
     content: () => {
       return h('div', [
         h(
@@ -178,22 +170,92 @@ function showTemplateHelp() {
         h('p', '• {{subscriptions}} - 订阅列表（Markdown表格格式）'),
         h('p', '• {{time}} - 发送时间'),
         h('p', '• {{site_url}} - 站点链接'),
-        h(
-          'p',
-          { style: 'margin-top: 12px; font-weight: 600; margin-bottom: 8px;' },
-          '内容示例：',
-        ),
-        h(
-          'pre',
-          {
-            style:
-              'background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; overflow-x: auto;',
-          },
-          '## ⏰ 订阅提醒\n\n您有 **{{count}}** 个订阅即将到期：\n\n{{subscriptions}}\n\n[👉 查看详情]({{site_url}})',
-        ),
       ]);
     },
     positiveText: '知道了',
+  });
+}
+
+// 临时存储模板编辑值
+const tempTitle = ref('');
+const tempBody = ref('');
+
+function openTemplateDialog() {
+  tempTitle.value = props.formData.serverchan_template_title || '';
+  tempBody.value = props.formData.serverchan_template_body || '';
+
+  dialog.create({
+    title: '自定义通知模板',
+    style: { width: '600px' },
+    content: () => {
+      return h('div', { style: 'padding: 8px 0;' }, [
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'label',
+            { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
+            '消息标题',
+          ),
+          h('input', {
+            value: tempTitle.value,
+            placeholder: '留空使用默认标题，支持变量：{{count}}',
+            style:
+              'width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px;',
+            onInput: (e: Event) => {
+              tempTitle.value = (e.target as HTMLInputElement).value;
+            },
+          }),
+        ]),
+        h('div', { style: 'margin-bottom: 16px;' }, [
+          h(
+            'label',
+            { style: 'display: block; margin-bottom: 8px; font-weight: 500;' },
+            '消息内容（支持 Markdown）',
+          ),
+          h('textarea', {
+            value: tempBody.value,
+            placeholder:
+              '留空使用默认模板，支持 Markdown 和变量：{{subscriptions}}、{{count}}、{{time}}、{{site_url}}',
+            style:
+              'width: 100%; min-height: 150px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; resize: vertical;',
+            onInput: (e: Event) => {
+              tempBody.value = (e.target as HTMLTextAreaElement).value;
+            },
+          }),
+        ]),
+        h(
+          'div',
+          {
+            style:
+              'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 12px;',
+          },
+          [
+            h(
+              'p',
+              { style: 'font-weight: 600; margin-bottom: 8px;' },
+              '可用变量：',
+            ),
+            h(
+              'p',
+              { style: 'margin: 4px 0;' },
+              '• {{count}} - 即将到期的订阅数量',
+            ),
+            h(
+              'p',
+              { style: 'margin: 4px 0;' },
+              '• {{subscriptions}} - 订阅列表（Markdown表格）',
+            ),
+            h('p', { style: 'margin: 4px 0;' }, '• {{time}} - 发送时间'),
+            h('p', { style: 'margin: 4px 0;' }, '• {{site_url}} - 站点链接'),
+          ],
+        ),
+      ]);
+    },
+    positiveText: '保存',
+    negativeText: '取消',
+    onPositiveClick: () => {
+      props.formData.serverchan_template_title = tempTitle.value;
+      props.formData.serverchan_template_body = tempBody.value;
+    },
   });
 }
 </script>
