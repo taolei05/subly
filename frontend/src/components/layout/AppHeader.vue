@@ -10,7 +10,7 @@
           :value="currency"
           :options="currencyOptions"
           size="small"
-          style="width: 100px"
+          style="width: 100px; margin-right: 8px;"
           @update:value="$emit('update:currency', $event)"
         />
         <n-popover trigger="click" placement="bottom">
@@ -167,7 +167,6 @@ const colorSwatches = [
 
   .header-right :deep(.n-select) {
     width: 85px !important;
-    margin-left: 6px !important;
   }
 }
 
@@ -182,7 +181,6 @@ const colorSwatches = [
 
   .header-right :deep(.n-select) {
     width: 85px !important;
-    margin-left: 6px !important;
   }
 }
 </style>
