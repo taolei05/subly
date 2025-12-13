@@ -27,17 +27,6 @@ export const subscriptionApi = {
   getExchangeRates: () =>
     http.get<ApiResponse<ExchangeRates>>('/exchange-rate'),
 
-  // 导出订阅
-  exportData: (format: 'json' | 'csv') =>
-    `/api/subscriptions/export?format=${format}`,
-
-  // 导入订阅
-  importData: (data: Record<string, unknown>[]) =>
-    http.post<ApiResponse<{ imported: number; failed: number }>>(
-      '/subscriptions/import',
-      { data },
-    ),
-
   // 批量删除
   batchDelete: (ids: number[]) =>
     http.delete<ApiResponse<{ deleted: number }>>('/subscriptions/batch', {

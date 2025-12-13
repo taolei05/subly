@@ -36,26 +36,4 @@ export function daysFromToday(dateStr: string): number {
   return daysBetween(today, targetDate);
 }
 
-/**
- * 解析 CSV 文件内容
- */
-export function parseCSV(text: string): Record<string, unknown>[] {
-  const lines = text.split('\n').filter((l) => l.trim());
-  if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map((h) => h.trim());
-
-  return lines.slice(1).map((line) => {
-    const values = line.split(',');
-    const obj: Record<string, unknown> = {};
-
-    headers.forEach((h, i) => {
-      let val: unknown = values[i]?.replace(/^"|"$/g, '');
-      if (h === 'one_time') val = val === 'true' || val === '1';
-      if (h === 'price' || h === 'remind_days') val = Number(val) || 0;
-      obj[h] = val;
-    });
-
-    return obj;
-  });
-}

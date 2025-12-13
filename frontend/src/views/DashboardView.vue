@@ -35,7 +35,6 @@
         @update:filter-type="updateFilterType"
         @update:sort-by="updateSortBy"
         @update:view-mode="updateViewMode"
-        @import-export="handleImportExport"
         @add="showAddModal = true"
       />
 
@@ -133,7 +132,7 @@ import type {
   SubscriptionFormData,
   SubscriptionType,
 } from '../types';
-import { daysFromToday, parseCSV } from '../utils';
+import { daysFromToday } from '../utils';
 
 const router = useRouter();
 const message = useMessage();
@@ -303,41 +302,6 @@ async function handleFormSubmit(data: SubscriptionFormData) {
 function handleFormClose() {
   showAddModal.value = false;
   editingSubscription.value = null;
-}
-
-async function handleImportExport(key: string) {
-  if (key === 'export-json' || key === 'export-csv') {
-    const format = key === 'export-json' ? 'json' : 'csv';
-    const token = localStorage.getItem('token');
-    const url = `${subscriptionApi.exportData(format)}&token=${token}`;
-    window.open(url, '_blank');
-  } else if (key === 'import') {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,.csv';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = file.name.endsWith('.json')
-          ? JSON.parse(text)
-          : parseCSV(text);
-
-        const result = await subscriptionApi.importData(data);
-        if (result.success) {
-          message.success(result.message || '导入成功');
-          await subscriptionStore.fetchSubscriptions();
-        } else {
-          message.error(result.message || '导入失败');
-        }
-      } catch {
-        message.error('文件解析失败，请检查格式');
-      }
-    };
-    input.click();
-  }
 }
 
 function handleBatchDelete() {
