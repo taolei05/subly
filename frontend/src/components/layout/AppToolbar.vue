@@ -59,7 +59,7 @@
         </n-button>
       </n-button-group>
 
-      <n-button type="primary" @click="$emit('add')">
+      <n-button type="primary" :disabled="readonly" @click="$emit('add')">
         <template #icon>
           <Icon name="add" :size="16" />
         </template>
@@ -79,6 +79,7 @@ defineProps<{
   filterType: SubscriptionType | null;
   sortBy: string;
   viewMode: 'list' | 'grid' | 'calendar';
+  readonly?: boolean;
 }>();
 
 defineEmits<{

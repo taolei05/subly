@@ -31,6 +31,7 @@
         :filter-type="filterType"
         :sort-by="sortBy"
         :view-mode="viewMode"
+        :readonly="authStore.isDemo"
         @update:search-query="searchQuery = $event"
         @update:filter-type="updateFilterType"
         @update:sort-by="updateSortBy"
