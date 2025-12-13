@@ -158,7 +158,7 @@ async function handleLogin() {
 }
 
 .auth-footer a {
-  color: #18a058;
+  color: v-bind('themeStore.primaryColor');
   text-decoration: none;
   margin-left: 4px;
 }

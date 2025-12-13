@@ -65,7 +65,7 @@
             {{ authStore.user?.username || '-' }}
           </n-descriptions-item>
           <n-descriptions-item label="角色">
-            <n-tag :type="roleTagType">{{ roleLabel }}</n-tag>
+            <n-tag :type="roleTagType" :color="roleTagType === 'success' ? { color: themeStore.primaryColor + '20', textColor: themeStore.primaryColor, borderColor: themeStore.primaryColor } : undefined">{{ roleLabel }}</n-tag>
           </n-descriptions-item>
         </n-descriptions>
         <template #action>

@@ -149,7 +149,38 @@ const colorSwatches = [
 
 @media (max-width: 768px) {
   .header {
-    padding: 0 16px;
+    padding: 0 12px;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+
+  .logo-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-right :deep(.n-select) {
+    width: 80px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  .header-right :deep(.n-select) {
+    width: 70px !important;
   }
 }
 </style>
