@@ -83,9 +83,51 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '服务名称',
     key: 'name',
-    // 移除宽度和固定，使其自适应填充剩余空间
     minWidth: 150,
     ellipsis: { tooltip: true },
+    render(row) {
+      if (row.url) {
+        return h(
+          'a',
+          {
+            href: row.url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            style: {
+              color: 'var(--n-text-color)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            },
+          },
+          [
+            row.name,
+            h(
+              NIcon,
+              { size: 14, style: { opacity: 0.5 } },
+              {
+                default: () =>
+                  h(
+                    'svg',
+                    {
+                      xmlns: 'http://www.w3.org/2000/svg',
+                      viewBox: '0 0 24 24',
+                      fill: 'currentColor',
+                    },
+                    [
+                      h('path', {
+                        d: 'M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.793 7.794-1.414-1.414L17.585 5H13V3h8z',
+                      }),
+                    ],
+                  ),
+              },
+            ),
+          ],
+        );
+      }
+      return row.name;
+    },
   },
   {
     title: '类型',

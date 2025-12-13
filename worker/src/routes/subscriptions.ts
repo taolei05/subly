@@ -148,8 +148,8 @@ export async function createSubscription(
 
 		const result = await env.DB.prepare(`
       INSERT INTO subscriptions 
-      (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, url, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 			.bind(
 				userId,
@@ -163,6 +163,7 @@ export async function createSubscription(
 				data.remind_days || 7,
 				renewType,
 				data.one_time ? 1 : 0,
+				data.url || null,
 				data.notes || null,
 			)
 			.run();
@@ -228,7 +229,7 @@ export async function updateSubscription(
       UPDATE subscriptions SET
         name = ?, type = ?, type_detail = ?, price = ?, currency = ?,
         start_date = ?, end_date = ?, remind_days = ?, renew_type = ?,
-        one_time = ?, notes = ?, updated_at = datetime('now')
+        one_time = ?, url = ?, notes = ?, updated_at = datetime('now')
       WHERE id = ? AND user_id = ?
     `)
 			.bind(
@@ -242,6 +243,7 @@ export async function updateSubscription(
 				data.remind_days || 7,
 				renewType,
 				data.one_time ? 1 : 0,
+				data.url || null,
 				data.notes || null,
 				id,
 				userId,
@@ -454,7 +456,7 @@ export async function exportSubscriptions(
 
 		const { results } = await env.DB.prepare(
 			`SELECT name, type, type_detail, price, currency, start_date, end_date, 
-              remind_days, renew_type, one_time, status, notes 
+              remind_days, renew_type, one_time, status, url, notes 
        FROM subscriptions WHERE user_id = ? ORDER BY end_date ASC`,
 		)
 			.bind(userId)
@@ -512,8 +514,8 @@ export async function importSubscriptions(
 
 				await env.DB.prepare(`
           INSERT INTO subscriptions 
-          (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, status, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, status, url, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 					.bind(
 						userId,
@@ -528,6 +530,7 @@ export async function importSubscriptions(
 						item.renew_type || "none",
 						item.one_time ? 1 : 0,
 						item.status || "active",
+						(item.url as string) || null,
 						item.notes || null,
 					)
 					.run();
@@ -567,6 +570,7 @@ function exportAsCsv(
 		"renew_type",
 		"one_time",
 		"status",
+		"url",
 		"notes",
 	];
 	const csvRows = [headers.join(",")];

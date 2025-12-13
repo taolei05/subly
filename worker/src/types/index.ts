@@ -130,6 +130,7 @@ export interface Subscription {
 	renew_type: RenewType;
 	one_time: boolean;
 	status: SubscriptionStatus;
+	url?: string;
 	notes?: string;
 	created_at: string;
 	updated_at: string;
@@ -199,6 +200,7 @@ export interface SubscriptionRequest {
 	remind_days: number;
 	renew_type?: RenewType;
 	one_time: boolean;
+	url?: string;
 	notes?: string;
 }
 

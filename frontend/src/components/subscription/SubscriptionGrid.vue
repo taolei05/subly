@@ -8,7 +8,17 @@
       class="subscription-card"
     >
       <div class="card-header">
-        <div class="card-title">{{ sub.name }}</div>
+        <div class="card-title">
+          <template v-if="sub.url">
+            <a :href="sub.url" target="_blank" rel="noopener noreferrer" class="card-title-link">
+              {{ sub.name }}
+              <n-icon :size="14" style="opacity: 0.5; margin-left: 4px;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.793 7.794-1.414-1.414L17.585 5H13V3h8z"/></svg>
+              </n-icon>
+            </a>
+          </template>
+          <template v-else>{{ sub.name }}</template>
+        </div>
         <n-tag 
           :type="getStatusType(sub)" 
           size="small" 
@@ -153,6 +163,17 @@ function formatDate(dateStr: string): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.card-title-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.card-title-link:hover {
+  color: var(--n-primary-color);
 }
 
 .card-meta {
