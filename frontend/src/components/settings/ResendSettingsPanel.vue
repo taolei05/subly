@@ -268,43 +268,83 @@ const defaultEmailPreview = `
 </div>`;
 
 function showDefaultTemplate() {
+  const mobile = isMobile();
+
   dialog.info({
     title: '默认邮件模板',
-    style: { width: '900px' },
+    style: { width: mobile ? '95vw' : '900px', maxWidth: '900px' },
     content: () => {
       return h('div', [
         h('div', { style: 'margin-bottom: 12px;' }, [
-          h('span', { style: 'font-weight: 600;' }, '默认标题：'),
+          h(
+            'span',
+            { style: 'font-weight: 600; display: block; margin-bottom: 4px;' },
+            '默认标题：',
+          ),
           h(
             'code',
             {
               style:
-                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px; margin-left: 8px;',
+                'background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block; word-break: break-all;',
             },
             '[Subly] 您有 {{count}} 个订阅即将到期',
           ),
         ]),
-        h('div', { style: 'display: flex; gap: 16px;' }, [
-          h('div', { style: 'flex: 1; min-width: 0;' }, [
-            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '源码'),
-            h(
-              'pre',
-              {
+        mobile
+          ? h('div', [
+              h(
+                'p',
+                { style: 'font-weight: 600; margin-bottom: 8px;' },
+                '源码 (HTML + 变量)',
+              ),
+              h(
+                'pre',
+                {
+                  style:
+                    'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 200px; white-space: pre-wrap; word-break: break-all; margin: 0;',
+                },
+                defaultEmailHtml,
+              ),
+              h(
+                'p',
+                { style: 'font-weight: 600; margin: 16px 0 8px 0;' },
+                '预览效果',
+              ),
+              h('div', {
                 style:
-                  'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; margin: 0;',
-              },
-              defaultEmailHtml,
-            ),
-          ]),
-          h('div', { style: 'flex: 1; min-width: 0;' }, [
-            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '预览'),
-            h('div', {
-              style:
-                'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; max-height: 400px; overflow-y: auto;',
-              innerHTML: defaultEmailPreview,
-            }),
-          ]),
-        ]),
+                  'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; max-height: 250px; overflow-y: auto;',
+                innerHTML: defaultEmailPreview,
+              }),
+            ])
+          : h('div', { style: 'display: flex; gap: 16px;' }, [
+              h('div', { style: 'flex: 1; min-width: 0;' }, [
+                h(
+                  'p',
+                  { style: 'font-weight: 600; margin-bottom: 8px;' },
+                  '源码 (HTML + 变量)',
+                ),
+                h(
+                  'pre',
+                  {
+                    style:
+                      'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; margin: 0;',
+                  },
+                  defaultEmailHtml,
+                ),
+              ]),
+              h('div', { style: 'flex: 1; min-width: 0;' }, [
+                h(
+                  'p',
+                  { style: 'font-weight: 600; margin-bottom: 8px;' },
+                  '预览效果',
+                ),
+                h('div', {
+                  style:
+                    'border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; max-height: 400px; overflow-y: auto;',
+                  innerHTML: defaultEmailPreview,
+                }),
+              ]),
+            ]),
       ]);
     },
     positiveText: '知道了',
