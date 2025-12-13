@@ -18,17 +18,22 @@ export interface User {
 	password: string;
 	role: UserRole;
 	site_url?: string;
-	// 备份配置
-	backup_enabled?: number;
-	backup_frequency?: BackupFrequency;
-	backup_to_email?: number;
-	backup_to_r2?: number;
-	backup_subscriptions?: number;
-	backup_settings?: number;
-	backup_last_at?: string;
 	// 两步验证 (2FA)
 	totp_secret?: string;
 	totp_enabled?: number;
+}
+
+// 备份配置
+export interface BackupConfig {
+	id: number;
+	user_id: number;
+	enabled: number;
+	frequency: BackupFrequency;
+	to_email: number;
+	to_r2: number;
+	backup_subscriptions: number;
+	backup_settings: number;
+	last_at?: string;
 }
 
 export type BackupFrequency = "daily" | "weekly" | "monthly";

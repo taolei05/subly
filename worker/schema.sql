@@ -19,17 +19,23 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user', 'demo')),
     site_url TEXT,
-    -- 备份配置
-    backup_enabled INTEGER DEFAULT 0,
-    backup_frequency TEXT DEFAULT 'weekly' CHECK (backup_frequency IN ('daily', 'weekly', 'monthly')),
-    backup_to_email INTEGER DEFAULT 1,
-    backup_to_r2 INTEGER DEFAULT 0,
-    backup_subscriptions INTEGER DEFAULT 1,
-    backup_settings INTEGER DEFAULT 0,
-    backup_last_at TEXT,
     -- 两步验证 (2FA)
     totp_secret TEXT,
     totp_enabled INTEGER DEFAULT 0
+);
+
+-- 备份配置表
+CREATE TABLE IF NOT EXISTS backup_config (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE,
+    enabled INTEGER DEFAULT 0,
+    frequency TEXT DEFAULT 'weekly' CHECK (frequency IN ('daily', 'weekly', 'monthly')),
+    to_email INTEGER DEFAULT 1,
+    to_r2 INTEGER DEFAULT 0,
+    backup_subscriptions INTEGER DEFAULT 1,
+    backup_settings INTEGER DEFAULT 0,
+    last_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Resend 邮件配置表
@@ -94,6 +100,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE INDEX IF NOT EXISTS idx_resend_config_user_id ON resend_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_serverchan_config_user_id ON serverchan_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_exchangerate_config_user_id ON exchangerate_config(user_id);
+CREATE INDEX IF NOT EXISTS idx_backup_config_user_id ON backup_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_end_date ON subscriptions(end_date);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);

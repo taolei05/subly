@@ -110,6 +110,9 @@ export async function register(request: Request, env: Env): Promise<Response> {
 			env.DB.prepare(
 				"INSERT INTO exchangerate_config (user_id) VALUES (?)",
 			).bind(userId),
+			env.DB.prepare("INSERT INTO backup_config (user_id) VALUES (?)").bind(
+				userId,
+			),
 		]);
 
 		logger.info("User registered", { username });
@@ -302,47 +305,55 @@ export async function updateSettings(
 			.bind(payload.userId)
 			.first<UserWithConfig>();
 
-		// 更新用户表字段（site_url 和备份配置）
-		const userUpdates: string[] = [];
-		const userParams: (string | number)[] = [];
-
+		// 更新用户表字段（site_url）
 		if (settings.site_url !== undefined) {
-			userUpdates.push("site_url = ?");
-			userParams.push(settings.site_url);
-		}
-		if (settings.backup_enabled !== undefined) {
-			userUpdates.push("backup_enabled = ?");
-			userParams.push(settings.backup_enabled ? 1 : 0);
-		}
-		if (settings.backup_frequency !== undefined) {
-			userUpdates.push("backup_frequency = ?");
-			userParams.push(settings.backup_frequency);
-		}
-		if (settings.backup_to_email !== undefined) {
-			userUpdates.push("backup_to_email = ?");
-			userParams.push(settings.backup_to_email ? 1 : 0);
-		}
-		if (settings.backup_to_r2 !== undefined) {
-			userUpdates.push("backup_to_r2 = ?");
-			userParams.push(settings.backup_to_r2 ? 1 : 0);
-		}
-		if (settings.backup_subscriptions !== undefined) {
-			userUpdates.push("backup_subscriptions = ?");
-			userParams.push(settings.backup_subscriptions ? 1 : 0);
-		}
-		if (settings.backup_settings !== undefined) {
-			userUpdates.push("backup_settings = ?");
-			userParams.push(settings.backup_settings ? 1 : 0);
-		}
-
-		if (userUpdates.length > 0) {
-			userParams.push(payload.userId);
-			await env.DB.prepare(
-				`UPDATE users SET ${userUpdates.join(", ")} WHERE id = ?`,
-			)
-				.bind(...userParams)
+			await env.DB.prepare("UPDATE users SET site_url = ? WHERE id = ?")
+				.bind(settings.site_url, payload.userId)
 				.run();
 		}
+
+		// 更新备份配置
+		await env.DB.prepare(`
+			INSERT INTO backup_config (user_id, enabled, frequency, to_email, to_r2, backup_subscriptions, backup_settings)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(user_id) DO UPDATE SET
+				enabled = excluded.enabled,
+				frequency = excluded.frequency,
+				to_email = excluded.to_email,
+				to_r2 = excluded.to_r2,
+				backup_subscriptions = excluded.backup_subscriptions,
+				backup_settings = excluded.backup_settings
+		`)
+			.bind(
+				payload.userId,
+				settings.backup_enabled !== undefined
+					? settings.backup_enabled
+						? 1
+						: 0
+					: (current?.backup_enabled ?? 0),
+				settings.backup_frequency ?? current?.backup_frequency ?? "weekly",
+				settings.backup_to_email !== undefined
+					? settings.backup_to_email
+						? 1
+						: 0
+					: (current?.backup_to_email ?? 1),
+				settings.backup_to_r2 !== undefined
+					? settings.backup_to_r2
+						? 1
+						: 0
+					: (current?.backup_to_r2 ?? 0),
+				settings.backup_subscriptions !== undefined
+					? settings.backup_subscriptions
+						? 1
+						: 0
+					: (current?.backup_subscriptions ?? 1),
+				settings.backup_settings !== undefined
+					? settings.backup_settings
+						? 1
+						: 0
+					: (current?.backup_settings ?? 0),
+			)
+			.run();
 
 		// 更新 Resend 配置（admin 和 user 都可以修改）
 		await env.DB.prepare(`

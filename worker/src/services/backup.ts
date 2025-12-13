@@ -18,6 +18,8 @@ interface UserBackupConfig {
 	backup_frequency: BackupFrequency;
 	backup_to_email: number;
 	backup_to_r2: number;
+	backup_subscriptions: number;
+	backup_settings: number;
 	backup_last_at?: string;
 }
 
@@ -330,22 +332,25 @@ export async function checkAndRunBackups(env: Env): Promise<void> {
 	try {
 		logger.info("[Backup] Starting backup check");
 
-		// 查询启用了备份的用户
+		// 查询启用了备份的用户（从 backup_config 表）
 		const { results: configs } = await env.DB.prepare(`
       SELECT 
         u.id as user_id,
         u.username,
-        u.backup_enabled,
-        u.backup_frequency,
-        u.backup_to_email,
-        u.backup_to_r2,
-        u.backup_last_at,
+        b.enabled as backup_enabled,
+        b.frequency as backup_frequency,
+        b.to_email as backup_to_email,
+        b.to_r2 as backup_to_r2,
+        b.backup_subscriptions,
+        b.backup_settings,
+        b.last_at as backup_last_at,
         r.email,
         r.api_key as resend_api_key,
         r.domain as resend_domain
       FROM users u
+      INNER JOIN backup_config b ON u.id = b.user_id
       LEFT JOIN resend_config r ON u.id = r.user_id
-      WHERE u.backup_enabled = 1
+      WHERE b.enabled = 1
     `).all<UserBackupConfig>();
 
 		logger.info("[Backup] Found users with backup enabled", {
@@ -366,53 +371,57 @@ export async function checkAndRunBackups(env: Env): Promise<void> {
 
 			if (!checkResult.should) continue;
 
-			// 获取用户的所有订阅
-			const { results: subscriptions } = await env.DB.prepare(
-				"SELECT * FROM subscriptions WHERE user_id = ?",
-			)
-				.bind(config.user_id)
-				.all<Subscription>();
-
-			const backupData = generateBackupData(
-				config.user_id,
-				config.username,
-				subscriptions,
-			);
-
 			let emailSuccess = false;
 			let r2Success = false;
 
-			// 备份到邮箱
-			if (config.backup_to_email && config.resend_api_key && config.email) {
-				emailSuccess = await sendBackupEmail(
-					config.resend_api_key,
-					config.resend_domain || "",
-					config.email,
-					config.username,
-					backupData,
-				);
-				logger.info("[Backup] Email backup result", {
-					userId: config.user_id,
-					success: emailSuccess,
-				});
-			}
+			// 备份订阅数据
+			if (config.backup_subscriptions) {
+				const { results: subscriptions } = await env.DB.prepare(
+					"SELECT * FROM subscriptions WHERE user_id = ?",
+				)
+					.bind(config.user_id)
+					.all<Subscription>();
 
-			// 备份到 R2
-			if (config.backup_to_r2 && env.BACKUP_BUCKET) {
-				r2Success = await saveBackupToR2(
-					env.BACKUP_BUCKET,
+				const backupData = generateBackupData(
 					config.user_id,
-					backupData,
+					config.username,
+					subscriptions,
 				);
-				logger.info("[Backup] R2 backup result", {
-					userId: config.user_id,
-					success: r2Success,
-				});
+
+				// 备份到邮箱
+				if (config.backup_to_email && config.resend_api_key && config.email) {
+					emailSuccess = await sendBackupEmail(
+						config.resend_api_key,
+						config.resend_domain || "",
+						config.email,
+						config.username,
+						backupData,
+					);
+					logger.info("[Backup] Email backup result", {
+						userId: config.user_id,
+						success: emailSuccess,
+					});
+				}
+
+				// 备份到 R2
+				if (config.backup_to_r2 && env.BACKUP_BUCKET) {
+					r2Success = await saveBackupToR2(
+						env.BACKUP_BUCKET,
+						config.user_id,
+						backupData,
+					);
+					logger.info("[Backup] R2 backup result", {
+						userId: config.user_id,
+						success: r2Success,
+					});
+				}
 			}
 
 			// 如果任一备份成功，更新最后备份时间
 			if (emailSuccess || r2Success) {
-				await env.DB.prepare("UPDATE users SET backup_last_at = ? WHERE id = ?")
+				await env.DB.prepare(
+					"UPDATE backup_config SET last_at = ? WHERE user_id = ?",
+				)
 					.bind(new Date().toISOString(), config.user_id)
 					.run();
 			}
@@ -498,7 +507,9 @@ export async function manualBackup(
 
 		// 更新最后备份时间
 		if (results.some((r) => r.includes("成功"))) {
-			await env.DB.prepare("UPDATE users SET backup_last_at = ? WHERE id = ?")
+			await env.DB.prepare(
+				"UPDATE backup_config SET last_at = ? WHERE user_id = ?",
+			)
 				.bind(new Date().toISOString(), userId)
 				.run();
 		}
