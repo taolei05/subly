@@ -73,10 +73,3 @@ export const RENEW_TYPE_LABELS: Record<string, string> = {
   auto: '自动续订',
   manual: '手动续订',
 };
-
-// 导入导出选项
-export const IMPORT_EXPORT_OPTIONS = [
-  { label: '导出 JSON', key: 'export-json' },
-  { label: '导出 CSV', key: 'export-csv' },
-  { label: '导入数据', key: 'import' },
-] as const;
