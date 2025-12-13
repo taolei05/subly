@@ -222,7 +222,7 @@ const baseColumns: DataTableColumns<Subscription> = [
             quaternary: true,
             onClick: () => emit('edit', row),
           },
-          { icon: () => h(Icon, { name: props.readonly ? 'view' : 'edit' }) },
+          { icon: () => h(Icon, { name: 'edit' }) },
         ),
       ];
 

@@ -64,9 +64,9 @@
       <div class="card-actions">
         <n-button size="small" quaternary @click="emit('edit', sub)">
           <template #icon>
-            <Icon :name="readonly ? 'view' : 'edit'" />
+            <Icon name="edit" />
           </template>
-          {{ readonly ? '查看' : '编辑' }}
+          编辑
         </n-button>
         <n-popconfirm v-if="!readonly" @positive-click="emit('delete', sub)">
           <template #trigger>
