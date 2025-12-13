@@ -28,7 +28,7 @@
           </template>
           <div style="padding: 12px; min-width: 200px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-              <span style="font-size: 14px;">深色模式</span>
+              <span style="font-size: 14px;">{{ isDark ? '浅色模式' : '深色模式' }}</span>
               <n-switch :value="isDark" @update:value="$emit('toggle-theme')" />
             </div>
             <div style="margin-bottom: 8px; font-size: 14px;">主题色</div>
