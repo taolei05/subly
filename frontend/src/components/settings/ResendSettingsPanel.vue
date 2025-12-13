@@ -316,7 +316,7 @@ const tempSubject = ref('');
 const tempBody = ref('');
 const previewHtml = ref('');
 
-function generateEmailPreview(body: string): string {
+function generateEmailPreview(subject: string, body: string): string {
   const sampleSubscriptions = `<table style="width: 100%; border-collapse: collapse; background: white; border-radius: 4px; font-size: 12px;">
     <thead><tr style="background: #f8f8f8;">
       <th style="padding: 8px; text-align: left; border-bottom: 1px solid #eee;">服务名称</th>
@@ -332,11 +332,15 @@ function generateEmailPreview(body: string): string {
   html = html.replace(/\{\{time\}\}/g, '2024-12-15 08:00:00');
   html = html.replace(/\{\{site_url\}\}/g, 'https://example.com');
 
-  return `<div style="background: #18a058; color: white; padding: 12px;"><h3 style="margin: 0; font-size: 16px;">Subly 订阅提醒</h3></div><div style="background: #f5f5f5; padding: 12px;">${html}</div>`;
+  // 处理标题，替换变量
+  let title = subject || '[Subly] 您有 {{count}} 个订阅即将到期';
+  title = title.replace(/\{\{count\}\}/g, '1');
+
+  return `<div style="background: #18a058; color: white; padding: 12px;"><h3 style="margin: 0; font-size: 16px;">${title}</h3></div><div style="background: #f5f5f5; padding: 12px;">${html}</div>`;
 }
 
 function updatePreview() {
-  previewHtml.value = generateEmailPreview(tempBody.value);
+  previewHtml.value = generateEmailPreview(tempSubject.value, tempBody.value);
 }
 
 function showPreviewDialog() {
@@ -383,6 +387,7 @@ function openTemplateDialog() {
               'width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; box-sizing: border-box;',
             onInput: (e: Event) => {
               tempSubject.value = (e.target as HTMLInputElement).value;
+              updatePreview();
             },
           }),
         ]),
