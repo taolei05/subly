@@ -9,7 +9,7 @@ export {
 	updateSettings,
 } from "./auth";
 // 备份相关
-export { downloadBackup, getBackupList, triggerBackup } from "./backup";
+export { downloadBackup, getBackupList, restoreSettings, triggerBackup } from "./backup";
 // 调试相关
 export { forceNotify, getNotifyStatus, resetLastSent } from "./debug";
 // 汇率相关

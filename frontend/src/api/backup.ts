@@ -67,3 +67,14 @@ export async function restoreBackup(
   });
   return response.json();
 }
+
+export async function restoreSettings(
+  settings: Record<string, unknown>,
+): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE}/settings/restore`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ settings }),
+  });
+  return response.json();
+}

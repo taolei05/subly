@@ -95,7 +95,15 @@
 </template>
 
 <script setup lang="ts">
-import { NTabPane, NTabs, useDialog, useMessage } from 'naive-ui';
+import {
+  NCheckbox,
+  NCheckboxGroup,
+  NSpace,
+  NTabPane,
+  NTabs,
+  useDialog,
+  useMessage,
+} from 'naive-ui';
 import Papa from 'papaparse';
 import { computed, h, ref } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
@@ -104,6 +112,7 @@ import {
   downloadBackup,
   getBackupList,
   restoreBackup,
+  restoreSettings,
   triggerBackup,
 } from '../../api/backup';
 import { useAuthStore } from '../../stores/auth';
@@ -515,6 +524,14 @@ function showCsvPreviewDialog(date: string) {
 
 // ==================== 数据恢复功能 ====================
 
+// 解析的备份文件数据
+const parsedFileData = ref<{
+  subscriptions?: Record<string, unknown>[];
+  settings?: Record<string, unknown>;
+} | null>(null);
+const restoreSource = ref<'file' | 'r2'>('file');
+const selectedR2Date = ref<string>('');
+
 function handleRestoreFromFile() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -524,61 +541,206 @@ function handleRestoreFromFile() {
     if (!file) return;
 
     try {
-      restoring.value = true;
       const text = await file.text();
-      let data: Record<string, unknown>[];
 
-      if (file.name.endsWith('.json')) {
-        const parsed = JSON.parse(text);
-        // 支持备份文件格式（包含 subscriptions 字段）和直接数组格式
-        data = parsed.subscriptions || parsed;
-      } else {
+      if (file.name.endsWith('.csv')) {
+        // CSV 只能是订阅数据
         const parsed = Papa.parse(text, { header: true });
-        data = parsed.data as Record<string, unknown>[];
-      }
+        const data = parsed.data as Record<string, unknown>[];
+        if (!Array.isArray(data) || data.length === 0) {
+          message.error('备份文件为空或格式错误');
+          return;
+        }
+        parsedFileData.value = { subscriptions: data };
+        restoreSource.value = 'file';
+        showRestoreTypeDialog();
+      } else {
+        // JSON 可能包含订阅或设置
+        const parsed = JSON.parse(text);
+        const fileData: {
+          subscriptions?: Record<string, unknown>[];
+          settings?: Record<string, unknown>;
+        } = {};
 
-      if (!Array.isArray(data) || data.length === 0) {
-        message.error('备份文件为空或格式错误');
-        return;
-      }
+        // 检测订阅数据
+        if (parsed.subscriptions && Array.isArray(parsed.subscriptions)) {
+          fileData.subscriptions = parsed.subscriptions;
+        } else if (Array.isArray(parsed)) {
+          fileData.subscriptions = parsed;
+        }
 
-      // 确认恢复
-      dialog.warning({
-        title: '确认恢复',
-        content: `将从备份文件导入 ${data.length} 条订阅记录。此操作不会删除现有数据，但可能产生重复记录。确定继续？`,
-        positiveText: '确认恢复',
-        negativeText: '取消',
-        onPositiveClick: async () => {
-          const result = await restoreBackup(data);
-          if (result.success) {
-            message.success(result.message || '恢复成功');
-            emit('restored');
-          } else {
-            message.error(result.message || '恢复失败');
-          }
-        },
-      });
+        // 检测设置数据
+        if (parsed.settings && typeof parsed.settings === 'object') {
+          fileData.settings = parsed.settings;
+        }
+
+        if (!fileData.subscriptions && !fileData.settings) {
+          message.error('备份文件格式错误，未找到有效数据');
+          return;
+        }
+
+        parsedFileData.value = fileData;
+        restoreSource.value = 'file';
+        showRestoreTypeDialog();
+      }
     } catch {
       message.error('文件解析失败，请检查格式');
-    } finally {
-      restoring.value = false;
     }
   };
   input.click();
 }
 
-async function showRestoreFromR2() {
-  const result = await getBackupList('subscriptions');
-  const backups = (result.data as BackupFile[]) || [];
+function showRestoreTypeDialog() {
+  const hasSubscriptions = !!parsedFileData.value?.subscriptions?.length;
+  const hasSettings = !!parsedFileData.value?.settings;
 
-  if (backups.length === 0) {
+  const restoreTypes = ref<string[]>([]);
+  if (hasSubscriptions) restoreTypes.value.push('subscriptions');
+  if (hasSettings) restoreTypes.value.push('settings');
+
+  dialog.info({
+    title: '选择恢复内容',
+    style: { width: '400px' },
+    content: () =>
+      h('div', { style: 'padding: 16px 0;' }, [
+        h(
+          'p',
+          { style: 'margin-bottom: 12px; color: #666;' },
+          '请选择要恢复的数据类型：',
+        ),
+        h(
+          NCheckboxGroup,
+          {
+            value: restoreTypes.value,
+            onUpdateValue: (val: (string | number)[]) => {
+              restoreTypes.value = val as string[];
+            },
+          },
+          () =>
+            h(NSpace, { vertical: true }, () => [
+              hasSubscriptions
+                ? h(
+                    NCheckbox,
+                    { value: 'subscriptions' },
+                    () =>
+                      `订阅信息 (${parsedFileData.value?.subscriptions?.length} 条)`,
+                  )
+                : null,
+              hasSettings
+                ? h(NCheckbox, { value: 'settings' }, () => '系统设置')
+                : null,
+            ]),
+        ),
+        !hasSubscriptions && !hasSettings
+          ? h('p', { style: 'color: #999;' }, '备份文件中没有可恢复的数据')
+          : null,
+      ]),
+    positiveText: '确认恢复',
+    negativeText: '取消',
+    positiveButtonProps: { disabled: !hasSubscriptions && !hasSettings },
+    onPositiveClick: async () => {
+      if (restoreTypes.value.length === 0) {
+        message.warning('请至少选择一种恢复内容');
+        return false;
+      }
+      await executeRestore(restoreTypes.value);
+    },
+  });
+}
+
+async function executeRestore(types: string[]) {
+  restoring.value = true;
+  try {
+    const results: string[] = [];
+
+    // 恢复订阅数据
+    if (
+      types.includes('subscriptions') &&
+      parsedFileData.value?.subscriptions
+    ) {
+      const result = await restoreBackup(parsedFileData.value.subscriptions);
+      results.push(
+        result.success
+          ? '订阅信息恢复成功'
+          : `订阅信息恢复失败：${result.message}`,
+      );
+      if (result.success) emit('restored');
+    }
+
+    // 恢复系统设置
+    if (types.includes('settings') && parsedFileData.value?.settings) {
+      const result = await restoreSettings(parsedFileData.value.settings);
+      results.push(
+        result.success
+          ? '系统设置恢复成功'
+          : `系统设置恢复失败：${result.message}`,
+      );
+      if (result.success) emit('restored');
+    }
+
+    const allSuccess = results.every((r) => r.includes('成功'));
+    if (allSuccess) {
+      message.success(results.join('；'));
+    } else {
+      message.warning(results.join('；'));
+    }
+  } finally {
+    restoring.value = false;
+    parsedFileData.value = null;
+  }
+}
+
+async function showRestoreFromR2() {
+  // 同时获取订阅和设置备份列表
+  const [subResult, settingsResult] = await Promise.all([
+    getBackupList('subscriptions'),
+    getBackupList('settings'),
+  ]);
+
+  const subBackups = (subResult.data as BackupFile[]) || [];
+  const settingsBackupsList =
+    (settingsResult.data as SettingsBackupFile[]) || [];
+
+  // 合并所有日期
+  const allDates = new Set<string>();
+  for (const b of subBackups) {
+    allDates.add(b.date);
+  }
+  for (const b of settingsBackupsList) {
+    allDates.add(b.date);
+  }
+
+  if (allDates.size === 0) {
     message.info('云存储中暂无备份记录');
     return;
   }
 
+  // 构建日期到备份类型的映射
+  const dateMap = new Map<
+    string,
+    {
+      hasSubscriptions: boolean;
+      hasSettings: boolean;
+      subSize: number;
+      settingsSize: number;
+    }
+  >();
+  for (const date of allDates) {
+    const sub = subBackups.find((b) => b.date === date);
+    const settings = settingsBackupsList.find((b) => b.date === date);
+    dateMap.set(date, {
+      hasSubscriptions: !!sub,
+      hasSettings: !!settings,
+      subSize: sub?.jsonSize || 0,
+      settingsSize: settings?.jsonSize || 0,
+    });
+  }
+
+  const sortedDates = Array.from(allDates).sort((a, b) => b.localeCompare(a));
+
   dialog.info({
     title: '从云存储恢复',
-    style: { width: '500px', maxWidth: '95vw' },
+    style: { width: '550px', maxWidth: '95vw' },
     content: () =>
       h('div', { style: 'max-height: 350px; overflow-y: auto;' }, [
         h(
@@ -590,32 +752,49 @@ async function showRestoreFromR2() {
           h('thead', [
             h('tr', { style: 'background: #f5f5f5;' }, [
               h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
-              h('th', { style: 'padding: 8px; text-align: right;' }, '大小'),
+              h('th', { style: 'padding: 8px; text-align: center;' }, '订阅'),
+              h('th', { style: 'padding: 8px; text-align: center;' }, '设置'),
               h('th', { style: 'padding: 8px; text-align: center;' }, '操作'),
             ]),
           ]),
           h(
             'tbody',
-            backups.map((backup) =>
-              h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
-                h('td', { style: 'padding: 8px;' }, backup.date),
+            sortedDates.map((date) => {
+              const info = dateMap.get(date);
+              if (!info) return null;
+              return h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
+                h('td', { style: 'padding: 8px;' }, date),
                 h(
                   'td',
-                  { style: 'padding: 8px; text-align: right;' },
-                  formatSize(backup.jsonSize),
+                  {
+                    style: `padding: 8px; text-align: center; color: ${info.hasSubscriptions ? '#18a058' : '#999'}`,
+                  },
+                  info.hasSubscriptions ? formatSize(info.subSize) : '-',
+                ),
+                h(
+                  'td',
+                  {
+                    style: `padding: 8px; text-align: center; color: ${info.hasSettings ? '#18a058' : '#999'}`,
+                  },
+                  info.hasSettings ? formatSize(info.settingsSize) : '-',
                 ),
                 h('td', { style: 'padding: 8px; text-align: center;' }, [
                   h(
                     'a',
                     {
                       style: 'color: #18a058; cursor: pointer;',
-                      onClick: () => handleRestoreFromR2(backup.date),
+                      onClick: () =>
+                        handleRestoreFromR2(
+                          date,
+                          info.hasSubscriptions,
+                          info.hasSettings,
+                        ),
                     },
                     '恢复',
                   ),
                 ]),
-              ]),
-            ),
+              ]);
+            }),
           ),
         ]),
       ]),
@@ -623,44 +802,50 @@ async function showRestoreFromR2() {
   });
 }
 
-async function handleRestoreFromR2(date: string) {
-  try {
-    const content = await downloadBackup(date, 'json', 'subscriptions');
-    if (!content) {
-      message.error('获取备份数据失败');
-      return;
+async function handleRestoreFromR2(
+  date: string,
+  hasSubscriptions: boolean,
+  hasSettings: boolean,
+) {
+  selectedR2Date.value = date;
+  restoreSource.value = 'r2';
+
+  // 获取备份数据
+  const fileData: {
+    subscriptions?: Record<string, unknown>[];
+    settings?: Record<string, unknown>;
+  } = {};
+
+  if (hasSubscriptions) {
+    try {
+      const content = await downloadBackup(date, 'json', 'subscriptions');
+      if (content) {
+        const parsed = JSON.parse(content);
+        fileData.subscriptions = parsed.subscriptions || parsed;
+      }
+    } catch {
+      /* ignore */
     }
-
-    const parsed = JSON.parse(content);
-    const data = parsed.subscriptions || parsed;
-
-    if (!Array.isArray(data) || data.length === 0) {
-      message.error('备份数据为空');
-      return;
-    }
-
-    dialog.warning({
-      title: '确认恢复',
-      content: `将从 ${date} 的备份恢复 ${data.length} 条订阅记录。此操作不会删除现有数据，但可能产生重复记录。确定继续？`,
-      positiveText: '确认恢复',
-      negativeText: '取消',
-      onPositiveClick: async () => {
-        restoring.value = true;
-        try {
-          const result = await restoreBackup(data);
-          if (result.success) {
-            message.success(result.message || '恢复成功');
-            emit('restored');
-          } else {
-            message.error(result.message || '恢复失败');
-          }
-        } finally {
-          restoring.value = false;
-        }
-      },
-    });
-  } catch {
-    message.error('恢复失败');
   }
+
+  if (hasSettings) {
+    try {
+      const content = await downloadBackup(date, 'json', 'settings');
+      if (content) {
+        const parsed = JSON.parse(content);
+        fileData.settings = parsed.settings;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (!fileData.subscriptions?.length && !fileData.settings) {
+    message.error('获取备份数据失败');
+    return;
+  }
+
+  parsedFileData.value = fileData;
+  showRestoreTypeDialog();
 }
 </script>

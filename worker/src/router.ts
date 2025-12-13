@@ -17,6 +17,7 @@ import {
 	login,
 	register,
 	resetLastSent,
+	restoreSettings,
 	sendTestEmail,
 	sendTestServerChan,
 	triggerBackup,
@@ -104,6 +105,7 @@ const routes: Route[] = [
 	{ pattern: "/backup/trigger", method: "POST", handler: triggerBackup },
 	{ pattern: "/backup/list", method: "GET", handler: getBackupList },
 	{ pattern: "/backup/download", method: "GET", handler: downloadBackup },
+	{ pattern: "/settings/restore", method: "POST", handler: restoreSettings },
 
 	// 调试路由
 	{
