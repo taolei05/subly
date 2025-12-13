@@ -186,18 +186,41 @@ function showTemplateHelp() {
   });
 }
 
+// 带变量的模板（用于用户编辑）
+const templateWithVariables = `## ⏰ 订阅到期提醒
+
+您有以下订阅即将到期，请及时处理：
+
+{{subscriptions}}
+
+---
+
+**发送时间**：{{time}}
+**到期数量**：{{count}} 个
+
+[👉 查看详情]({{site_url}})
+
+---
+
+*这是一条自动发送的消息，请勿直接回复。*`;
+
+// 预览用的示例数据
+const sampleSubscriptionsTable = `| 服务名称 | 类型 | 到期日期 |
+| :--- | :--- | :--- |
+| Netflix 会员 | 会员 | 2025-12-20 |
+| 阿里云服务器 | 服务器 | 2025-12-22 |`;
+
+// 用于展示的默认模板（变量已替换为示例值）
 const defaultMarkdownTemplate = `## ⏰ 订阅到期提醒
 
 您有以下订阅即将到期，请及时处理：
 
-| 服务名称 | 类型 | 到期日期 |
-| :--- | :--- | :--- |
-| 示例服务 | 会员 | 2024-12-20 |
+${sampleSubscriptionsTable}
 
 ---
 
-**发送时间**：2024-12-15 08:00:00
-**到期数量**：1 个
+**发送时间**：2025-12-15 08:00:00
+**到期数量**：2 个
 
 [👉 查看详情](https://example.com)
 
@@ -229,7 +252,7 @@ function showDefaultTemplate() {
             h(
               'p',
               { style: 'font-weight: 600; margin-bottom: 8px;' },
-              '源码 (Markdown)',
+              '源码 (Markdown + 变量)',
             ),
             h(
               'pre',
@@ -237,11 +260,15 @@ function showDefaultTemplate() {
                 style:
                   'background: #f5f5f5; padding: 12px; border-radius: 4px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; margin: 0;',
               },
-              defaultMarkdownTemplate,
+              templateWithVariables,
             ),
           ]),
           h('div', { style: 'flex: 1; min-width: 0;' }, [
-            h('p', { style: 'font-weight: 600; margin-bottom: 8px;' }, '预览'),
+            h(
+              'p',
+              { style: 'font-weight: 600; margin-bottom: 8px;' },
+              '预览效果',
+            ),
             h('div', {
               style:
                 'border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; max-height: 400px; overflow-y: auto; background: white;',
@@ -261,15 +288,17 @@ const tempBody = ref('');
 const previewHtml = ref('');
 
 function generateMarkdownPreview(body: string): string {
-  const sampleSubscriptions = `| 服务名称 | 类型 | 到期日期 |
-| :--- | :--- | :--- |
-| 示例服务 | 会员 | 2024-12-20 |`;
+  // 如果没有自定义模板，使用带变量的默认模板
+  let markdown = body || templateWithVariables;
 
-  let markdown = body || defaultMarkdownTemplate;
-  markdown = markdown.replace(/\{\{subscriptions\}\}/g, sampleSubscriptions);
-  markdown = markdown.replace(/\{\{count\}\}/g, '1');
-  markdown = markdown.replace(/\{\{time\}\}/g, '2024-12-15 08:00:00');
-  markdown = markdown.replace(/\{\{site_url\}\}/g, 'https://example.com');
+  // 替换变量为示例值（支持 {{var}} 和 {{ var }} 格式）
+  markdown = markdown.replace(
+    /\{\{\s*subscriptions\s*\}\}/g,
+    sampleSubscriptionsTable,
+  );
+  markdown = markdown.replace(/\{\{\s*count\s*\}\}/g, '2');
+  markdown = markdown.replace(/\{\{\s*time\s*\}\}/g, '2025-12-15 08:00:00');
+  markdown = markdown.replace(/\{\{\s*site_url\s*\}\}/g, 'https://example.com');
 
   return md.render(markdown);
 }

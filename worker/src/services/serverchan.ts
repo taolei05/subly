@@ -85,7 +85,12 @@ function replaceTemplateVariables(
 ): string {
 	let result = template;
 	for (const [key, value] of Object.entries(variables)) {
-		result = result.replace(new RegExp(`{{${key}}}`, "g"), value);
+		// 支持多种变量格式：{{key}}, {{ key }}, {key}
+		result = result.replace(
+			new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g"),
+			value,
+		);
+		result = result.replace(new RegExp(`\\{${key}\\}`, "g"), value);
 	}
 	return result;
 }
