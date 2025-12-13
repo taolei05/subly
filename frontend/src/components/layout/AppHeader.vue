@@ -19,18 +19,19 @@
               <template #trigger>
                 <n-button quaternary circle>
                   <template #icon>
-                    <div
-                      class="color-indicator"
-                      :style="{ backgroundColor: themeStore.primaryColor }"
-                    />
+                    <Icon :name="isDark ? 'sun' : 'moon'" :size="20" />
                   </template>
                 </n-button>
               </template>
-              主题色
+              主题设置
             </n-tooltip>
           </template>
-          <div style="padding: 8px;">
-            <div style="margin-bottom: 8px; font-size: 14px; font-weight: 500;">主题色</div>
+          <div style="padding: 12px; min-width: 200px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <span style="font-size: 14px;">深色模式</span>
+              <n-switch :value="isDark" @update:value="$emit('toggle-theme')" />
+            </div>
+            <div style="margin-bottom: 8px; font-size: 14px;">主题色</div>
             <n-color-picker
               :value="themeStore.primaryColor"
               :show-alpha="false"
@@ -44,20 +45,10 @@
               style="margin-top: 8px; width: 100%;"
               @click="themeStore.resetPrimaryColor"
             >
-              恢复默认
+              恢复默认主题色
             </n-button>
           </div>
         </n-popover>
-        <n-tooltip trigger="hover">
-          <template #trigger>
-            <n-button quaternary circle @click="$emit('toggle-theme')">
-              <template #icon>
-                <Icon :name="isDark ? 'sun' : 'moon'" :size="20" />
-              </template>
-            </n-button>
-          </template>
-          {{ isDark ? '切换到亮色模式' : '切换到暗色模式' }}
-        </n-tooltip>
         <n-tooltip trigger="hover">
           <template #trigger>
             <n-button quaternary circle @click="$emit('settings')">
@@ -137,7 +128,6 @@ const colorSwatches = [
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -157,56 +147,9 @@ const colorSwatches = [
   gap: 8px;
 }
 
-.color-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid rgba(128, 128, 128, 0.3);
-}
-
 @media (max-width: 768px) {
   .header {
-    padding: 0 12px;
-    height: 56px;
-  }
-
-  .logo-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  .logo {
-    font-size: 20px;
-  }
-
-  .header-right {
-    gap: 2px;
-  }
-
-  .header-right :deep(.n-select) {
-    width: 80px !important;
-  }
-
-  .header-right :deep(.n-button) {
-    padding: 0 6px;
-  }
-}
-
-@media (max-width: 480px) {
-  .header {
-    padding: 0 8px;
-  }
-
-  .logo {
-    display: none;
-  }
-
-  .header-right {
-    gap: 0;
-  }
-
-  .header-right :deep(.n-select) {
-    width: 70px !important;
+    padding: 0 16px;
   }
 }
 </style>
