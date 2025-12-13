@@ -56,3 +56,14 @@ export async function downloadBackup(
 
   return response.text();
 }
+
+export async function restoreBackup(
+  data: Record<string, unknown>[],
+): Promise<ApiResponse> {
+  const response = await fetch(`${API_BASE}/subscriptions/import`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ data }),
+  });
+  return response.json();
+}

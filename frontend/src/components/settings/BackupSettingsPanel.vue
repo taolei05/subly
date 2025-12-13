@@ -60,6 +60,33 @@
         </n-space>
       </n-form-item>
 
+      <n-divider style="margin: 16px 0;" />
+
+      <n-form-item label="数据恢复">
+        <n-space vertical style="width: 100%;">
+          <n-text depth="3" style="font-size: 12px;">
+            从备份文件恢复订阅数据。支持 JSON 和 CSV 格式。恢复将导入备份中的订阅，不会删除现有数据。
+          </n-text>
+          <n-space>
+            <n-button
+              secondary
+              :disabled="disabled"
+              :loading="restoring"
+              @click="handleRestoreFromFile"
+            >
+              从文件恢复
+            </n-button>
+            <n-button
+              secondary
+              :disabled="disabled"
+              @click="showRestoreFromR2"
+            >
+              从云存储恢复
+            </n-button>
+          </n-space>
+        </n-space>
+      </n-form-item>
+
       <n-text depth="3" style="font-size: 12px; display: block; margin-top: 8px;">
         订阅信息备份同时保存 JSON 和 CSV 两种格式，系统设置仅保存 JSON 格式。邮箱备份需要先配置 Resend API Key。
       </n-text>
@@ -73,16 +100,23 @@ import Papa from 'papaparse';
 import { computed, h, ref } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
-import { downloadBackup, getBackupList, triggerBackup } from '../../api/backup';
+import {
+  downloadBackup,
+  getBackupList,
+  restoreBackup,
+  triggerBackup,
+} from '../../api/backup';
 import { useAuthStore } from '../../stores/auth';
 import type { BackupFile, SettingsBackupFile, UserSettings } from '../../types';
 
 const props = defineProps<{ formData: UserSettings; disabled?: boolean }>();
+const emit = defineEmits<{ restored: [] }>();
 
 const dialog = useDialog();
 const message = useMessage();
 const authStore = useAuthStore();
 const backingUp = ref(false);
+const restoring = ref(false);
 
 const isAdmin = computed(() => authStore.isAdmin);
 
@@ -477,5 +511,156 @@ function showCsvPreviewDialog(date: string) {
       return false;
     },
   });
+}
+
+// ==================== 数据恢复功能 ====================
+
+function handleRestoreFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,.csv';
+  input.onchange = async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    try {
+      restoring.value = true;
+      const text = await file.text();
+      let data: Record<string, unknown>[];
+
+      if (file.name.endsWith('.json')) {
+        const parsed = JSON.parse(text);
+        // 支持备份文件格式（包含 subscriptions 字段）和直接数组格式
+        data = parsed.subscriptions || parsed;
+      } else {
+        const parsed = Papa.parse(text, { header: true });
+        data = parsed.data as Record<string, unknown>[];
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        message.error('备份文件为空或格式错误');
+        return;
+      }
+
+      // 确认恢复
+      dialog.warning({
+        title: '确认恢复',
+        content: `将从备份文件导入 ${data.length} 条订阅记录。此操作不会删除现有数据，但可能产生重复记录。确定继续？`,
+        positiveText: '确认恢复',
+        negativeText: '取消',
+        onPositiveClick: async () => {
+          const result = await restoreBackup(data);
+          if (result.success) {
+            message.success(result.message || '恢复成功');
+            emit('restored');
+          } else {
+            message.error(result.message || '恢复失败');
+          }
+        },
+      });
+    } catch {
+      message.error('文件解析失败，请检查格式');
+    } finally {
+      restoring.value = false;
+    }
+  };
+  input.click();
+}
+
+async function showRestoreFromR2() {
+  const result = await getBackupList('subscriptions');
+  const backups = (result.data as BackupFile[]) || [];
+
+  if (backups.length === 0) {
+    message.info('云存储中暂无备份记录');
+    return;
+  }
+
+  dialog.info({
+    title: '从云存储恢复',
+    style: { width: '500px', maxWidth: '95vw' },
+    content: () =>
+      h('div', { style: 'max-height: 350px; overflow-y: auto;' }, [
+        h(
+          'p',
+          { style: 'margin-bottom: 12px; color: #666; font-size: 13px;' },
+          '选择要恢复的备份：',
+        ),
+        h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
+          h('thead', [
+            h('tr', { style: 'background: #f5f5f5;' }, [
+              h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
+              h('th', { style: 'padding: 8px; text-align: right;' }, '大小'),
+              h('th', { style: 'padding: 8px; text-align: center;' }, '操作'),
+            ]),
+          ]),
+          h(
+            'tbody',
+            backups.map((backup) =>
+              h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
+                h('td', { style: 'padding: 8px;' }, backup.date),
+                h(
+                  'td',
+                  { style: 'padding: 8px; text-align: right;' },
+                  formatSize(backup.jsonSize),
+                ),
+                h('td', { style: 'padding: 8px; text-align: center;' }, [
+                  h(
+                    'a',
+                    {
+                      style: 'color: #18a058; cursor: pointer;',
+                      onClick: () => handleRestoreFromR2(backup.date),
+                    },
+                    '恢复',
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+        ]),
+      ]),
+    positiveText: '关闭',
+  });
+}
+
+async function handleRestoreFromR2(date: string) {
+  try {
+    const content = await downloadBackup(date, 'json', 'subscriptions');
+    if (!content) {
+      message.error('获取备份数据失败');
+      return;
+    }
+
+    const parsed = JSON.parse(content);
+    const data = parsed.subscriptions || parsed;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      message.error('备份数据为空');
+      return;
+    }
+
+    dialog.warning({
+      title: '确认恢复',
+      content: `将从 ${date} 的备份恢复 ${data.length} 条订阅记录。此操作不会删除现有数据，但可能产生重复记录。确定继续？`,
+      positiveText: '确认恢复',
+      negativeText: '取消',
+      onPositiveClick: async () => {
+        restoring.value = true;
+        try {
+          const result = await restoreBackup(data);
+          if (result.success) {
+            message.success(result.message || '恢复成功');
+            emit('restored');
+          } else {
+            message.error(result.message || '恢复失败');
+          }
+        } finally {
+          restoring.value = false;
+        }
+      },
+    });
+  } catch {
+    message.error('恢复失败');
+  }
 }
 </script>

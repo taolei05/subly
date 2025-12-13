@@ -32,10 +32,6 @@
     </div>
 
     <div class="toolbar-right">
-      <n-dropdown :options="importExportOptions" @select="$emit('import-export', $event)">
-        <n-button secondary> 导入/导出 </n-button>
-      </n-dropdown>
-
       <n-button-group>
         <n-button
           :type="viewMode === 'list' ? 'primary' : 'default'"
@@ -74,11 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  IMPORT_EXPORT_OPTIONS,
-  SORT_OPTIONS,
-  TYPE_FILTER_OPTIONS,
-} from '../../constants';
+import { SORT_OPTIONS, TYPE_FILTER_OPTIONS } from '../../constants';
 import type { SubscriptionType } from '../../types';
 import Icon from '../common/Icon.vue';
 
@@ -94,13 +86,11 @@ defineEmits<{
   'update:filterType': [value: SubscriptionType | null];
   'update:sortBy': [value: string];
   'update:viewMode': [value: 'list' | 'grid' | 'calendar'];
-  'import-export': [key: string];
   add: [];
 }>();
 
 const typeOptions = TYPE_FILTER_OPTIONS;
 const sortOptions = SORT_OPTIONS;
-const importExportOptions = IMPORT_EXPORT_OPTIONS;
 </script>
 
 <style scoped>
