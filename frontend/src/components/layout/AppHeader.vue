@@ -166,7 +166,7 @@ const colorSwatches = [
   }
 
   .header-right :deep(.n-select) {
-    width: 80px !important;
+    width: 85px !important;
   }
 }
 
@@ -180,7 +180,7 @@ const colorSwatches = [
   }
 
   .header-right :deep(.n-select) {
-    width: 70px !important;
+    width: 85px !important;
   }
 }
 </style>
