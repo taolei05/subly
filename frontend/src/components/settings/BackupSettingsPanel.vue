@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { useDialog, useMessage } from 'naive-ui';
+import { NTabPane, NTabs, useDialog, useMessage } from 'naive-ui';
 import Papa from 'papaparse';
 import { computed, h, ref } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
@@ -175,42 +175,34 @@ function openBackupDialog() {
 }
 
 function renderBackupTabs() {
-  return h('div', [
-    h(
-      'div',
-      {
-        style:
-          'display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;',
+  return h(
+    NTabs,
+    {
+      type: 'line',
+      value: activeTab.value,
+      onUpdateValue: (val: 'subscriptions' | 'settings') => {
+        activeTab.value = val;
       },
-      [
-        h(
-          'button',
-          {
-            style: `padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 2px solid ${activeTab.value === 'subscriptions' ? '#18a058' : 'transparent'}; color: ${activeTab.value === 'subscriptions' ? '#18a058' : '#666'}; font-weight: ${activeTab.value === 'subscriptions' ? '500' : 'normal'};`,
-            onClick: () => {
-              activeTab.value = 'subscriptions';
-              openBackupDialog();
-            },
-          },
-          `订阅信息 (${subscriptionBackups.value.length})`,
-        ),
-        h(
-          'button',
-          {
-            style: `padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 2px solid ${activeTab.value === 'settings' ? '#18a058' : 'transparent'}; color: ${activeTab.value === 'settings' ? '#18a058' : '#666'}; font-weight: ${activeTab.value === 'settings' ? '500' : 'normal'};`,
-            onClick: () => {
-              activeTab.value = 'settings';
-              openBackupDialog();
-            },
-          },
-          `系统设置 (${settingsBackups.value.length})`,
-        ),
-      ],
-    ),
-    activeTab.value === 'subscriptions'
-      ? renderSubscriptionBackups()
-      : renderSettingsBackups(),
-  ]);
+    },
+    () => [
+      h(
+        NTabPane,
+        {
+          name: 'subscriptions',
+          tab: `订阅信息 (${subscriptionBackups.value.length})`,
+        },
+        () => renderSubscriptionBackups(),
+      ),
+      h(
+        NTabPane,
+        {
+          name: 'settings',
+          tab: `系统设置 (${settingsBackups.value.length})`,
+        },
+        () => renderSettingsBackups(),
+      ),
+    ],
+  );
 }
 
 function renderSubscriptionBackups() {
