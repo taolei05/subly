@@ -96,6 +96,16 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 频率限制表（防止暴力破解）
+CREATE TABLE IF NOT EXISTS rate_limits (
+    key TEXT PRIMARY KEY,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    first_attempt_at INTEGER NOT NULL,
+    last_attempt_at INTEGER NOT NULL,
+    lockout_until INTEGER,
+    lockout_count INTEGER DEFAULT 0
+);
+
 -- 创建索引优化查询
 CREATE INDEX IF NOT EXISTS idx_resend_config_user_id ON resend_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_serverchan_config_user_id ON serverchan_config(user_id);
@@ -104,3 +114,4 @@ CREATE INDEX IF NOT EXISTS idx_backup_config_user_id ON backup_config(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_end_date ON subscriptions(end_date);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_last_attempt ON rate_limits(last_attempt_at);

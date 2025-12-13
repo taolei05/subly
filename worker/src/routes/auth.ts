@@ -1,3 +1,13 @@
+import {
+	checkIpRateLimit,
+	checkRegisterRateLimit,
+	checkUsernameRateLimit,
+	clearLoginFailures,
+	getClientIp,
+	recordIpAttempt,
+	recordLoginFailure,
+	recordRegisterSuccess,
+} from "../services/rateLimit";
 import type {
 	Env,
 	UpdateSettingsRequest,
@@ -49,6 +59,22 @@ const loginSchema = {
  */
 export async function register(request: Request, env: Env): Promise<Response> {
 	try {
+		const clientIp = getClientIp(request);
+
+		// 检查 IP 频率限制
+		const ipLimit = await checkIpRateLimit(env, clientIp, "register");
+		if (!ipLimit.allowed) {
+			logger.warn("Register blocked by IP rate limit", { ip: clientIp });
+			return errorResponse(ipLimit.message || "请求过于频繁", 429);
+		}
+
+		// 检查注册频率限制
+		const registerLimit = await checkRegisterRateLimit(env, clientIp);
+		if (!registerLimit.allowed) {
+			logger.warn("Register blocked by register rate limit", { ip: clientIp });
+			return errorResponse(registerLimit.message || "注册过于频繁", 429);
+		}
+
 		// 检查是否允许注册
 		const config = await env.DB.prepare(
 			"SELECT registration_enabled FROM system_config WHERE id = 1",
@@ -79,6 +105,8 @@ export async function register(request: Request, env: Env): Promise<Response> {
 			.first();
 
 		if (existing) {
+			// 记录 IP 请求（即使失败也记录，防止用户名枚举）
+			await recordIpAttempt(env, clientIp, "register");
 			return errorResponse("用户名已存在");
 		}
 
@@ -115,7 +143,10 @@ export async function register(request: Request, env: Env): Promise<Response> {
 			),
 		]);
 
-		logger.info("User registered", { username });
+		// 记录注册成功
+		await recordRegisterSuccess(env, clientIp);
+
+		logger.info("User registered", { username, ip: clientIp });
 		return successResponse(null, "注册成功");
 	} catch (error) {
 		logger.error("Register error", error);
@@ -128,6 +159,15 @@ export async function register(request: Request, env: Env): Promise<Response> {
  */
 export async function login(request: Request, env: Env): Promise<Response> {
 	try {
+		const clientIp = getClientIp(request);
+
+		// 检查 IP 频率限制
+		const ipLimit = await checkIpRateLimit(env, clientIp, "login");
+		if (!ipLimit.allowed) {
+			logger.warn("Login blocked by IP rate limit", { ip: clientIp });
+			return errorResponse(ipLimit.message || "请求过于频繁", 429);
+		}
+
 		const body = await request.json();
 		const validation = validateRequest<{
 			username: string;
@@ -145,6 +185,16 @@ export async function login(request: Request, env: Env): Promise<Response> {
 			totp_code?: string;
 		};
 
+		// 检查用户名级别的频率限制
+		const usernameLimit = await checkUsernameRateLimit(env, username);
+		if (!usernameLimit.allowed) {
+			logger.warn("Login blocked by username rate limit", { username });
+			return errorResponse(usernameLimit.message || "账户已被临时锁定", 429);
+		}
+
+		// 记录 IP 请求
+		await recordIpAttempt(env, clientIp, "login");
+
 		const user = await env.DB.prepare(
 			"SELECT id, username, password, totp_enabled, totp_secret FROM users WHERE username = ?",
 		)
@@ -158,11 +208,19 @@ export async function login(request: Request, env: Env): Promise<Response> {
 			}>();
 
 		if (!user) {
+			// 记录失败（防止用户名枚举，使用相同的错误消息）
+			await recordLoginFailure(env, username);
 			return errorResponse("用户名或密码错误");
 		}
 
 		const isValid = await verifyPassword(password, user.password);
 		if (!isValid) {
+			// 记录登录失败
+			await recordLoginFailure(env, username);
+			logger.warn("Login failed - wrong password", {
+				username,
+				ip: clientIp,
+			});
 			return errorResponse("用户名或密码错误");
 		}
 
@@ -180,9 +238,15 @@ export async function login(request: Request, env: Env): Promise<Response> {
 			const { verifyTOTP } = await import("../services/totp");
 			const totpValid = await verifyTOTP(user.totp_secret, totp_code);
 			if (!totpValid) {
+				// 记录 2FA 验证失败
+				await recordLoginFailure(env, username);
+				logger.warn("Login failed - wrong TOTP", { username, ip: clientIp });
 				return errorResponse("两步验证码错误");
 			}
 		}
+
+		// 登录成功，清除失败记录
+		await clearLoginFailures(env, username);
 
 		const token = await generateToken(user.id, user.username);
 
@@ -193,7 +257,7 @@ export async function login(request: Request, env: Env): Promise<Response> {
 			.bind(user.id)
 			.first<UserWithConfig>();
 
-		logger.info("User logged in", { userId: user.id, username });
+		logger.info("User logged in", { userId: user.id, username, ip: clientIp });
 		return successResponse({
 			token,
 			user: userWithConfig,
