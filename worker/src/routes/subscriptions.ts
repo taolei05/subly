@@ -356,6 +356,11 @@ export async function batchDeleteSubscriptions(
 			return errorResponse("请选择要删除的订阅", 400);
 		}
 
+		// 验证所有 id 都是正整数
+		if (!ids.every((id) => Number.isInteger(id) && id > 0)) {
+			return errorResponse("无效的订阅 ID", 400);
+		}
+
 		const placeholders = ids.map(() => "?").join(",");
 		const result = await env.DB.prepare(
 			`DELETE FROM subscriptions WHERE id IN (${placeholders}) AND user_id = ?`,
@@ -395,6 +400,11 @@ export async function batchUpdateRemindDays(
 
 		if (!Array.isArray(ids) || ids.length === 0) {
 			return errorResponse("请选择要修改的订阅", 400);
+		}
+
+		// 验证所有 id 都是正整数
+		if (!ids.every((id) => Number.isInteger(id) && id > 0)) {
+			return errorResponse("无效的订阅 ID", 400);
 		}
 
 		if (

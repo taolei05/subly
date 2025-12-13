@@ -118,6 +118,11 @@ export async function downloadBackup(
 			return errorResponse("缺少日期参数");
 		}
 
+		// 验证日期格式，防止路径遍历攻击
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+			return errorResponse("日期格式无效，应为 YYYY-MM-DD");
+		}
+
 		if (format !== "json" && format !== "csv") {
 			return errorResponse("格式参数无效，仅支持 json 或 csv");
 		}
