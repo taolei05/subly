@@ -41,13 +41,6 @@
           />
         </n-form-item>
 
-        <n-form-item v-if="authStore.turnstileEnabled && authStore.turnstileSiteKey" label="人机验证">
-          <Turnstile
-            :site-key="authStore.turnstileSiteKey"
-            v-model="turnstileToken"
-          />
-        </n-form-item>
-        
         <n-button 
           type="primary" 
           block 
@@ -58,7 +51,7 @@
         </n-button>
       </n-form>
       
-      <div class="auth-footer">
+      <div v-if="authStore.registrationEnabled" class="auth-footer">
         <span>还没有账号？</span>
         <router-link to="/register">立即注册</router-link>
       </div>
@@ -70,7 +63,6 @@
 import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import Turnstile from '../components/common/Turnstile.vue';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 
@@ -82,7 +74,6 @@ const authStore = useAuthStore();
 
 const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
-const turnstileToken = ref('');
 
 const formData = reactive({
   username: '',
@@ -103,21 +94,7 @@ async function handleLogin() {
     await formRef.value?.validate();
     loading.value = true;
 
-    // 如果启用了 Turnstile 但没有 token，提示用户
-    if (
-      authStore.turnstileEnabled &&
-      authStore.turnstileSiteKey &&
-      !turnstileToken.value
-    ) {
-      message.error('请完成人机验证');
-      loading.value = false;
-      return;
-    }
-
-    const result = await authStore.login({
-      ...formData,
-      turnstile_token: turnstileToken.value || undefined,
-    });
+    const result = await authStore.login(formData);
 
     if (result.success) {
       message.success('登录成功');
@@ -125,7 +102,7 @@ async function handleLogin() {
     } else {
       message.error(result.message || '登录失败');
     }
-  } catch (error) {
+  } catch {
     // 表单验证失败
   } finally {
     loading.value = false;
