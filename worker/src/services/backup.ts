@@ -57,6 +57,11 @@ interface SettingsBackupData {
 			to_email?: number;
 			to_r2?: number;
 		};
+		// 两步验证 (2FA)
+		totp?: {
+			enabled?: number;
+			secret?: string;
+		};
 		// 安全设置（仅管理员）
 		security?: {
 			site_url?: string;
@@ -590,7 +595,7 @@ async function generateSettingsBackupData(
 	userId: number,
 	isAdmin: boolean,
 ): Promise<SettingsBackupData> {
-	// 获取用户完整配置
+	// 获取用户完整配置（包括 2FA）
 	const user = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
 		.bind(userId)
 		.first<{
@@ -616,11 +621,19 @@ async function generateSettingsBackupData(
 			backup_frequency?: string;
 			backup_to_email?: number;
 			backup_to_r2?: number;
+			totp_enabled?: number;
 		}>();
 
 	if (!user) {
 		throw new Error("用户不存在");
 	}
+
+	// 获取 2FA 密钥（需要单独查询，因为 USER_WITH_CONFIG_QUERY 不包含敏感的 totp_secret）
+	const totpData = await env.DB.prepare(
+		"SELECT totp_secret, totp_enabled FROM users WHERE id = ?",
+	)
+		.bind(userId)
+		.first<{ totp_secret?: string; totp_enabled?: number }>();
 
 	const backupData: SettingsBackupData = {
 		version: "1.0",
@@ -656,6 +669,11 @@ async function generateSettingsBackupData(
 				frequency: user.backup_frequency,
 				to_email: user.backup_to_email,
 				to_r2: user.backup_to_r2,
+			},
+			// 两步验证设置
+			totp: {
+				enabled: totpData?.totp_enabled,
+				secret: totpData?.totp_secret,
 			},
 		},
 	};
@@ -787,6 +805,7 @@ async function sendSettingsBackupEmail(
 
 		const dateStr = backupData.exported_at.split("T")[0];
 		const hasSecuritySettings = !!backupData.settings.security;
+		const hasTotpSettings = !!backupData.settings.totp?.enabled;
 
 		const html = `
     <!DOCTYPE html>
@@ -806,13 +825,14 @@ async function sendSettingsBackupEmail(
           </tr>
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999;">备份内容</td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">Resend、Server酱、汇率、备份配置${hasSecuritySettings ? "、安全设置" : ""}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">Resend、Server酱、汇率、备份配置${hasTotpSettings ? "、两步验证" : ""}${hasSecuritySettings ? "、安全设置" : ""}</td>
           </tr>
           <tr>
             <td style="padding: 12px; color: #999;">附件格式</td>
             <td style="padding: 12px;">JSON</td>
           </tr>
         </table>
+        ${hasTotpSettings ? '<p style="margin-top: 16px; color: #d03050; font-size: 14px;">⚠️ 此备份包含两步验证密钥，请妥善保管，切勿泄露！</p>' : ""}
         <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的备份邮件，请妥善保管备份文件。</p>
       </div>
     </body>

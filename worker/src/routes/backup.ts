@@ -258,6 +258,10 @@ export async function restoreSettings(
 					to_email?: number;
 					to_r2?: number;
 				};
+				totp?: {
+					enabled?: number;
+					secret?: string;
+				};
 				security?: {
 					site_url?: string;
 					registration_enabled?: boolean;
@@ -366,6 +370,31 @@ export async function restoreSettings(
 					`UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
 				)
 					.bind(...params)
+					.run();
+			}
+		}
+
+		// 恢复两步验证 (2FA) 配置
+		if (settings.totp) {
+			const t = settings.totp;
+			const totpUpdates: string[] = [];
+			const totpParams: (string | number | null)[] = [];
+
+			if (t.enabled !== undefined) {
+				totpUpdates.push("totp_enabled = ?");
+				totpParams.push(t.enabled);
+			}
+			if (t.secret !== undefined) {
+				totpUpdates.push("totp_secret = ?");
+				totpParams.push(t.secret ?? null);
+			}
+
+			if (totpUpdates.length > 0) {
+				totpParams.push(payload.userId);
+				await env.DB.prepare(
+					`UPDATE users SET ${totpUpdates.join(", ")} WHERE id = ?`,
+				)
+					.bind(...totpParams)
 					.run();
 			}
 		}
