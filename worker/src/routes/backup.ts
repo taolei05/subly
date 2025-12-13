@@ -1,7 +1,9 @@
 import {
 	downloadR2Backup,
 	listR2Backups,
+	listR2SettingsBackups,
 	manualBackup,
+	manualSettingsBackup,
 } from "../services/backup";
 import type { Env } from "../types/index";
 import { errorResponse, logger, successResponse, verifyToken } from "../utils";
@@ -38,26 +40,56 @@ export async function triggerBackup(
 			return errorResponse("演示账户不能执行备份", 403);
 		}
 
-		const { to_email, to_r2 } = (await request.json()) as {
-			to_email?: boolean;
-			to_r2?: boolean;
-		};
+		const { to_email, to_r2, backup_subscriptions, backup_settings } =
+			(await request.json()) as {
+				to_email?: boolean;
+				to_r2?: boolean;
+				backup_subscriptions?: boolean;
+				backup_settings?: boolean;
+			};
 
 		if (!to_email && !to_r2) {
 			return errorResponse("请至少选择一种备份方式");
 		}
 
-		const result = await manualBackup(
-			env,
-			payload.userId,
-			to_email ?? false,
-			to_r2 ?? false,
-		);
+		// 默认备份订阅信息（兼容旧版本）
+		const shouldBackupSubscriptions = backup_subscriptions !== false;
+		const shouldBackupSettings = backup_settings === true;
 
-		if (result.success) {
-			return successResponse(null, result.message);
+		if (!shouldBackupSubscriptions && !shouldBackupSettings) {
+			return errorResponse("请至少选择一种备份内容");
 		}
-		return errorResponse(result.message);
+
+		const results: string[] = [];
+		const isAdmin = user.role === "admin";
+
+		// 备份订阅信息
+		if (shouldBackupSubscriptions) {
+			const result = await manualBackup(
+				env,
+				payload.userId,
+				to_email ?? false,
+				to_r2 ?? false,
+			);
+			results.push(`订阅信息：${result.message}`);
+		}
+
+		// 备份系统设置
+		if (shouldBackupSettings) {
+			const result = await manualSettingsBackup(
+				env,
+				payload.userId,
+				isAdmin,
+				to_email ?? false,
+				to_r2 ?? false,
+			);
+			results.push(`系统设置：${result.message}`);
+		}
+
+		const allSuccess = results.every((r) => r.includes("成功"));
+		return allSuccess
+			? successResponse(null, results.join("；"))
+			: errorResponse(results.join("；"));
 	} catch (error) {
 		logger.error("TriggerBackup error", error);
 		return errorResponse("备份失败，请重试", 500);
@@ -81,6 +113,14 @@ export async function getBackupList(
 		const payload = await verifyToken(token);
 		if (!payload) {
 			return errorResponse("Token 无效或已过期", 401);
+		}
+
+		const url = new URL(request.url);
+		const type = url.searchParams.get("type") || "subscriptions";
+
+		if (type === "settings") {
+			const backups = await listR2SettingsBackups(env, payload.userId);
+			return successResponse(backups);
 		}
 
 		const backups = await listR2Backups(env, payload.userId);
@@ -127,18 +167,29 @@ export async function downloadBackup(
 			return errorResponse("格式参数无效，仅支持 json 或 csv");
 		}
 
-		const content = await downloadR2Backup(env, payload.userId, date, format);
+		const type = (url.searchParams.get("type") || "subscriptions") as
+			| "subscriptions"
+			| "settings";
+
+		const content = await downloadR2Backup(
+			env,
+			payload.userId,
+			date,
+			format,
+			type,
+		);
 
 		if (!content) {
 			return errorResponse("备份文件不存在", 404);
 		}
 
 		const contentType = format === "json" ? "application/json" : "text/csv";
+		const prefix = type === "settings" ? "subly-settings" : "subly-backup";
 
 		return new Response(content, {
 			headers: {
 				"Content-Type": contentType,
-				"Content-Disposition": `attachment; filename="subly-backup-${date}.${format}"`,
+				"Content-Disposition": `attachment; filename="${prefix}-${date}.${format}"`,
 			},
 		});
 	} catch (error) {

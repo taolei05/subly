@@ -23,6 +23,18 @@
         </n-checkbox-group>
       </n-form-item>
 
+      <n-form-item label="备份内容">
+        <n-checkbox-group v-model:value="backupContents" :disabled="disabled">
+          <n-space>
+            <n-checkbox value="subscriptions" label="订阅信息" />
+            <n-checkbox value="settings" label="系统设置" />
+          </n-space>
+        </n-checkbox-group>
+        <n-text v-if="!isAdmin" depth="3" style="font-size: 12px; display: block; margin-top: 4px;">
+          注：安全设置仅管理员可备份
+        </n-text>
+      </n-form-item>
+
       <n-form-item v-if="formData.backup_last_at" label="上次备份时间">
         <n-text>{{ formatBackupTime(formData.backup_last_at) }}</n-text>
       </n-form-item>
@@ -33,7 +45,7 @@
             secondary
             type="primary"
             :loading="backingUp"
-            :disabled="disabled || (!formData.backup_to_email && !formData.backup_to_r2)"
+            :disabled="disabled || (!formData.backup_to_email && !formData.backup_to_r2) || backupContents.length === 0"
             @click="handleManualBackup"
           >
             立即备份
@@ -50,7 +62,7 @@
       </n-form-item>
 
       <n-text depth="3" style="font-size: 12px; display: block; margin-top: 8px;">
-        备份数据包含所有订阅信息，同时保存 JSON 和 CSV 两种格式。邮箱备份需要先配置 Resend API Key。
+        订阅信息备份同时保存 JSON 和 CSV 两种格式，系统设置仅保存 JSON 格式。邮箱备份需要先配置 Resend API Key。
       </n-text>
     </div>
   </n-collapse-item>
@@ -63,13 +75,17 @@ import { computed, h, ref } from 'vue';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import { downloadBackup, getBackupList, triggerBackup } from '../../api/backup';
-import type { BackupFile, UserSettings } from '../../types';
+import { useAuthStore } from '../../stores/auth';
+import type { BackupFile, SettingsBackupFile, UserSettings } from '../../types';
 
 const props = defineProps<{ formData: UserSettings; disabled?: boolean }>();
 
 const dialog = useDialog();
 const message = useMessage();
+const authStore = useAuthStore();
 const backingUp = ref(false);
+
+const isAdmin = computed(() => authStore.isAdmin);
 
 const frequencyOptions = [
   { label: '每天', value: 'daily' },
@@ -77,7 +93,6 @@ const frequencyOptions = [
   { label: '每月', value: 'monthly' },
 ];
 
-// 双向绑定备份目标
 const backupTargets = computed({
   get: () => {
     const targets: string[] = [];
@@ -91,10 +106,24 @@ const backupTargets = computed({
   },
 });
 
+const backupContents = ref<string[]>(['subscriptions']);
+const activeTab = ref<'subscriptions' | 'settings'>('subscriptions');
+const subscriptionBackups = ref<BackupFile[]>([]);
+const settingsBackups = ref<SettingsBackupFile[]>([]);
+const previewData = ref<unknown>(null);
+const csvData = ref<Record<string, unknown>[]>([]);
+const csvHeaders = ref<string[]>([]);
+
 function formatBackupTime(isoString: string): string {
   return new Date(isoString).toLocaleString('zh-CN', {
     timeZone: 'Asia/Shanghai',
   });
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function handleManualBackup() {
@@ -103,6 +132,8 @@ async function handleManualBackup() {
     const result = await triggerBackup(
       props.formData.backup_to_email ?? false,
       props.formData.backup_to_r2 ?? false,
+      backupContents.value.includes('subscriptions'),
+      backupContents.value.includes('settings'),
     );
     if (result.success) {
       message.success(result.message || '备份成功');
@@ -115,117 +146,227 @@ async function handleManualBackup() {
 }
 
 async function showBackupList() {
-  const result = await getBackupList();
-  if (!result.success || !result.data) {
-    message.error('获取备份列表失败');
-    return;
-  }
+  const [subResult, settingsResult] = await Promise.all([
+    getBackupList('subscriptions'),
+    getBackupList('settings'),
+  ]);
 
-  const backups = result.data as BackupFile[];
+  subscriptionBackups.value = (subResult.data as BackupFile[]) || [];
+  settingsBackups.value = (settingsResult.data as SettingsBackupFile[]) || [];
 
-  if (backups.length === 0) {
+  if (
+    subscriptionBackups.value.length === 0 &&
+    settingsBackups.value.length === 0
+  ) {
     message.info('暂无备份记录');
     return;
   }
 
+  openBackupDialog();
+}
+
+function openBackupDialog() {
   dialog.info({
     title: '历史备份',
-    style: { width: '700px' },
-    content: () => {
-      return h('div', { style: 'max-height: 400px; overflow-y: auto;' }, [
-        h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
-          h('thead', [
-            h('tr', { style: 'background: #f5f5f5;' }, [
-              h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
-              h('th', { style: 'padding: 8px; text-align: right;' }, 'JSON'),
-              h('th', { style: 'padding: 8px; text-align: right;' }, 'CSV'),
-              h('th', { style: 'padding: 8px; text-align: center;' }, '预览'),
-              h('th', { style: 'padding: 8px; text-align: center;' }, '下载'),
-            ]),
-          ]),
-          h(
-            'tbody',
-            backups.map((backup) =>
-              h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
-                h('td', { style: 'padding: 8px;' }, backup.date),
-                h(
-                  'td',
-                  { style: 'padding: 8px; text-align: right;' },
-                  formatSize(backup.jsonSize),
-                ),
-                h(
-                  'td',
-                  { style: 'padding: 8px; text-align: right;' },
-                  formatSize(backup.csvSize),
-                ),
-                h('td', { style: 'padding: 8px; text-align: center;' }, [
-                  h(
-                    'a',
-                    {
-                      style:
-                        'color: #18a058; cursor: pointer; margin-right: 8px;',
-                      onClick: () => handlePreview(backup.date, 'json'),
-                    },
-                    'JSON',
-                  ),
-                  h(
-                    'a',
-                    {
-                      style: 'color: #18a058; cursor: pointer;',
-                      onClick: () => handlePreview(backup.date, 'csv'),
-                    },
-                    'CSV',
-                  ),
-                ]),
-                h('td', { style: 'padding: 8px; text-align: center;' }, [
-                  h(
-                    'a',
-                    {
-                      style:
-                        'color: #18a058; cursor: pointer; margin-right: 8px;',
-                      onClick: () => handleDownload(backup.date, 'json'),
-                    },
-                    'JSON',
-                  ),
-                  h(
-                    'a',
-                    {
-                      style: 'color: #18a058; cursor: pointer;',
-                      onClick: () => handleDownload(backup.date, 'csv'),
-                    },
-                    'CSV',
-                  ),
-                ]),
-              ]),
-            ),
-          ),
-        ]),
-      ]);
-    },
+    style: { width: '750px', maxWidth: '95vw' },
+    content: () => renderBackupTabs(),
     positiveText: '关闭',
   });
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function renderBackupTabs() {
+  return h('div', [
+    h(
+      'div',
+      {
+        style:
+          'display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0;',
+      },
+      [
+        h(
+          'button',
+          {
+            style: `padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 2px solid ${activeTab.value === 'subscriptions' ? '#18a058' : 'transparent'}; color: ${activeTab.value === 'subscriptions' ? '#18a058' : '#666'}; font-weight: ${activeTab.value === 'subscriptions' ? '500' : 'normal'};`,
+            onClick: () => {
+              activeTab.value = 'subscriptions';
+              openBackupDialog();
+            },
+          },
+          `订阅信息 (${subscriptionBackups.value.length})`,
+        ),
+        h(
+          'button',
+          {
+            style: `padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; border-bottom: 2px solid ${activeTab.value === 'settings' ? '#18a058' : 'transparent'}; color: ${activeTab.value === 'settings' ? '#18a058' : '#666'}; font-weight: ${activeTab.value === 'settings' ? '500' : 'normal'};`,
+            onClick: () => {
+              activeTab.value = 'settings';
+              openBackupDialog();
+            },
+          },
+          `系统设置 (${settingsBackups.value.length})`,
+        ),
+      ],
+    ),
+    activeTab.value === 'subscriptions'
+      ? renderSubscriptionBackups()
+      : renderSettingsBackups(),
+  ]);
 }
 
-async function handleDownload(date: string, format: 'json' | 'csv' = 'json') {
+function renderSubscriptionBackups() {
+  if (subscriptionBackups.value.length === 0) {
+    return h(
+      'div',
+      { style: 'text-align: center; color: #999; padding: 40px;' },
+      '暂无订阅信息备份',
+    );
+  }
+  return h('div', { style: 'max-height: 350px; overflow-y: auto;' }, [
+    h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
+      h('thead', [
+        h('tr', { style: 'background: #f5f5f5;' }, [
+          h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
+          h('th', { style: 'padding: 8px; text-align: right;' }, 'JSON'),
+          h('th', { style: 'padding: 8px; text-align: right;' }, 'CSV'),
+          h('th', { style: 'padding: 8px; text-align: center;' }, '预览'),
+          h('th', { style: 'padding: 8px; text-align: center;' }, '下载'),
+        ]),
+      ]),
+      h(
+        'tbody',
+        subscriptionBackups.value.map((backup) =>
+          h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
+            h('td', { style: 'padding: 8px;' }, backup.date),
+            h(
+              'td',
+              { style: 'padding: 8px; text-align: right;' },
+              formatSize(backup.jsonSize),
+            ),
+            h(
+              'td',
+              { style: 'padding: 8px; text-align: right;' },
+              formatSize(backup.csvSize),
+            ),
+            h('td', { style: 'padding: 8px; text-align: center;' }, [
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer; margin-right: 8px;',
+                  onClick: () =>
+                    handlePreview(backup.date, 'json', 'subscriptions'),
+                },
+                'JSON',
+              ),
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer;',
+                  onClick: () =>
+                    handlePreview(backup.date, 'csv', 'subscriptions'),
+                },
+                'CSV',
+              ),
+            ]),
+            h('td', { style: 'padding: 8px; text-align: center;' }, [
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer; margin-right: 8px;',
+                  onClick: () =>
+                    handleDownload(backup.date, 'json', 'subscriptions'),
+                },
+                'JSON',
+              ),
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer;',
+                  onClick: () =>
+                    handleDownload(backup.date, 'csv', 'subscriptions'),
+                },
+                'CSV',
+              ),
+            ]),
+          ]),
+        ),
+      ),
+    ]),
+  ]);
+}
+
+function renderSettingsBackups() {
+  if (settingsBackups.value.length === 0) {
+    return h(
+      'div',
+      { style: 'text-align: center; color: #999; padding: 40px;' },
+      '暂无系统设置备份',
+    );
+  }
+  return h('div', { style: 'max-height: 350px; overflow-y: auto;' }, [
+    h('table', { style: 'width: 100%; border-collapse: collapse;' }, [
+      h('thead', [
+        h('tr', { style: 'background: #f5f5f5;' }, [
+          h('th', { style: 'padding: 8px; text-align: left;' }, '日期'),
+          h('th', { style: 'padding: 8px; text-align: right;' }, '大小'),
+          h('th', { style: 'padding: 8px; text-align: center;' }, '预览'),
+          h('th', { style: 'padding: 8px; text-align: center;' }, '下载'),
+        ]),
+      ]),
+      h(
+        'tbody',
+        settingsBackups.value.map((backup) =>
+          h('tr', { style: 'border-bottom: 1px solid #eee;' }, [
+            h('td', { style: 'padding: 8px;' }, backup.date),
+            h(
+              'td',
+              { style: 'padding: 8px; text-align: right;' },
+              formatSize(backup.jsonSize),
+            ),
+            h('td', { style: 'padding: 8px; text-align: center;' }, [
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer;',
+                  onClick: () => handlePreview(backup.date, 'json', 'settings'),
+                },
+                'JSON',
+              ),
+            ]),
+            h('td', { style: 'padding: 8px; text-align: center;' }, [
+              h(
+                'a',
+                {
+                  style: 'color: #18a058; cursor: pointer;',
+                  onClick: () =>
+                    handleDownload(backup.date, 'json', 'settings'),
+                },
+                'JSON',
+              ),
+            ]),
+          ]),
+        ),
+      ),
+    ]),
+  ]);
+}
+
+async function handleDownload(
+  date: string,
+  format: 'json' | 'csv',
+  type: 'subscriptions' | 'settings',
+) {
   try {
-    const content = await downloadBackup(date, format);
+    const content = await downloadBackup(date, format, type);
     if (!content) {
       message.error('下载失败');
       return;
     }
-
     const mimeType = format === 'json' ? 'application/json' : 'text/csv';
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `subly-backup-${date}.${format}`;
+    a.download = `${type === 'settings' ? 'subly-settings' : 'subly-backup'}-${date}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
   } catch {
@@ -233,25 +374,20 @@ async function handleDownload(date: string, format: 'json' | 'csv' = 'json') {
   }
 }
 
-// 预览状态
-const previewFormat = ref<'json' | 'csv'>('json');
-const previewData = ref<unknown>(null);
-const csvData = ref<Record<string, unknown>[]>([]);
-const csvHeaders = ref<string[]>([]);
-
-async function handlePreview(date: string, format: 'json' | 'csv' = 'json') {
+async function handlePreview(
+  date: string,
+  format: 'json' | 'csv',
+  type: 'subscriptions' | 'settings',
+) {
   try {
-    const content = await downloadBackup(date, format);
+    const content = await downloadBackup(date, format, type);
     if (!content) {
       message.error('获取备份数据失败');
       return;
     }
-
-    previewFormat.value = format;
-
     if (format === 'json') {
       previewData.value = JSON.parse(content);
-      showJsonPreviewDialog(date);
+      showJsonPreviewDialog(date, type);
     } else {
       const parsed = Papa.parse(content, { header: true });
       csvData.value = parsed.data as Record<string, unknown>[];
@@ -263,12 +399,15 @@ async function handlePreview(date: string, format: 'json' | 'csv' = 'json') {
   }
 }
 
-function showJsonPreviewDialog(date: string) {
+function showJsonPreviewDialog(
+  date: string,
+  type: 'subscriptions' | 'settings',
+) {
   dialog.info({
-    title: `JSON 预览 - ${date}`,
+    title: `${type === 'settings' ? '系统设置' : '订阅信息'}预览 - ${date}`,
     style: { width: '800px', maxWidth: '90vw' },
-    content: () => {
-      return h('div', { style: 'max-height: 500px; overflow: auto;' }, [
+    content: () =>
+      h('div', { style: 'max-height: 500px; overflow: auto;' }, [
         h(VueJsonPretty, {
           data: previewData.value,
           deep: 3,
@@ -276,12 +415,11 @@ function showJsonPreviewDialog(date: string) {
           showLine: true,
           showDoubleQuotes: true,
         }),
-      ]);
-    },
+      ]),
     positiveText: '关闭',
     negativeText: '下载',
     onNegativeClick: () => {
-      handleDownload(date, 'json');
+      handleDownload(date, 'json', type);
       return false;
     },
   });
@@ -291,8 +429,8 @@ function showCsvPreviewDialog(date: string) {
   dialog.info({
     title: `CSV 预览 - ${date}`,
     style: { width: '900px', maxWidth: '95vw' },
-    content: () => {
-      return h('div', { style: 'max-height: 500px; overflow: auto;' }, [
+    content: () =>
+      h('div', { style: 'max-height: 500px; overflow: auto;' }, [
         h(
           'table',
           { style: 'width: 100%; border-collapse: collapse; font-size: 12px;' },
@@ -301,14 +439,14 @@ function showCsvPreviewDialog(date: string) {
               h(
                 'tr',
                 { style: 'background: #f5f5f5; position: sticky; top: 0;' },
-                csvHeaders.value.map((header) =>
+                csvHeaders.value.map((hdr) =>
                   h(
                     'th',
                     {
                       style:
                         'padding: 8px; text-align: left; border: 1px solid #e0e0e0; white-space: nowrap;',
                     },
-                    header,
+                    hdr,
                   ),
                 ),
               ),
@@ -318,14 +456,14 @@ function showCsvPreviewDialog(date: string) {
               csvData.value.slice(0, 100).map((row) =>
                 h(
                   'tr',
-                  csvHeaders.value.map((header) =>
+                  csvHeaders.value.map((hdr) =>
                     h(
                       'td',
                       {
                         style:
                           'padding: 6px 8px; border: 1px solid #e0e0e0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',
                       },
-                      String(row[header] ?? ''),
+                      String(row[hdr] ?? ''),
                     ),
                   ),
                 ),
@@ -340,12 +478,11 @@ function showCsvPreviewDialog(date: string) {
               `显示前 100 条，共 ${csvData.value.length} 条记录`,
             )
           : null,
-      ]);
-    },
+      ]),
     positiveText: '关闭',
     negativeText: '下载',
     onNegativeClick: () => {
-      handleDownload(date, 'csv');
+      handleDownload(date, 'csv', 'subscriptions');
       return false;
     },
   });

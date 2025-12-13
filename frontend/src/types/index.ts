@@ -125,6 +125,11 @@ export interface BackupFile {
   csvSize: number;
 }
 
+export interface SettingsBackupFile {
+  date: string;
+  jsonSize: number;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;

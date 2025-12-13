@@ -1,5 +1,10 @@
-import type { BackupFrequency, Env, Subscription } from "../types/index";
-import { logger } from "../utils";
+import type {
+	BackupFrequency,
+	Env,
+	Subscription,
+	UserRole,
+} from "../types/index";
+import { logger, USER_WITH_CONFIG_QUERY } from "../utils";
 
 // ==================== 类型定义 ====================
 
@@ -14,6 +19,50 @@ interface UserBackupConfig {
 	backup_to_email: number;
 	backup_to_r2: number;
 	backup_last_at?: string;
+}
+
+// 系统设置备份数据
+interface SettingsBackupData {
+	version: string;
+	exported_at: string;
+	user: {
+		id: number;
+		username: string;
+		role: UserRole;
+	};
+	settings: {
+		resend?: {
+			email?: string;
+			api_key?: string;
+			domain?: string;
+			enabled?: number;
+			notify_hours?: string;
+			template_subject?: string;
+			template_body?: string;
+		};
+		serverchan?: {
+			api_key?: string;
+			enabled?: number;
+			notify_hours?: string;
+			template_title?: string;
+			template_body?: string;
+		};
+		exchangerate?: {
+			api_key?: string;
+			enabled?: number;
+		};
+		backup?: {
+			enabled?: number;
+			frequency?: string;
+			to_email?: number;
+			to_r2?: number;
+		};
+		// 安全设置（仅管理员）
+		security?: {
+			site_url?: string;
+			registration_enabled?: boolean;
+		};
+	};
 }
 
 interface BackupData {
@@ -512,13 +561,15 @@ export async function downloadR2Backup(
 	userId: number,
 	date: string,
 	format: "json" | "csv" = "json",
+	type: "subscriptions" | "settings" = "subscriptions",
 ): Promise<string | null> {
 	if (!env.BACKUP_BUCKET) {
 		return null;
 	}
 
 	try {
-		const key = `backups/${userId}/${date}.${format}`;
+		const folder = type === "settings" ? "settings" : "backups";
+		const key = `${folder}/${userId}/${date}.${format}`;
 		const object = await env.BACKUP_BUCKET.get(key);
 
 		if (!object) {
@@ -529,5 +580,304 @@ export async function downloadR2Backup(
 	} catch (error) {
 		logger.error("[Backup] Download R2 backup error", error);
 		return null;
+	}
+}
+
+// ==================== 系统设置备份 ====================
+
+async function generateSettingsBackupData(
+	env: Env,
+	userId: number,
+	isAdmin: boolean,
+): Promise<SettingsBackupData> {
+	// 获取用户完整配置
+	const user = await env.DB.prepare(`${USER_WITH_CONFIG_QUERY} WHERE u.id = ?`)
+		.bind(userId)
+		.first<{
+			id: number;
+			username: string;
+			role: UserRole;
+			site_url?: string;
+			email?: string;
+			resend_api_key?: string;
+			resend_domain?: string;
+			resend_enabled?: number;
+			resend_notify_hours?: string;
+			resend_template_subject?: string;
+			resend_template_body?: string;
+			serverchan_api_key?: string;
+			serverchan_enabled?: number;
+			serverchan_notify_hours?: string;
+			serverchan_template_title?: string;
+			serverchan_template_body?: string;
+			exchangerate_api_key?: string;
+			exchangerate_enabled?: number;
+			backup_enabled?: number;
+			backup_frequency?: string;
+			backup_to_email?: number;
+			backup_to_r2?: number;
+		}>();
+
+	if (!user) {
+		throw new Error("用户不存在");
+	}
+
+	const backupData: SettingsBackupData = {
+		version: "1.0",
+		exported_at: new Date().toISOString(),
+		user: {
+			id: user.id,
+			username: user.username,
+			role: user.role,
+		},
+		settings: {
+			resend: {
+				email: user.email,
+				api_key: user.resend_api_key,
+				domain: user.resend_domain,
+				enabled: user.resend_enabled,
+				notify_hours: user.resend_notify_hours,
+				template_subject: user.resend_template_subject,
+				template_body: user.resend_template_body,
+			},
+			serverchan: {
+				api_key: user.serverchan_api_key,
+				enabled: user.serverchan_enabled,
+				notify_hours: user.serverchan_notify_hours,
+				template_title: user.serverchan_template_title,
+				template_body: user.serverchan_template_body,
+			},
+			exchangerate: {
+				api_key: user.exchangerate_api_key,
+				enabled: user.exchangerate_enabled,
+			},
+			backup: {
+				enabled: user.backup_enabled,
+				frequency: user.backup_frequency,
+				to_email: user.backup_to_email,
+				to_r2: user.backup_to_r2,
+			},
+		},
+	};
+
+	// 仅管理员可备份安全设置
+	if (isAdmin) {
+		const systemConfig = await env.DB.prepare(
+			"SELECT registration_enabled FROM system_config WHERE id = 1",
+		).first<{ registration_enabled: number }>();
+
+		backupData.settings.security = {
+			site_url: user.site_url,
+			registration_enabled: systemConfig
+				? Boolean(systemConfig.registration_enabled)
+				: true,
+		};
+	}
+
+	return backupData;
+}
+
+async function saveSettingsBackupToR2(
+	bucket: R2Bucket,
+	userId: number,
+	backupData: SettingsBackupData,
+): Promise<boolean> {
+	try {
+		const date = backupData.exported_at.split("T")[0];
+		const jsonKey = `settings/${userId}/${date}.json`;
+
+		await bucket.put(jsonKey, JSON.stringify(backupData, null, 2), {
+			httpMetadata: { contentType: "application/json" },
+		});
+
+		logger.info("[Backup] Settings saved to R2", { userId, jsonKey });
+		return true;
+	} catch (error) {
+		logger.error("[Backup] Settings R2 save error", error);
+		return false;
+	}
+}
+
+export async function manualSettingsBackup(
+	env: Env,
+	userId: number,
+	isAdmin: boolean,
+	toEmail: boolean,
+	toR2: boolean,
+): Promise<{ success: boolean; message: string }> {
+	try {
+		const user = await env.DB.prepare(`
+      SELECT u.id, u.username, r.email, r.api_key as resend_api_key, r.domain as resend_domain
+      FROM users u
+      LEFT JOIN resend_config r ON u.id = r.user_id
+      WHERE u.id = ?
+    `)
+			.bind(userId)
+			.first<{
+				id: number;
+				username: string;
+				email?: string;
+				resend_api_key?: string;
+				resend_domain?: string;
+			}>();
+
+		if (!user) {
+			return { success: false, message: "用户不存在" };
+		}
+
+		const backupData = await generateSettingsBackupData(env, userId, isAdmin);
+		const results: string[] = [];
+
+		// 备份到邮箱
+		if (toEmail) {
+			if (!user.resend_api_key || !user.email) {
+				results.push("邮箱备份失败：未配置 Resend API Key 或邮箱");
+			} else {
+				const success = await sendSettingsBackupEmail(
+					user.resend_api_key,
+					user.resend_domain || "",
+					user.email,
+					user.username,
+					backupData,
+				);
+				results.push(success ? "邮箱备份成功" : "邮箱备份失败");
+			}
+		}
+
+		// 备份到 R2
+		if (toR2) {
+			if (!env.BACKUP_BUCKET) {
+				results.push("R2 备份失败：未配置存储桶");
+			} else {
+				const success = await saveSettingsBackupToR2(
+					env.BACKUP_BUCKET,
+					userId,
+					backupData,
+				);
+				results.push(success ? "R2 备份成功" : "R2 备份失败");
+			}
+		}
+
+		const allSuccess = results.every((r) => r.includes("成功"));
+		return {
+			success: allSuccess,
+			message: results.join("；"),
+		};
+	} catch (error) {
+		logger.error("[Backup] Manual settings backup error", error);
+		return { success: false, message: "备份失败，请重试" };
+	}
+}
+
+async function sendSettingsBackupEmail(
+	apiKey: string,
+	domain: string,
+	email: string,
+	username: string,
+	backupData: SettingsBackupData,
+): Promise<boolean> {
+	try {
+		const fromEmail = domain
+			? `Subly <noreply@${domain}>`
+			: "Subly <onboarding@resend.dev>";
+
+		const backupTime = new Date().toLocaleString("zh-CN", {
+			timeZone: "Asia/Shanghai",
+		});
+
+		const dateStr = backupData.exported_at.split("T")[0];
+		const hasSecuritySettings = !!backupData.settings.security;
+
+		const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>Subly 系统设置备份</title></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #2080f0; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px;">Subly 系统设置备份</h1>
+      </div>
+      <div style="background: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px;">
+        <p>您好，${username}！</p>
+        <p>您的 Subly 系统设置已成功备份，请查收附件中的备份文件。</p>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; margin-top: 16px;">
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999; width: 100px;">备份时间</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">${backupTime}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #999;">备份内容</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">Resend、Server酱、汇率、备份配置${hasSecuritySettings ? "、安全设置" : ""}</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; color: #999;">附件格式</td>
+            <td style="padding: 12px;">JSON</td>
+          </tr>
+        </table>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">这是一封自动发送的备份邮件，请妥善保管备份文件。</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+		const response = await fetch("https://api.resend.com/emails", {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				from: fromEmail,
+				to: email,
+				subject: `[Subly] 系统设置备份 - ${backupTime}`,
+				html,
+				attachments: [
+					{
+						filename: `subly-settings-${dateStr}.json`,
+						content: toBase64(JSON.stringify(backupData, null, 2)),
+					},
+				],
+			}),
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			logger.error("[Backup] Settings email send error", {
+				status: response.status,
+				error: errorText,
+			});
+			return false;
+		}
+
+		return true;
+	} catch (error) {
+		logger.error("[Backup] Settings email send error", error);
+		return false;
+	}
+}
+
+// ==================== 获取系统设置备份列表 ====================
+
+export async function listR2SettingsBackups(
+	env: Env,
+	userId: number,
+): Promise<{ date: string; jsonSize: number }[]> {
+	if (!env.BACKUP_BUCKET) {
+		return [];
+	}
+
+	try {
+		const prefix = `settings/${userId}/`;
+		const listed = await env.BACKUP_BUCKET.list({ prefix });
+
+		return listed.objects
+			.filter((obj) => obj.key.endsWith(".json"))
+			.map((obj) => ({
+				date: obj.key.replace(prefix, "").replace(".json", ""),
+				jsonSize: obj.size,
+			}))
+			.sort((a, b) => b.date.localeCompare(a.date));
+	} catch (error) {
+		logger.error("[Backup] List R2 settings backups error", error);
+		return [];
 	}
 }
