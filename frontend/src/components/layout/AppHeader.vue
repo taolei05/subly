@@ -175,10 +175,6 @@ const colorSwatches = [
     padding: 0 8px;
   }
 
-  .logo {
-    display: none;
-  }
-
   .header-right :deep(.n-select) {
     width: 85px !important;
   }
