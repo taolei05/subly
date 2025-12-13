@@ -161,7 +161,7 @@ function getTypeTagType(
 }
 
 function getRenewLabel(sub: Subscription): string {
-  if (sub.one_time) return '一次性买断';
+  if (sub.one_time) return '永久授权';
   const labels: Record<string, string> = {
     auto: '自动续订',
     manual: '手动续订',

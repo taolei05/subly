@@ -107,7 +107,7 @@
           </n-form-item>
         </n-gi>
         <n-gi>
-          <n-form-item path="one_time" label="一次性买断">
+          <n-form-item path="one_time" label="永久授权">
             <n-switch 
               v-model:value="formData.one_time" 
               :disabled="formData.renew_type !== 'none' || readonly"
@@ -248,14 +248,14 @@ const rules = computed<FormRules>(() => ({
 watch(
   () => formData.renew_type,
   (newVal) => {
-    // 如果选择了续订类型，禁用一次性买断
+    // 如果选择了续订类型，禁用永久授权
     if (newVal !== 'none') {
       formData.one_time = false;
     }
   },
 );
 
-// 处理一次性买断变化
+// 处理永久授权变化
 function handleOneTimeChange(value: boolean) {
   if (value) {
     formData.renew_type = 'none';
@@ -283,7 +283,7 @@ watch(
           price: props.subscription.price,
           currency: props.subscription.currency,
           start_date: new Date(props.subscription.start_date).getTime(),
-          // 一次性买断时，end_date 设为 null（不显示日期）
+          // 永久授权时，end_date 设为 null（不显示日期）
           end_date: isOneTime
             ? null
             : new Date(props.subscription.end_date).getTime(),

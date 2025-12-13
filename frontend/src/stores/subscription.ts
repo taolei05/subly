@@ -130,7 +130,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     formData: SubscriptionFormData,
   ): Promise<ApiResponse> {
     try {
-      // 一次性买断时，end_date 设为空字符串或远期日期
+      // 永久授权支出时，end_date 设为空字符串或远期日期
       const endDate = formData.one_time
         ? '9999-12-31'
         : formatDate(formData.end_date || Date.now());
@@ -161,7 +161,7 @@ export const useSubscriptionStore = defineStore('subscription', () => {
     formData: SubscriptionFormData,
   ): Promise<ApiResponse> {
     try {
-      // 一次性买断时，end_date 设为远期日期
+      // 永久授权时，end_date 设为远期日期
       const endDate = formData.one_time
         ? '9999-12-31'
         : formatDate(formData.end_date || Date.now());

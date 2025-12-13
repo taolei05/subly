@@ -9,7 +9,7 @@
       </template>
       <n-radio-group v-model:value="chartType" size="small" class="chart-tabs">
         <n-radio-button value="monthly">月均支出分布</n-radio-button>
-        <n-radio-button value="onetime">一次性买断分布</n-radio-button>
+        <n-radio-button value="onetime">永久授权支出分布</n-radio-button>
         <n-radio-button value="trend">月度支出趋势</n-radio-button>
       </n-radio-group>
       <v-chart
@@ -160,7 +160,7 @@ const monthlyTypeChartOption = computed(() => {
   };
 });
 
-// 一次性买断分布饼图
+// 永久授权支出分布饼图
 const oneTimeTypeChartOption = computed(() => {
   const typeData: Record<SubscriptionType, number> = {
     domain: 0,

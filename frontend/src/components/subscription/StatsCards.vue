@@ -33,7 +33,7 @@
           <div class="stat-value">
             {{ currencySymbols[currency] }}{{ stats.oneTimeTotal.toFixed(2) }}
           </div>
-          <div class="stat-label">一次性买断支出</div>
+          <div class="stat-label">永久授权支出</div>
         </div>
       </div>
     </n-card>

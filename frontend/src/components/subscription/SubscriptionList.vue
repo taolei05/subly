@@ -171,7 +171,7 @@ const baseColumns: DataTableColumns<Subscription> = [
         return h(
           NTag,
           { size: 'small', type: 'success' },
-          { default: () => '一次性买断' },
+          { default: () => '永久授权' },
         );
       }
       const renewLabels: Record<
