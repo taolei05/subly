@@ -77,6 +77,9 @@ import { type FormInst, type FormRules, useMessage } from 'naive-ui';
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
+
+const themeStore = useThemeStore();
 
 const router = useRouter();
 const message = useMessage();
@@ -194,7 +197,7 @@ async function handleRegister() {
 }
 
 .auth-footer a {
-  color: #18a058;
+  color: v-bind('themeStore.primaryColor');
   text-decoration: none;
   margin-left: 4px;
 }
