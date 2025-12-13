@@ -51,7 +51,6 @@
             立即备份
           </n-button>
           <n-button
-            v-if="formData.backup_to_r2"
             secondary
             :disabled="disabled"
             @click="showBackupList"
