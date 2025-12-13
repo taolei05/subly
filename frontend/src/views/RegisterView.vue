@@ -124,16 +124,16 @@
           </div>
 
           <div class="totp-buttons">
-            <n-button style="flex: 1;" @click="skipTOTP">跳过</n-button>
             <n-button
               type="primary"
-              style="flex: 1;"
+              block
               :loading="loading"
               :disabled="totpCode.length !== 6"
               @click="verifyAndEnableTOTP"
             >
               验证并完成
             </n-button>
+            <n-button block quaternary @click="skipTOTP">跳过，稍后设置</n-button>
           </div>
         </template>
       </n-spin>
@@ -364,6 +364,7 @@ function copySecret() {
 .totp-buttons {
   margin-top: 16px;
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 </style>
