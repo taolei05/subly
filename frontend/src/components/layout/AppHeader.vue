@@ -137,6 +137,7 @@ const colorSwatches = [
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .logo-icon {
@@ -165,7 +166,47 @@ const colorSwatches = [
 
 @media (max-width: 768px) {
   .header {
-    padding: 0 16px;
+    padding: 0 12px;
+    height: 56px;
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .header-right {
+    gap: 2px;
+  }
+
+  .header-right :deep(.n-select) {
+    width: 80px !important;
+  }
+
+  .header-right :deep(.n-button) {
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  .header-right {
+    gap: 0;
+  }
+
+  .header-right :deep(.n-select) {
+    width: 70px !important;
   }
 }
 </style>
