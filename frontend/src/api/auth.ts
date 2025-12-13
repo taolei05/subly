@@ -9,8 +9,10 @@ import type {
 import { http } from './http';
 
 interface LoginResponse {
-  token: string;
-  user: User;
+  token?: string;
+  user?: User;
+  requires_2fa?: boolean;
+  user_id?: number;
 }
 
 export const authApi = {

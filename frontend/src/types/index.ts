@@ -93,6 +93,8 @@ export interface User {
   backup_to_email?: boolean;
   backup_to_r2?: boolean;
   backup_last_at?: string;
+  // 两步验证 (2FA)
+  totp_enabled?: boolean;
 }
 
 export interface UserSettings {
@@ -133,6 +135,7 @@ export interface SettingsBackupFile {
 export interface LoginCredentials {
   username: string;
   password: string;
+  totp_code?: string;
 }
 
 export interface RegisterData {

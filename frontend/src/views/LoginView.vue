@@ -22,7 +22,8 @@
         </div>
       </template>
       
-      <n-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleLogin">
+      <!-- 普通登录表单 -->
+      <n-form v-if="!requires2FA" ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleLogin">
         <n-form-item path="username" label="用户名">
           <n-input 
             v-model:value="formData.username" 
@@ -50,8 +51,47 @@
           登录
         </n-button>
       </n-form>
+
+      <!-- 两步验证表单 -->
+      <div v-else>
+        <n-alert type="info" style="margin-bottom: 16px;">
+          您的账号已启用两步验证，请输入验证器应用中的验证码。
+        </n-alert>
+        
+        <n-form @submit.prevent="handleLogin2FA">
+          <n-form-item label="验证码">
+            <n-input
+              v-model:value="totpCode"
+              placeholder="000000"
+              maxlength="6"
+              style="font-size: 20px; letter-spacing: 6px; text-align: center;"
+              :input-props="{ autocomplete: 'one-time-code' }"
+              @keyup.enter="handleLogin2FA"
+            />
+          </n-form-item>
+
+          <n-button 
+            type="primary" 
+            block 
+            :loading="loading"
+            :disabled="totpCode.length !== 6"
+            attr-type="submit"
+          >
+            验证
+          </n-button>
+        </n-form>
+
+        <n-button
+          text
+          block
+          style="margin-top: 12px;"
+          @click="cancelTOTP"
+        >
+          返回登录
+        </n-button>
+      </div>
       
-      <div v-if="authStore.registrationEnabled" class="auth-footer">
+      <div v-if="authStore.registrationEnabled && !requires2FA" class="auth-footer">
         <span>还没有账号？</span>
         <router-link to="/register">立即注册</router-link>
       </div>
@@ -75,6 +115,10 @@ const authStore = useAuthStore();
 const formRef = ref<FormInst | null>(null);
 const loading = ref(false);
 
+// 两步验证状态
+const requires2FA = ref(false);
+const totpCode = ref('');
+
 const formData = reactive({
   username: '',
   password: '',
@@ -97,6 +141,11 @@ async function handleLogin() {
     const result = await authStore.login(formData);
 
     if (result.success) {
+      // 检查是否需要两步验证
+      if (result.data?.requires_2fa) {
+        requires2FA.value = true;
+        return;
+      }
       message.success('登录成功');
       router.push('/');
     } else {
@@ -107,6 +156,32 @@ async function handleLogin() {
   } finally {
     loading.value = false;
   }
+}
+
+async function handleLogin2FA() {
+  if (totpCode.value.length !== 6) return;
+
+  loading.value = true;
+  try {
+    const result = await authStore.login({
+      ...formData,
+      totp_code: totpCode.value,
+    });
+
+    if (result.success) {
+      message.success('登录成功');
+      router.push('/');
+    } else {
+      message.error(result.message || '验证码错误');
+    }
+  } finally {
+    loading.value = false;
+  }
+}
+
+function cancelTOTP() {
+  requires2FA.value = false;
+  totpCode.value = '';
 }
 </script>
 

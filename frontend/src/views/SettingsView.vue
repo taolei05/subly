@@ -83,7 +83,11 @@
 
       <!-- 安全设置 -->
       <n-card title="安全设置" :bordered="false" style="margin-top: 24px;">
-        <n-form-item label="本站链接" label-placement="top">
+        <n-collapse accordion>
+          <TwoFactorSettingsPanel :disabled="authStore.isDemo" />
+        </n-collapse>
+
+        <n-form-item label="本站链接" label-placement="top" style="margin-top: 16px;">
           <template #label>
             <div style="display: flex; align-items: center; gap: 4px;">
               本站链接
@@ -175,6 +179,7 @@ import BackupSettingsPanel from '../components/settings/BackupSettingsPanel.vue'
 import ExchangeRateSettingsPanel from '../components/settings/ExchangeRateSettingsPanel.vue';
 import ResendSettingsPanel from '../components/settings/ResendSettingsPanel.vue';
 import ServerChanSettingsPanel from '../components/settings/ServerChanSettingsPanel.vue';
+import TwoFactorSettingsPanel from '../components/settings/TwoFactorSettingsPanel.vue';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import type { UserProfileUpdate, UserSettings } from '../types';

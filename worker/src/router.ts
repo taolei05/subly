@@ -3,7 +3,9 @@ import {
 	batchUpdateRemindDays,
 	createSubscription,
 	deleteSubscription,
+	disableTOTP,
 	downloadBackup,
+	enableTOTP,
 	exportSubscriptions,
 	forceNotify,
 	getBackupList,
@@ -20,6 +22,7 @@ import {
 	restoreSettings,
 	sendTestEmail,
 	sendTestServerChan,
+	setupTOTP,
 	triggerBackup,
 	updateProfile,
 	updateSettings,
@@ -69,6 +72,11 @@ const routes: Route[] = [
 
 	// 设置路由
 	{ pattern: "/settings", method: "PUT", handler: updateSettings },
+
+	// 两步验证 (2FA) 路由
+	{ pattern: "/auth/2fa/setup", method: "POST", handler: setupTOTP },
+	{ pattern: "/auth/2fa/enable", method: "POST", handler: enableTOTP },
+	{ pattern: "/auth/2fa/disable", method: "POST", handler: disableTOTP },
 
 	// 系统配置路由
 	{ pattern: "/system/config", method: "GET", handler: getSystemConfig },

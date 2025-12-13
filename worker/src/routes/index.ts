@@ -9,7 +9,12 @@ export {
 	updateSettings,
 } from "./auth";
 // 备份相关
-export { downloadBackup, getBackupList, restoreSettings, triggerBackup } from "./backup";
+export {
+	downloadBackup,
+	getBackupList,
+	restoreSettings,
+	triggerBackup,
+} from "./backup";
 // 调试相关
 export { forceNotify, getNotifyStatus, resetLastSent } from "./debug";
 // 汇率相关
@@ -29,3 +34,5 @@ export {
 } from "./subscriptions";
 // 系统配置
 export { getSystemConfig, updateSystemConfig } from "./system";
+// 两步验证 (2FA)
+export { disableTOTP, enableTOTP, setupTOTP, verifyTOTPCode } from "./totp";

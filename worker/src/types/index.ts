@@ -24,6 +24,9 @@ export interface User {
 	backup_to_email?: number;
 	backup_to_r2?: number;
 	backup_last_at?: string;
+	// 两步验证 (2FA)
+	totp_secret?: string;
+	totp_enabled?: number;
 }
 
 export type BackupFrequency = "daily" | "weekly" | "monthly";
@@ -89,6 +92,8 @@ export interface UserWithConfig {
 	backup_to_email?: number;
 	backup_to_r2?: number;
 	backup_last_at?: string;
+	// 两步验证 (2FA)
+	totp_enabled?: number;
 }
 
 // ==================== 订阅相关 ====================

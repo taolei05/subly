@@ -24,13 +24,28 @@ export const useAuthStore = defineStore('auth', () => {
   const isDemo = computed(() => user.value?.role === 'demo');
   const userRole = computed(() => user.value?.role ?? 'user');
 
-  async function login(credentials: LoginCredentials): Promise<ApiResponse> {
+  async function login(
+    credentials: LoginCredentials,
+  ): Promise<ApiResponse<{ requires_2fa?: boolean; user_id?: number }>> {
     try {
       const response = await authApi.login(credentials);
       if (response.success && response.data) {
-        token.value = response.data.token;
-        user.value = response.data.user;
-        localStorage.setItem('token', response.data.token);
+        // 检查是否需要两步验证
+        if (response.data.requires_2fa) {
+          return {
+            success: true,
+            data: {
+              requires_2fa: true,
+              user_id: response.data.user_id,
+            },
+          };
+        }
+        // 正常登录
+        if (response.data.token && response.data.user) {
+          token.value = response.data.token;
+          user.value = response.data.user;
+          localStorage.setItem('token', response.data.token);
+        }
       }
       return response;
     } catch (error) {

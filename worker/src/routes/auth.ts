@@ -126,22 +126,33 @@ export async function register(request: Request, env: Env): Promise<Response> {
 export async function login(request: Request, env: Env): Promise<Response> {
 	try {
 		const body = await request.json();
-		const validation = validateRequest<{ username: string; password: string }>(
-			body,
-			loginSchema,
-		);
+		const validation = validateRequest<{
+			username: string;
+			password: string;
+			totp_code?: string;
+		}>(body, loginSchema);
 
 		if (!validation.valid) {
 			return errorResponse(validation.error);
 		}
 
-		const { username, password } = validation.data;
+		const { username, password, totp_code } = validation.data as {
+			username: string;
+			password: string;
+			totp_code?: string;
+		};
 
 		const user = await env.DB.prepare(
-			"SELECT id, username, password FROM users WHERE username = ?",
+			"SELECT id, username, password, totp_enabled, totp_secret FROM users WHERE username = ?",
 		)
 			.bind(username)
-			.first<{ id: number; username: string; password: string }>();
+			.first<{
+				id: number;
+				username: string;
+				password: string;
+				totp_enabled: number;
+				totp_secret: string;
+			}>();
 
 		if (!user) {
 			return errorResponse("用户名或密码错误");
@@ -150,6 +161,24 @@ export async function login(request: Request, env: Env): Promise<Response> {
 		const isValid = await verifyPassword(password, user.password);
 		if (!isValid) {
 			return errorResponse("用户名或密码错误");
+		}
+
+		// 检查是否启用了 2FA
+		if (user.totp_enabled && user.totp_secret) {
+			// 如果没有提供验证码，返回需要 2FA 的响应
+			if (!totp_code) {
+				return successResponse({
+					requires_2fa: true,
+					user_id: user.id,
+				});
+			}
+
+			// 验证 TOTP 码
+			const { verifyTOTP } = await import("../services/totp");
+			const totpValid = await verifyTOTP(user.totp_secret, totp_code);
+			if (!totpValid) {
+				return errorResponse("两步验证码错误");
+			}
 		}
 
 		const token = await generateToken(user.id, user.username);
@@ -256,7 +285,6 @@ export async function updateSettings(
 		}
 
 		const settings = (await request.json()) as UpdateSettingsRequest;
-		const _isAdmin = role === "admin";
 
 		// 验证站点 URL
 		if (
