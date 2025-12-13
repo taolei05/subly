@@ -387,4 +387,8 @@ A: 备份文件可以发送到邮箱，也可以存储到 Cloudflare R2 存储�
 
 ## License
 
-MIT
+本项目采用 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 协议开源。
+
+- ✅ 可以自由使用、修改、分享
+- ✅ 需要署名原作者
+- ❌ 不可用于商业用途
