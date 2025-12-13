@@ -11,6 +11,20 @@
       <n-form-item path="name" label="服务名称">
         <n-input v-model:value="formData.name" placeholder="请输入服务名称" />
       </n-form-item>
+
+      <n-form-item path="url" label="服务链接">
+        <n-input 
+          v-model:value="formData.url" 
+          placeholder="可选，订阅服务的管理页面链接"
+          clearable
+        >
+          <template #prefix>
+            <n-icon :size="16" style="color: #999;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.364 15.536L16.95 14.12l1.414-1.414a5 5 0 1 0-7.071-7.071L9.879 7.05 8.464 5.636 9.88 4.222a7 7 0 0 1 9.9 9.9l-1.415 1.414zm-2.828 2.828l-1.415 1.414a7 7 0 0 1-9.9-9.9l1.415-1.414L7.05 9.88l-1.414 1.414a5 5 0 1 0 7.071 7.071l1.414-1.414 1.415 1.414zm-.708-10.607l1.415 1.415-7.071 7.07-1.415-1.414 7.071-7.07z"/></svg>
+            </n-icon>
+          </template>
+        </n-input>
+      </n-form-item>
       
       <n-form-item path="type" label="订阅类型">
         <n-select v-model:value="formData.type" :options="typeOptions" placeholder="请选择订阅类型" />
@@ -97,20 +111,6 @@
         </n-gi>
       </n-grid>
       
-      <n-form-item path="url" label="服务链接">
-        <n-input 
-          v-model:value="formData.url" 
-          placeholder="可选，订阅服务的管理页面链接"
-          clearable
-        >
-          <template #prefix>
-            <n-icon :size="16" style="color: #999;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.364 15.536L16.95 14.12l1.414-1.414a5 5 0 1 0-7.071-7.071L9.879 7.05 8.464 5.636 9.88 4.222a7 7 0 0 1 9.9 9.9l-1.415 1.414zm-2.828 2.828l-1.415 1.414a7 7 0 0 1-9.9-9.9l1.415-1.414L7.05 9.88l-1.414 1.414a5 5 0 1 0 7.071 7.071l1.414-1.414 1.415 1.414zm-.708-10.607l1.415 1.415-7.071 7.07-1.415-1.414 7.071-7.07z"/></svg>
-            </n-icon>
-          </template>
-        </n-input>
-      </n-form-item>
-
       <n-form-item path="notes" label="备注">
         <n-input 
           v-model:value="formData.notes" 
