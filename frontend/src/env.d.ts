@@ -34,3 +34,7 @@ declare module 'vue-json-pretty' {
   }>;
   export default VueJsonPretty;
 }
+
+declare module 'theme-colors' {
+  export function getColors(color: string): Record<number, string>;
+}

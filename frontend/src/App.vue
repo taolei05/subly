@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="themeStore.theme" :locale="zhCN" :date-locale="dateZhCN">
+  <n-config-provider :theme="themeStore.theme" :theme-overrides="themeStore.themeOverrides" :locale="zhCN" :date-locale="dateZhCN">
     <n-message-provider>
       <n-notification-provider>
         <n-dialog-provider>

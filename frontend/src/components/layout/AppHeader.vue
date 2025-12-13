@@ -13,6 +13,41 @@
           style="width: 100px"
           @update:value="$emit('update:currency', $event)"
         />
+        <n-popover trigger="click" placement="bottom">
+          <template #trigger>
+            <n-tooltip trigger="hover">
+              <template #trigger>
+                <n-button quaternary circle>
+                  <template #icon>
+                    <div
+                      class="color-indicator"
+                      :style="{ backgroundColor: themeStore.primaryColor }"
+                    />
+                  </template>
+                </n-button>
+              </template>
+              主题色
+            </n-tooltip>
+          </template>
+          <div style="padding: 8px;">
+            <div style="margin-bottom: 8px; font-size: 14px; font-weight: 500;">主题色</div>
+            <n-color-picker
+              :value="themeStore.primaryColor"
+              :show-alpha="false"
+              :modes="['hex']"
+              :swatches="colorSwatches"
+              @update:value="themeStore.setPrimaryColor"
+            />
+            <n-button
+              size="small"
+              quaternary
+              style="margin-top: 8px; width: 100%;"
+              @click="themeStore.resetPrimaryColor"
+            >
+              恢复默认
+            </n-button>
+          </div>
+        </n-popover>
         <n-tooltip trigger="hover">
           <template #trigger>
             <n-button quaternary circle @click="$emit('toggle-theme')">
@@ -50,6 +85,7 @@
 
 <script setup lang="ts">
 import { CURRENCY_OPTIONS } from '../../constants';
+import { useThemeStore } from '../../stores/theme';
 import type { Currency } from '../../types';
 import Icon from '../common/Icon.vue';
 
@@ -65,7 +101,19 @@ defineEmits<{
   logout: [];
 }>();
 
+const themeStore = useThemeStore();
 const currencyOptions = CURRENCY_OPTIONS;
+
+const colorSwatches = [
+  '#18a058', // 默认绿色
+  '#2080f0', // 蓝色
+  '#f0a020', // 橙色
+  '#d03050', // 红色
+  '#8a2be2', // 紫色
+  '#00ced1', // 青色
+  '#ff6b6b', // 珊瑚红
+  '#4ecdc4', // 薄荷绿
+];
 </script>
 
 <style scoped>
@@ -106,6 +154,13 @@ const currencyOptions = CURRENCY_OPTIONS;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.color-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(128, 128, 128, 0.3);
 }
 
 @media (max-width: 768px) {
