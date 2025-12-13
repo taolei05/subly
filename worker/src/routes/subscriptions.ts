@@ -57,6 +57,16 @@ async function getUserId(request: Request): Promise<number | null> {
 }
 
 /**
+ * 检查用户是否为 demo 用户
+ */
+async function isDemoUser(env: Env, userId: number): Promise<boolean> {
+	const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?")
+		.bind(userId)
+		.first<{ role: string }>();
+	return user?.role === "demo";
+}
+
+/**
  * 转换订阅数据（布尔值处理）
  */
 function transformSubscription(sub: Subscription): Subscription {
@@ -133,6 +143,11 @@ export async function createSubscription(
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
 
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能创建订阅", 403);
+		}
+
 		const body = await request.json();
 		const validation = validateRequest<SubscriptionRequest>(
 			body,
@@ -201,6 +216,11 @@ export async function updateSubscription(
 	try {
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
+
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能修改订阅", 403);
+		}
 
 		const existing = await env.DB.prepare(
 			"SELECT id FROM subscriptions WHERE id = ? AND user_id = ?",
@@ -283,6 +303,11 @@ export async function deleteSubscription(
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
 
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能删除订阅", 403);
+		}
+
 		const result = await env.DB.prepare(
 			"DELETE FROM subscriptions WHERE id = ? AND user_id = ?",
 		)
@@ -315,6 +340,11 @@ export async function updateSubscriptionStatus(
 	try {
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
+
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能修改订阅状态", 403);
+		}
 
 		const { status } = (await request.json()) as { status: string };
 
@@ -351,6 +381,11 @@ export async function batchDeleteSubscriptions(
 	try {
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
+
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能删除订阅", 403);
+		}
 
 		const { ids } = (await request.json()) as { ids: number[] };
 
@@ -394,6 +429,11 @@ export async function batchUpdateRemindDays(
 	try {
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
+
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能修改订阅", 403);
+		}
 
 		const { ids, remind_days } = (await request.json()) as {
 			ids: number[];
@@ -492,6 +532,11 @@ export async function importSubscriptions(
 	try {
 		const userId = await getUserId(request);
 		if (!userId) return errorResponse("未授权", 401);
+
+		// 检查是否为 demo 用户
+		if (await isDemoUser(env, userId)) {
+			return errorResponse("演示账户不能导入订阅", 403);
+		}
 
 		const body = (await request.json()) as {
 			data: Array<Record<string, unknown>>;

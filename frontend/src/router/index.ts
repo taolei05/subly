@@ -31,8 +31,13 @@ const router = createRouter({
   ],
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
+
+  // 如果已登录但用户信息未加载，先加载用户信息
+  if (authStore.isAuthenticated && !authStore.user) {
+    await authStore.fetchUser();
+  }
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login' });
