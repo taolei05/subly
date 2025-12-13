@@ -39,8 +39,8 @@
           
           <n-collapse accordion>
             <ResendSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
-            <ExchangeRateSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
             <ServerChanSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
+            <ExchangeRateSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
             <BackupSettingsPanel :formData="formData" :disabled="authStore.isDemo" />
           </n-collapse>
 

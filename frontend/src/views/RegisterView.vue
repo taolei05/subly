@@ -123,11 +123,11 @@
             />
           </div>
 
-          <div style="margin-top: 16px; display: flex; gap: 12px;">
-            <n-button block @click="skipTOTP">跳过</n-button>
+          <div class="totp-buttons">
+            <n-button style="flex: 1;" @click="skipTOTP">跳过</n-button>
             <n-button
               type="primary"
-              block
+              style="flex: 1;"
               :loading="loading"
               :disabled="totpCode.length !== 6"
               @click="verifyAndEnableTOTP"
@@ -359,5 +359,11 @@ function copySecret() {
   background: rgba(24, 160, 88, 0.08);
   border-radius: 8px;
   margin-top: 8px;
+}
+
+.totp-buttons {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
 }
 </style>
