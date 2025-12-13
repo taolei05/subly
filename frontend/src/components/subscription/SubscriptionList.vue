@@ -27,6 +27,7 @@ const props = defineProps<{
   subscriptions: Subscription[];
   selectable?: boolean;
   selectedIds?: number[];
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -200,8 +201,8 @@ const baseColumns: DataTableColumns<Subscription> = [
           type: getStatusType(row),
           size: 'small',
           round: true,
-          style: { cursor: 'pointer' },
-          onClick: () => emit('toggle-status', row),
+          style: { cursor: props.readonly ? 'default' : 'pointer' },
+          onClick: () => !props.readonly && emit('toggle-status', row),
         },
         { default: () => getStatusText(row) },
       );
@@ -210,48 +211,67 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '操作',
     key: 'actions',
-    width: 100, // 增加宽度
+    width: 100,
     fixed: 'right',
     render(row) {
+      const buttons = [
+        h(
+          NButton,
+          {
+            size: 'small',
+            quaternary: true,
+            onClick: () => emit('edit', row),
+          },
+          { icon: () => h(Icon, { name: props.readonly ? 'view' : 'edit' }) },
+        ),
+      ];
+
+      // 只读模式禁用删除按钮
+      if (props.readonly) {
+        buttons.push(
+          h(
+            NButton,
+            {
+              size: 'small',
+              quaternary: true,
+              type: 'error',
+              disabled: true,
+            },
+            { icon: () => h(Icon, { name: 'delete' }) },
+          ),
+        );
+      } else {
+        buttons.push(
+          h(
+            NPopconfirm,
+            {
+              onPositiveClick: () => emit('delete', row),
+            },
+            {
+              trigger: () =>
+                h(
+                  NButton,
+                  {
+                    size: 'small',
+                    quaternary: true,
+                    type: 'error',
+                  },
+                  { icon: () => h(Icon, { name: 'delete' }) },
+                ),
+              default: () => '确定删除此订阅吗？',
+            },
+          ),
+        );
+      }
+
       return h(
         NSpace,
         {
           size: 'small',
-          wrap: false, // 禁止换行
+          wrap: false,
           style: { flexWrap: 'nowrap' },
         },
-        {
-          default: () => [
-            h(
-              NButton,
-              {
-                size: 'small',
-                quaternary: true,
-                onClick: () => emit('edit', row),
-              },
-              { icon: () => h(Icon, { name: 'edit' }) },
-            ),
-            h(
-              NPopconfirm,
-              {
-                onPositiveClick: () => emit('delete', row),
-              },
-              {
-                trigger: () =>
-                  h(
-                    NButton,
-                    {
-                      size: 'small',
-                      quaternary: true,
-                      type: 'error',
-                    },
-                    { icon: () => h(Icon, { name: 'delete' }) },
-                  ),
-                default: () => '确定删除此订阅吗？',
-              },
-            ),
-          ],
-        },
+        { default: () => buttons },
       );
     },
   },

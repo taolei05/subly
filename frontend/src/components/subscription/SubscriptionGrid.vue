@@ -23,8 +23,8 @@
           :type="getStatusType(sub)" 
           size="small" 
           round
-          style="cursor: pointer;"
-          @click="$emit('toggle-status', sub)"
+          :style="{ cursor: readonly ? 'default' : 'pointer' }"
+          @click="!readonly && emit('toggle-status', sub)"
         >
           {{ getStatusText(sub) }}
         </n-tag>
@@ -62,13 +62,13 @@
       </div>
       
       <div class="card-actions">
-        <n-button size="small" quaternary @click="$emit('edit', sub)">
+        <n-button size="small" quaternary @click="emit('edit', sub)">
           <template #icon>
-            <Icon name="edit" />
+            <Icon :name="readonly ? 'view' : 'edit'" />
           </template>
-          编辑
+          {{ readonly ? '查看' : '编辑' }}
         </n-button>
-        <n-popconfirm @positive-click="$emit('delete', sub)">
+        <n-popconfirm v-if="!readonly" @positive-click="emit('delete', sub)">
           <template #trigger>
             <n-button size="small" quaternary type="error">
               <template #icon>
@@ -79,21 +79,31 @@
           </template>
           确定删除此订阅吗？
         </n-popconfirm>
+        <n-button v-else size="small" quaternary type="error" disabled>
+          <template #icon>
+            <Icon name="delete" />
+          </template>
+          删除
+        </n-button>
       </div>
     </n-card>
   </div>
 </template>
 
 <script setup lang="ts">
+import { toRefs } from 'vue';
 import { CURRENCY_SYMBOLS, TYPE_LABELS } from '../../constants';
 import type { Subscription } from '../../types';
 import Icon from '../common/Icon.vue';
 
-defineProps<{
+const props = defineProps<{
   subscriptions: Subscription[];
+  readonly?: boolean;
 }>();
 
-defineEmits<{
+const { readonly } = toRefs(props);
+
+const emit = defineEmits<{
   edit: [subscription: Subscription];
   delete: [subscription: Subscription];
   'toggle-status': [subscription: Subscription];

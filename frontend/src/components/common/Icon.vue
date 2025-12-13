@@ -11,6 +11,7 @@ import {
   CashOutline,
   CheckmarkOutline,
   CreateOutline,
+  EyeOutline,
   GridOutline,
   InformationCircleOutline,
   LayersOutline,
@@ -56,6 +57,7 @@ const iconMap: Record<string, unknown> = {
   stats: StatsChartOutline,
   subscription: LayersOutline,
   sun: SunnyOutline,
+  view: EyeOutline,
   warning: WarningOutline,
 };
 

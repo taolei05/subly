@@ -35,5 +35,3 @@ export function daysFromToday(dateStr: string): number {
   const targetDate = new Date(dateStr);
   return daysBetween(today, targetDate);
 }
-
-

@@ -2,14 +2,17 @@
   <n-modal 
     :show="show" 
     preset="card"
-    :title="subscription ? '编辑订阅' : '添加订阅'"
+    :title="readonly ? '查看订阅' : (subscription ? '编辑订阅' : '添加订阅')"
     :style="{ width: '600px', maxWidth: '90vw' }"
     :mask-closable="false"
     @update:show="$emit('update:show', $event)"
   >
+    <n-alert v-if="readonly" type="info" style="margin-bottom: 16px;">
+      演示账户仅可查看，不能修改数据
+    </n-alert>
     <n-form ref="formRef" :model="formData" :rules="rules" label-placement="top">
       <n-form-item path="name" label="服务名称">
-        <n-input v-model:value="formData.name" placeholder="请输入服务名称" />
+        <n-input v-model:value="formData.name" placeholder="请输入服务名称" :disabled="readonly" />
       </n-form-item>
 
       <n-form-item path="url" label="服务链接">
@@ -17,6 +20,7 @@
           v-model:value="formData.url" 
           placeholder="可选，订阅服务的管理页面链接"
           clearable
+          :disabled="readonly"
         >
           <template #prefix>
             <n-icon :size="16" style="color: #999;">
@@ -27,11 +31,11 @@
       </n-form-item>
       
       <n-form-item path="type" label="订阅类型">
-        <n-select v-model:value="formData.type" :options="typeOptions" placeholder="请选择订阅类型" />
+        <n-select v-model:value="formData.type" :options="typeOptions" placeholder="请选择订阅类型" :disabled="readonly" />
       </n-form-item>
       
       <n-form-item path="type_detail" :label="typeDetailLabel">
-        <n-input v-model:value="formData.type_detail" :placeholder="typeDetailPlaceholder" />
+        <n-input v-model:value="formData.type_detail" :placeholder="typeDetailPlaceholder" :disabled="readonly" />
       </n-form-item>
       
       <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
@@ -43,12 +47,13 @@
               :min="0"
               placeholder="请输入价格"
               style="width: 100%;"
+              :disabled="readonly"
             />
           </n-form-item>
         </n-gi>
         <n-gi>
           <n-form-item path="currency" label="货币">
-            <n-select v-model:value="formData.currency" :options="currencyOptions" />
+            <n-select v-model:value="formData.currency" :options="currencyOptions" :disabled="readonly" />
           </n-form-item>
         </n-gi>
       </n-grid>
@@ -60,6 +65,7 @@
               v-model:value="formData.start_date" 
               type="date"
               style="width: 100%;"
+              :disabled="readonly"
             />
           </n-form-item>
         </n-gi>
@@ -69,7 +75,7 @@
               v-model:value="formData.end_date" 
               type="date"
               style="width: 100%;"
-              :disabled="formData.one_time"
+              :disabled="formData.one_time || readonly"
               :placeholder="formData.one_time ? '永久' : '请选择到期日期'"
             />
           </n-form-item>
@@ -82,7 +88,7 @@
           :min="0"
           :max="365"
           :placeholder="formData.one_time ? '永久无需提醒' : '提前几天提醒'"
-          :disabled="formData.one_time"
+          :disabled="formData.one_time || readonly"
           style="width: 100%;"
         >
           <template #suffix>天</template>
@@ -95,7 +101,7 @@
             <n-select 
               v-model:value="formData.renew_type" 
               :options="renewTypeOptions" 
-              :disabled="formData.one_time"
+              :disabled="formData.one_time || readonly"
               placeholder="请选择续订类型"
             />
           </n-form-item>
@@ -104,7 +110,7 @@
           <n-form-item path="one_time" label="一次性买断">
             <n-switch 
               v-model:value="formData.one_time" 
-              :disabled="formData.renew_type !== 'none'"
+              :disabled="formData.renew_type !== 'none' || readonly"
               @update:value="handleOneTimeChange"
             />
           </n-form-item>
@@ -117,14 +123,15 @@
           type="textarea" 
           placeholder="可选备注信息"
           :rows="3"
+          :disabled="readonly"
         />
       </n-form-item>
     </n-form>
     
     <template #footer>
       <n-space justify="end">
-        <n-button @click="handleCancel">取消</n-button>
-        <n-button type="primary" :loading="submitting" @click="handleSubmit">
+        <n-button @click="handleCancel">{{ readonly ? '关闭' : '取消' }}</n-button>
+        <n-button v-if="!readonly" type="primary" :loading="submitting" @click="handleSubmit">
           {{ subscription ? '保存' : '添加' }}
         </n-button>
       </n-space>
@@ -150,6 +157,7 @@ import type {
 const props = defineProps<{
   show: boolean;
   subscription: Subscription | null;
+  readonly?: boolean;
 }>();
 
 const emit = defineEmits<{

@@ -40,7 +40,7 @@
 
       <!-- 批量操作工具栏 -->
       <BatchToolbar
-        v-if="selectedIds.length > 0"
+        v-if="selectedIds.length > 0 && !authStore.isDemo"
         :selected-count="selectedIds.length"
         @cancel="selectedIds = []"
         @update-remind="showBatchRemindModal = true"
@@ -56,8 +56,9 @@
         <SubscriptionList
           v-if="viewMode === 'list'"
           v-model:selected-ids="selectedIds"
-          :selectable="true"
+          :selectable="!authStore.isDemo"
           :subscriptions="filteredSubscriptions"
+          :readonly="authStore.isDemo"
           @edit="handleEdit"
           @delete="handleDelete"
           @toggle-status="handleToggleStatus"
@@ -66,6 +67,7 @@
         <SubscriptionGrid
           v-else-if="viewMode === 'grid'"
           :subscriptions="filteredSubscriptions"
+          :readonly="authStore.isDemo"
           @edit="handleEdit"
           @delete="handleDelete"
           @toggle-status="handleToggleStatus"
@@ -83,6 +85,7 @@
     <SubscriptionForm
       v-model:show="showAddModal"
       :subscription="editingSubscription"
+      :readonly="authStore.isDemo"
       @submit="handleFormSubmit"
       @close="handleFormClose"
     />
