@@ -318,6 +318,11 @@ function copySecret() {
   width: 100%;
   max-width: 400px;
   border-radius: 12px;
+  overflow: hidden;
+}
+
+.auth-card :deep(.n-card__content) {
+  overflow: hidden;
 }
 
 .auth-header {
@@ -363,8 +368,14 @@ function copySecret() {
 
 .totp-buttons {
   margin-top: 16px;
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 8px;
+  width: 100%;
+}
+
+.totp-buttons .n-button {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 </style>
