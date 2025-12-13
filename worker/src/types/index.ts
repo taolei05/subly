@@ -23,6 +23,8 @@ export interface User {
 	backup_frequency?: BackupFrequency;
 	backup_to_email?: number;
 	backup_to_r2?: number;
+	backup_subscriptions?: number;
+	backup_settings?: number;
 	backup_last_at?: string;
 	// 两步验证 (2FA)
 	totp_secret?: string;
@@ -91,6 +93,8 @@ export interface UserWithConfig {
 	backup_frequency?: BackupFrequency;
 	backup_to_email?: number;
 	backup_to_r2?: number;
+	backup_subscriptions?: number;
+	backup_settings?: number;
 	backup_last_at?: string;
 	// 两步验证 (2FA)
 	totp_enabled?: number;
@@ -172,6 +176,8 @@ export interface UpdateSettingsRequest {
 	backup_frequency?: BackupFrequency;
 	backup_to_email?: boolean;
 	backup_to_r2?: boolean;
+	backup_subscriptions?: boolean;
+	backup_settings?: boolean;
 	// 其他
 	site_url?: string;
 }

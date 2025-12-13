@@ -92,6 +92,8 @@ export interface User {
   backup_frequency?: BackupFrequency;
   backup_to_email?: boolean;
   backup_to_r2?: boolean;
+  backup_subscriptions?: boolean;
+  backup_settings?: boolean;
   backup_last_at?: string;
   // 两步验证 (2FA)
   totp_enabled?: boolean;
@@ -118,6 +120,8 @@ export interface UserSettings {
   backup_frequency?: BackupFrequency;
   backup_to_email?: boolean;
   backup_to_r2?: boolean;
+  backup_subscriptions?: boolean;
+  backup_settings?: boolean;
   backup_last_at?: string;
 }
 

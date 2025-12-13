@@ -326,6 +326,14 @@ export async function updateSettings(
 			userUpdates.push("backup_to_r2 = ?");
 			userParams.push(settings.backup_to_r2 ? 1 : 0);
 		}
+		if (settings.backup_subscriptions !== undefined) {
+			userUpdates.push("backup_subscriptions = ?");
+			userParams.push(settings.backup_subscriptions ? 1 : 0);
+		}
+		if (settings.backup_settings !== undefined) {
+			userUpdates.push("backup_settings = ?");
+			userParams.push(settings.backup_settings ? 1 : 0);
+		}
 
 		if (userUpdates.length > 0) {
 			userParams.push(payload.userId);

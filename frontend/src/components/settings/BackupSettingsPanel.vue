@@ -148,7 +148,19 @@ const backupTargets = computed({
   },
 });
 
-const backupContents = ref<string[]>(['subscriptions']);
+const backupContents = computed({
+  get: () => {
+    const contents: string[] = [];
+    if (props.formData.backup_subscriptions !== false)
+      contents.push('subscriptions');
+    if (props.formData.backup_settings) contents.push('settings');
+    return contents;
+  },
+  set: (val: string[]) => {
+    props.formData.backup_subscriptions = val.includes('subscriptions');
+    props.formData.backup_settings = val.includes('settings');
+  },
+});
 const activeTab = ref<'subscriptions' | 'settings'>('subscriptions');
 const subscriptionBackups = ref<BackupFile[]>([]);
 const settingsBackups = ref<SettingsBackupFile[]>([]);

@@ -5,7 +5,8 @@ export const USER_PUBLIC_FIELDS = "id, username, role, site_url";
 export const USER_WITH_CONFIG_QUERY = `
   SELECT 
     u.id, u.username, u.role, u.site_url,
-    u.backup_enabled, u.backup_frequency, u.backup_to_email, u.backup_to_r2, u.backup_last_at,
+    u.backup_enabled, u.backup_frequency, u.backup_to_email, u.backup_to_r2, 
+    u.backup_subscriptions, u.backup_settings, u.backup_last_at,
     u.totp_enabled,
     r.email, r.api_key as resend_api_key, r.domain as resend_domain, 
     r.enabled as resend_enabled, r.notify_hours as resend_notify_hours,

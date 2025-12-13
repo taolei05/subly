@@ -221,6 +221,8 @@ const formData = reactive<UserSettings>({
   backup_frequency: 'weekly',
   backup_to_email: true,
   backup_to_r2: false,
+  backup_subscriptions: true,
+  backup_settings: false,
 });
 
 const rules: FormRules = {
@@ -317,6 +319,11 @@ onMounted(async () => {
         ? true
         : Boolean(authStore.user.backup_to_email);
     formData.backup_to_r2 = Boolean(authStore.user.backup_to_r2);
+    formData.backup_subscriptions =
+      authStore.user.backup_subscriptions === undefined
+        ? true
+        : Boolean(authStore.user.backup_subscriptions);
+    formData.backup_settings = Boolean(authStore.user.backup_settings);
   }
 
   // Auto-capture site URL from current browser origin and update if different
