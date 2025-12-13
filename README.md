@@ -60,7 +60,7 @@
 
 ### 界面特性
 
-- 列表/卡片视图切换
+- 列表/卡片/日历视图切换
 - 深色/浅色主题
 - 自定义主题色
 - 搜索、筛选、排序（支持持久化）
@@ -112,11 +112,11 @@ pnpm install
 ### 初始化数据库
 
 ```bash
-# 创建 D1 数据库
-pnpm db:create
+# 执行数据库迁移（本地）
+npx wrangler d1 execute subly --local --file=worker/schema.sql
 
-# 执行数据库迁移
-pnpm db:migrate
+# 执行数据库迁移（生产环境）
+npx wrangler d1 execute subly --file=worker/schema.sql
 ```
 
 ### 启动开发服务器
@@ -126,7 +126,7 @@ pnpm db:migrate
 pnpm dev
 
 # 启动后端 Worker（终端 2）
-pnpm worker:dev
+pnpm --filter subly-worker dev
 ```
 
 - 前端：http://localhost:3000
@@ -173,14 +173,18 @@ wrangler secret put JWT_SECRET
 ### 4. 执行数据库迁移
 
 ```bash
-pnpm db:migrate
+npx wrangler d1 execute subly --file=worker/schema.sql
 ```
 
 ### 5. 构建并部署
 
 ```bash
+# 一键构建并部署
+pnpm deploy
+
+# 或者分步执行
 pnpm build
-pnpm worker:deploy
+pnpm --filter subly-worker deploy
 ```
 
 ## 项目结构
@@ -235,11 +239,10 @@ subly/
 |------|------|
 | `pnpm dev` | 启动前端开发服务器 |
 | `pnpm build` | 构建生产版本 |
+| `pnpm deploy` | 构建并部署到 Cloudflare |
 | `pnpm preview` | 预览生产构建 |
-| `pnpm worker:dev` | 本地运行 Worker |
-| `pnpm worker:deploy` | 部署 Worker 到 Cloudflare |
-| `pnpm db:create` | 创建 D1 数据库 |
-| `pnpm db:migrate` | 执行数据库迁移 |
+| `pnpm --filter subly-worker dev` | 本地运行 Worker |
+| `pnpm --filter subly-worker deploy` | 部署 Worker 到 Cloudflare |
 | `pnpm check` | 运行代码检查 |
 | `pnpm format` | 格式化代码 |
 
