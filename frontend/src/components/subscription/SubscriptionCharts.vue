@@ -345,4 +345,20 @@ const trendChartOption = computed(() => {
 .chart {
   height: 280px;
 }
+
+/* 修复手机端 radio-button 分隔线 */
+@media (max-width: 768px) {
+  .chart-tabs :deep(.n-radio-button) {
+    border: 1px solid var(--n-button-border-color);
+  }
+
+  .chart-tabs :deep(.n-radio-button:not(:first-child)) {
+    margin-left: -1px;
+  }
+
+  .chart-tabs :deep(.n-radio-button.n-radio-button--checked) {
+    border-color: var(--n-button-border-color-active);
+    z-index: 1;
+  }
+}
 </style>
