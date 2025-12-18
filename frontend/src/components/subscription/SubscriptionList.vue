@@ -279,7 +279,7 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '操作',
     key: 'actions',
-    width: 100,
+    minWidth: 100,
     fixed: 'right',
     render(row) {
       const buttons = [
