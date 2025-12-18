@@ -279,27 +279,45 @@ async function handleToggleStatus(subscription: Subscription) {
   }
 }
 
-async function handleFormSubmit(data: SubscriptionFormData) {
-  let result: { success: boolean; message?: string };
+async function handleFormSubmit(
+  data: SubscriptionFormData,
+  pendingFiles: File[],
+) {
   if (editingSubscription.value) {
-    result = await subscriptionStore.updateSubscription(
+    const result = await subscriptionStore.updateSubscription(
       editingSubscription.value.id,
       data,
     );
     if (result.success) {
       message.success('更新成功');
+      handleFormClose();
+    } else {
+      message.error(result.message || '操作失败');
     }
   } else {
-    result = await subscriptionStore.createSubscription(data);
+    const result = await subscriptionStore.createSubscription(data);
     if (result.success) {
       message.success('添加成功');
+      // 如果有待上传的附件，上传它们
+      const newSubscription = result.data as Subscription | undefined;
+      if (pendingFiles.length > 0 && newSubscription?.id) {
+        const { attachmentApi } = await import('../api/attachment');
+        let uploadFailed = false;
+        for (const file of pendingFiles) {
+          try {
+            await attachmentApi.upload(newSubscription.id, file);
+          } catch {
+            uploadFailed = true;
+          }
+        }
+        if (uploadFailed) {
+          message.warning('部分附件上传失败');
+        }
+      }
+      handleFormClose();
+    } else {
+      message.error(result.message || '操作失败');
     }
-  }
-
-  if (!result.success) {
-    message.error(result.message || '操作失败');
-  } else {
-    handleFormClose();
   }
 }
 

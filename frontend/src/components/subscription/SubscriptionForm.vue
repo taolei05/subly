@@ -139,17 +139,20 @@
         />
       </n-form-item>
 
-      <!-- 附件上传（仅编辑模式显示） -->
-      <n-form-item v-if="subscription" label="附件">
-        <AttachmentUpload
-          ref="attachmentRef"
-          :subscription-id="subscription.id"
-          :readonly="readonly"
-        />
+      <!-- 附件上传 -->
+      <n-form-item label="附件">
+        <div style="width: 100%;">
+          <AttachmentUpload
+            ref="attachmentRef"
+            :subscription-id="subscription?.id ?? null"
+            :readonly="readonly"
+            @pending-files-change="handlePendingFilesChange"
+          />
+          <n-text v-if="!subscription" depth="3" style="font-size: 12px; margin-top: 8px; display: block;">
+            添加的文件将在保存订阅后自动上传
+          </n-text>
+        </div>
       </n-form-item>
-      <n-alert v-else type="info" style="margin-bottom: 0;">
-        保存订阅后可上传附件（发票、合同等）
-      </n-alert>
     </n-form>
     
     <template #footer>
@@ -187,13 +190,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:show': [show: boolean];
-  submit: [data: SubscriptionFormData];
+  submit: [data: SubscriptionFormData, pendingFiles: File[]];
   close: [];
 }>();
 
 const formRef = ref<FormInst | null>(null);
 const attachmentRef = ref<InstanceType<typeof AttachmentUpload> | null>(null);
 const submitting = ref(false);
+const pendingFiles = ref<File[]>([]);
 
 const defaultFormData = (): SubscriptionFormData => ({
   name: '',
@@ -344,15 +348,20 @@ watch(
 );
 
 function handleCancel() {
+  pendingFiles.value = [];
   emit('update:show', false);
   emit('close');
+}
+
+function handlePendingFilesChange(files: File[]) {
+  pendingFiles.value = files;
 }
 
 async function handleSubmit() {
   try {
     await formRef.value?.validate();
     submitting.value = true;
-    emit('submit', { ...formData });
+    emit('submit', { ...formData }, pendingFiles.value);
   } catch (error) {
     // 表单验证失败
   } finally {

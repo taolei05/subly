@@ -1,7 +1,6 @@
 <template>
   <div class="attachment-upload">
     <n-upload
-      ref="uploadRef"
       :custom-request="handleUpload"
       :max="10"
       :accept="acceptTypes"
@@ -24,7 +23,39 @@
       </n-upload-dragger>
     </n-upload>
 
-    <!-- 附件列表 -->
+    <!-- 待上传文件列表（新建订阅时） -->
+    <div v-if="pendingFiles.length > 0" class="attachment-list">
+      <n-list bordered>
+        <n-list-item v-for="(file, index) in pendingFiles" :key="index">
+          <template #prefix>
+            <n-icon size="24" :color="getFileIconColor(file.type)">
+              <component :is="getFileIcon(file.type)" />
+            </n-icon>
+          </template>
+          <n-thing :title="file.name">
+            <template #description>
+              <n-space size="small">
+                <n-text depth="3">{{ formatFileSize(file.size) }}</n-text>
+                <n-tag size="small" type="warning">待上传</n-tag>
+              </n-space>
+            </template>
+          </n-thing>
+          <template #suffix>
+            <n-button 
+              size="small" 
+              quaternary 
+              type="error" 
+              :disabled="readonly"
+              @click="removePendingFile(index)"
+            >
+              移除
+            </n-button>
+          </template>
+        </n-list-item>
+      </n-list>
+    </div>
+
+    <!-- 已上传附件列表 -->
     <div v-if="attachments.length > 0" class="attachment-list">
       <n-list bordered>
         <n-list-item v-for="attachment in attachments" :key="attachment.id">
@@ -109,11 +140,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   change: [attachments: Attachment[]];
+  'pending-files-change': [files: File[]];
 }>();
 
 const message = useMessage();
 const uploading = ref(false);
 const attachments = ref<Attachment[]>([]);
+const pendingFiles = ref<File[]>([]); // 待上传文件（新建订阅时暂存）
 
 // 预览相关
 const previewVisible = ref(false);
@@ -235,8 +268,16 @@ async function handleUpload({
   onFinish,
   onError,
 }: UploadCustomRequestOptions) {
-  if (!props.subscriptionId || !file.file) {
+  if (!file.file) {
     onError();
+    return;
+  }
+
+  // 如果没有 subscriptionId，暂存文件
+  if (!props.subscriptionId) {
+    pendingFiles.value.push(file.file);
+    emit('pending-files-change', pendingFiles.value);
+    onFinish();
     return;
   }
 
@@ -259,6 +300,18 @@ async function handleUpload({
   } finally {
     uploading.value = false;
   }
+}
+
+// 移除待上传文件
+function removePendingFile(index: number) {
+  pendingFiles.value.splice(index, 1);
+  emit('pending-files-change', pendingFiles.value);
+}
+
+// 清空待上传文件
+function clearPendingFiles() {
+  pendingFiles.value = [];
+  emit('pending-files-change', []);
 }
 
 // 预览附件
@@ -318,9 +371,32 @@ async function handleDelete(attachment: Attachment) {
   }
 }
 
+// 上传待上传的文件（订阅创建后调用）
+async function uploadPendingFiles(subscriptionId: number): Promise<boolean> {
+  if (pendingFiles.value.length === 0) return true;
+
+  let allSuccess = true;
+  for (const file of pendingFiles.value) {
+    try {
+      const res = await attachmentApi.upload(subscriptionId, file);
+      if (!res.success) {
+        allSuccess = false;
+      }
+    } catch {
+      allSuccess = false;
+    }
+  }
+
+  pendingFiles.value = [];
+  emit('pending-files-change', []);
+  return allSuccess;
+}
+
 // 暴露方法供父组件调用
 defineExpose({
   loadAttachments,
+  uploadPendingFiles,
+  clearPendingFiles,
 });
 </script>
 
