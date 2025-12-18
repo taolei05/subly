@@ -155,6 +155,14 @@ const previewUrl = ref('');
 const previewType = ref<'pdf' | 'docx' | 'image' | null>(null);
 const docxContainer = ref<HTMLElement | null>(null);
 
+// 监听预览弹窗关闭，释放 blob URL
+watch(previewVisible, (visible) => {
+  if (!visible && previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = '';
+  }
+});
+
 const acceptTypes = '.pdf,.docx,.png,.jpg,.jpeg';
 
 // 文件图标
@@ -317,7 +325,6 @@ function clearPendingFiles() {
 // 预览附件
 async function handlePreview(attachment: Attachment) {
   previewAttachment.value = attachment;
-  previewUrl.value = attachmentApi.getUrl(attachment.id);
 
   if (attachment.mime_type === 'application/pdf') {
     previewType.value = 'pdf';
@@ -327,22 +334,25 @@ async function handlePreview(attachment: Attachment) {
     previewType.value = 'image';
   }
 
-  previewVisible.value = true;
+  try {
+    // 获取文件 blob
+    const blob = await attachmentApi.getBlob(attachment.id);
 
-  // Word 文档需要特殊处理
-  if (previewType.value === 'docx') {
-    await nextTick();
-    try {
-      const response = await fetch(previewUrl.value);
-      const blob = await response.blob();
+    // 创建 blob URL 用于预览
+    previewUrl.value = URL.createObjectURL(blob);
+    previewVisible.value = true;
+
+    // Word 文档需要特殊处理
+    if (previewType.value === 'docx') {
+      await nextTick();
       if (docxContainer.value) {
         docxContainer.value.innerHTML = '';
         await renderAsync(blob, docxContainer.value);
       }
-    } catch (error) {
-      message.error('Word 文档预览失败');
-      console.error('Docx preview error:', error);
     }
+  } catch (error) {
+    message.error('预览失败，请重试');
+    console.error('Preview error:', error);
   }
 }
 

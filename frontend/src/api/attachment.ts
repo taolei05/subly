@@ -70,8 +70,26 @@ export const attachmentApi = {
   // 获取附件下载/预览 URL
   getUrl: (attachmentId: number, download = false) => {
     const token = localStorage.getItem('token');
-    const base = import.meta.env.DEV ? 'http://localhost:8787' : '';
+    // 开发环境使用完整的后端地址
+    const isDev =
+      window.location.port === '3000' || window.location.port === '3001';
+    const base = isDev ? 'http://localhost:8787' : '';
     return `${base}/api/attachments/${attachmentId}?token=${token}${download ? '&download=true' : ''}`;
+  },
+
+  // 获取附件内容（用于预览）
+  getBlob: async (attachmentId: number): Promise<Blob> => {
+    const token = localStorage.getItem('token');
+    const isDev =
+      window.location.port === '3000' || window.location.port === '3001';
+    const base = isDev ? 'http://localhost:8787' : '';
+    const url = `${base}/api/attachments/${attachmentId}?token=${token}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('获取文件失败');
+    }
+    return response.blob();
   },
 
   // 删除附件

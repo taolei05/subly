@@ -21,12 +21,22 @@ const MAX_SIZE = 10 * 1024 * 1024;
  * 获取认证用户 ID
  */
 async function getUserId(request: Request): Promise<number | null> {
+	// 先尝试从 Authorization header 获取
 	const authHeader = request.headers.get("Authorization");
 	if (authHeader?.startsWith("Bearer ")) {
 		const token = authHeader.slice(7);
 		const payload = await verifyToken(token);
 		if (payload?.userId) return payload.userId;
 	}
+
+	// 再尝试从 URL 参数获取（用于下载/预览等场景）
+	const url = new URL(request.url);
+	const tokenParam = url.searchParams.get("token");
+	if (tokenParam) {
+		const payload = await verifyToken(tokenParam);
+		if (payload?.userId) return payload.userId;
+	}
+
 	return null;
 }
 
