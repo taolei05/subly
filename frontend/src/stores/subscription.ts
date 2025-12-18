@@ -70,15 +70,22 @@ export const useSubscriptionStore = defineStore('subscription', () => {
       if (sub.status === 'inactive') return;
 
       const endDate = new Date(sub.end_date);
-      const priceInSelectedCurrency = convertCurrency(
-        sub.price,
-        sub.currency,
-        selectedCurrency.value,
-      );
 
       if (sub.one_time) {
-        oneTimeTotal += priceInSelectedCurrency;
+        // 永久授权使用首付价格
+        const initialPriceInSelectedCurrency = convertCurrency(
+          sub.initial_price ?? sub.price,
+          sub.currency,
+          selectedCurrency.value,
+        );
+        oneTimeTotal += initialPriceInSelectedCurrency;
       } else {
+        // 订阅使用续费价格计算月均
+        const priceInSelectedCurrency = convertCurrency(
+          sub.price,
+          sub.currency,
+          selectedCurrency.value,
+        );
         const startDate = new Date(sub.start_date);
         const months = Math.max(
           1,

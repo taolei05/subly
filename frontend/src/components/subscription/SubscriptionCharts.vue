@@ -51,8 +51,11 @@ const chartType = ref<ChartType>('monthly');
 
 import VChart from 'vue-echarts';
 import { useSubscriptionStore } from '../../stores/subscription';
+import { useThemeStore } from '../../stores/theme';
 import type { Currency, Subscription, SubscriptionType } from '../../types';
 import Icon from '../common/Icon.vue';
+
+const themeStore = useThemeStore();
 
 use([
   CanvasRenderer,
@@ -89,6 +92,14 @@ const currencySymbol = computed(
 function convertPrice(sub: Subscription): number {
   return subscriptionStore.convertCurrency(
     sub.price,
+    sub.currency,
+    subscriptionStore.selectedCurrency,
+  );
+}
+
+function convertInitialPrice(sub: Subscription): number {
+  return subscriptionStore.convertCurrency(
+    sub.initial_price ?? sub.price,
     sub.currency,
     subscriptionStore.selectedCurrency,
   );
@@ -160,7 +171,7 @@ const monthlyTypeChartOption = computed(() => {
   };
 });
 
-// 永久授权支出分布饼图
+// 永久授权支出分布饼图（使用首付价格）
 const oneTimeTypeChartOption = computed(() => {
   const typeData: Record<SubscriptionType, number> = {
     domain: 0,
@@ -173,7 +184,7 @@ const oneTimeTypeChartOption = computed(() => {
   subscriptionStore.subscriptions
     .filter((s) => s.status !== 'inactive' && s.one_time)
     .forEach((sub) => {
-      typeData[sub.type] += convertPrice(sub);
+      typeData[sub.type] += convertInitialPrice(sub);
     });
 
   const data = Object.entries(typeData)
@@ -279,8 +290,13 @@ const trendChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: '#18a058' },
-              { offset: 1, color: '#36ad6a' },
+              { offset: 0, color: themeStore.primaryColor },
+              {
+                offset: 1,
+                color:
+                  themeStore.themeOverrides.common?.primaryColorHover ||
+                  themeStore.primaryColor,
+              },
             ],
           },
         },
