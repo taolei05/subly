@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { BarChart, PieChart } from 'echarts/charts';
+import { LineChart, PieChart } from 'echarts/charts';
 import {
   GridComponent,
   LegendComponent,
@@ -60,7 +60,7 @@ const themeStore = useThemeStore();
 use([
   CanvasRenderer,
   PieChart,
-  BarChart,
+  LineChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -147,21 +147,26 @@ const monthlyTypeChartOption = computed(() => {
     },
     legend: {
       orient: 'vertical',
-      right: 10,
+      left: 10,
       top: 'center',
     },
     series: [
       {
         type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['35%', '50%'],
-        avoidLabelOverlap: false,
+        radius: '65%',
+        center: ['60%', '50%'],
         itemStyle: {
-          borderRadius: 6,
+          borderRadius: 4,
           borderColor: '#fff',
           borderWidth: 2,
         },
-        label: { show: false },
+        label: {
+          show: true,
+          formatter: '{b}',
+        },
+        labelLine: {
+          show: true,
+        },
         emphasis: {
           label: { show: true, fontSize: 14, fontWeight: 'bold' },
         },
@@ -202,21 +207,26 @@ const oneTimeTypeChartOption = computed(() => {
     },
     legend: {
       orient: 'vertical',
-      right: 10,
+      left: 10,
       top: 'center',
     },
     series: [
       {
         type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['35%', '50%'],
-        avoidLabelOverlap: false,
+        radius: '65%',
+        center: ['60%', '50%'],
         itemStyle: {
-          borderRadius: 6,
+          borderRadius: 4,
           borderColor: '#fff',
           borderWidth: 2,
         },
-        label: { show: false },
+        label: {
+          show: true,
+          formatter: '{b}',
+        },
+        labelLine: {
+          show: true,
+        },
         emphasis: {
           label: { show: true, fontSize: 14, fontWeight: 'bold' },
         },
@@ -279,10 +289,21 @@ const trendChartOption = computed(() => {
     },
     series: [
       {
-        type: 'bar',
+        type: 'line',
         data: monthlyData,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 8,
+        lineStyle: {
+          width: 3,
+          color: themeStore.primaryColor,
+        },
         itemStyle: {
-          borderRadius: [4, 4, 0, 0],
+          color: themeStore.primaryColor,
+          borderWidth: 2,
+          borderColor: '#fff',
+        },
+        areaStyle: {
           color: {
             type: 'linear',
             x: 0,
@@ -290,17 +311,11 @@ const trendChartOption = computed(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: themeStore.primaryColor },
-              {
-                offset: 1,
-                color:
-                  themeStore.themeOverrides.common?.primaryColorHover ||
-                  themeStore.primaryColor,
-              },
+              { offset: 0, color: `${themeStore.primaryColor}40` },
+              { offset: 1, color: `${themeStore.primaryColor}05` },
             ],
           },
         },
-        barWidth: '50%',
       },
     ],
   };
