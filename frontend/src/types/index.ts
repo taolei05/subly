@@ -45,7 +45,7 @@ export interface SubscriptionFormData {
   type: SubscriptionType;
   type_detail?: string;
   price: number;
-  initial_price?: number | null;
+  initial_price: number;
   currency: Currency;
   start_date: number | null;
   end_date: number | null;

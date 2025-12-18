@@ -45,10 +45,9 @@
               v-model:value="formData.initial_price" 
               :precision="2" 
               :min="0"
-              placeholder="可选"
+              placeholder="请输入首付价格"
               style="width: 100%;"
               :disabled="readonly"
-              clearable
             />
           </n-form-item>
         </n-gi>
@@ -58,9 +57,9 @@
               v-model:value="formData.price" 
               :precision="2" 
               :min="0"
-              placeholder="请输入价格"
+              :placeholder="formData.one_time ? '永久无需续费' : '请输入续费价格'"
               style="width: 100%;"
-              :disabled="readonly"
+              :disabled="formData.one_time || readonly"
             />
           </n-form-item>
         </n-gi>
@@ -187,7 +186,7 @@ const defaultFormData = (): SubscriptionFormData => ({
   type: 'membership' as SubscriptionType,
   type_detail: '',
   price: 0,
-  initial_price: null,
+  initial_price: 0,
   currency: 'CNY' as Currency,
   start_date: Date.now(),
   end_date: Date.now() + 365 * 24 * 60 * 60 * 1000,
@@ -237,8 +236,21 @@ const typeDetailPlaceholder = computed(() => {
 const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: '请输入服务名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择订阅类型', trigger: 'change' }],
+  initial_price: [
+    {
+      required: true,
+      type: 'number',
+      message: '请输入首付价格',
+      trigger: 'blur',
+    },
+  ],
   price: [
-    { required: true, type: 'number', message: '请输入价格', trigger: 'blur' },
+    {
+      required: !formData.one_time,
+      type: 'number',
+      message: '请输入续费价格',
+      trigger: 'blur',
+    },
   ],
   start_date: [
     {
@@ -275,6 +287,7 @@ function handleOneTimeChange(value: boolean) {
     formData.renew_type = 'none';
     formData.end_date = null as unknown as number; // 清空到期日期
     formData.remind_days = 0; // 清空提醒天数
+    formData.price = 0; // 清空续费价格
   } else {
     // 恢复默认到期日期（一年后）和提醒天数
     formData.end_date = Date.now() + 365 * 24 * 60 * 60 * 1000;
@@ -295,7 +308,7 @@ watch(
           type: props.subscription.type,
           type_detail: props.subscription.type_detail || '',
           price: props.subscription.price,
-          initial_price: props.subscription.initial_price || null,
+          initial_price: props.subscription.initial_price ?? 0,
           currency: props.subscription.currency,
           start_date: new Date(props.subscription.start_date).getTime(),
           // 永久授权时，end_date 设为 null（不显示日期）
