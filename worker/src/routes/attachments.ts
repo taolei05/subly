@@ -51,13 +51,13 @@ async function isDemoUser(env: Env, userId: number): Promise<boolean> {
 }
 
 /**
- * 生成唯一文件名
+ * 生成唯一文件名（保留原始文件名，添加时间戳前缀）
  */
 function generateFilename(originalName: string): string {
-	const ext = originalName.split(".").pop() || "";
 	const timestamp = Date.now();
-	const random = Math.random().toString(36).substring(2, 8);
-	return `${timestamp}-${random}.${ext}`;
+	// 移除文件名中的特殊字符，保留中文、字母、数字、点、下划线、横线
+	const safeName = originalName.replace(/[^\u4e00-\u9fa5a-zA-Z0-9._-]/g, "_");
+	return `${timestamp}-${safeName}`;
 }
 
 /**
