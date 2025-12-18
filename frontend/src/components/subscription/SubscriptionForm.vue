@@ -141,6 +141,10 @@
 
       <!-- 附件上传 -->
       <n-form-item label="附件">
+        <template #label>
+          <span>附件</span>
+          <n-text depth="3" style="font-size: 12px; margin-left: 8px;">上传发票、合同等文件</n-text>
+        </template>
         <div style="width: 100%;">
           <AttachmentUpload
             ref="attachmentRef"
