@@ -9,7 +9,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "subly"
-database_id = "92571f48-4924-48f6-a6fc-b8a72f6706c0"
+database_id = "92571f48-4924-48f6-a6fc-b8a72f6706c0"#替换为你的D1数据库ID
 
 # R2 存储桶（用于数据备份）
 [[r2_buckets]]
