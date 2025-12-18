@@ -180,7 +180,7 @@ import type {
   SubscriptionFormData,
   SubscriptionType,
 } from '../../types';
-import type AttachmentUpload from '../attachment/AttachmentUpload.vue';
+import AttachmentUpload from '../attachment/AttachmentUpload.vue';
 
 const props = defineProps<{
   show: boolean;
