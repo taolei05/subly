@@ -147,7 +147,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     },
   },
   {
-    title: '价格',
+    title: '续费价格',
     key: 'price',
     minWidth: 140,
     render(row) {
@@ -160,7 +160,7 @@ const baseColumns: DataTableColumns<Subscription> = [
             { style: { fontSize: '12px', color: '#999' } },
             `首付 ${symbol}${row.initial_price.toFixed(2)}`,
           ),
-          h('div', {}, `续费 ${renewPrice}`),
+          h('div', {}, renewPrice),
         ]);
       }
       return renewPrice;

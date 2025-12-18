@@ -56,7 +56,7 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
 // 排序选项
 export const SORT_OPTIONS = [
   { label: '到期时间', value: 'end_date' },
-  { label: '价格', value: 'price' },
+  { label: '续费价格', value: 'price' },
   { label: '名称', value: 'name' },
 ] as const;
 

@@ -36,11 +36,11 @@
           <span class="meta-value">{{ typeLabels[sub.type] }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">价格</span>
+          <span class="meta-label">续费价格</span>
           <span class="meta-value">
             <template v-if="sub.initial_price != null">
               <div style="font-size: 12px; color: #999;">首付 {{ currencySymbols[sub.currency] }}{{ sub.initial_price.toFixed(2) }}</div>
-              <div>续费 {{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}</div>
+              <div>{{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}</div>
             </template>
             <template v-else>
               {{ currencySymbols[sub.currency] }}{{ sub.price.toFixed(2) }}
