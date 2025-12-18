@@ -163,8 +163,8 @@ export async function createSubscription(
 
 		const result = await env.DB.prepare(`
       INSERT INTO subscriptions 
-      (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, url, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, name, type, type_detail, price, initial_price, currency, start_date, end_date, remind_days, renew_type, one_time, url, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 			.bind(
 				userId,
@@ -172,6 +172,7 @@ export async function createSubscription(
 				data.type,
 				data.type_detail || null,
 				data.price,
+				data.initial_price || null,
 				data.currency,
 				data.start_date,
 				data.end_date,
@@ -247,7 +248,7 @@ export async function updateSubscription(
 
 		await env.DB.prepare(`
       UPDATE subscriptions SET
-        name = ?, type = ?, type_detail = ?, price = ?, currency = ?,
+        name = ?, type = ?, type_detail = ?, price = ?, initial_price = ?, currency = ?,
         start_date = ?, end_date = ?, remind_days = ?, renew_type = ?,
         one_time = ?, url = ?, notes = ?, updated_at = datetime('now')
       WHERE id = ? AND user_id = ?
@@ -257,6 +258,7 @@ export async function updateSubscription(
 				data.type,
 				data.type_detail || null,
 				data.price,
+				data.initial_price || null,
 				data.currency,
 				data.start_date,
 				data.end_date,
@@ -495,7 +497,7 @@ export async function exportSubscriptions(
 		const format = url.searchParams.get("format") || "json";
 
 		const { results } = await env.DB.prepare(
-			`SELECT name, type, type_detail, price, currency, start_date, end_date, 
+			`SELECT name, type, type_detail, price, initial_price, currency, start_date, end_date, 
               remind_days, renew_type, one_time, status, url, notes 
        FROM subscriptions WHERE user_id = ? ORDER BY end_date ASC`,
 		)
@@ -559,8 +561,8 @@ export async function importSubscriptions(
 
 				await env.DB.prepare(`
           INSERT INTO subscriptions 
-          (user_id, name, type, type_detail, price, currency, start_date, end_date, remind_days, renew_type, one_time, status, url, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (user_id, name, type, type_detail, price, initial_price, currency, start_date, end_date, remind_days, renew_type, one_time, status, url, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `)
 					.bind(
 						userId,
@@ -568,6 +570,7 @@ export async function importSubscriptions(
 						item.type,
 						item.type_detail || null,
 						item.price || 0,
+						(item.initial_price as number) || null,
 						item.currency || "CNY",
 						item.start_date,
 						item.end_date,
@@ -608,6 +611,7 @@ function exportAsCsv(
 		"type",
 		"type_detail",
 		"price",
+		"initial_price",
 		"currency",
 		"start_date",
 		"end_date",

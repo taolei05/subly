@@ -18,6 +18,7 @@ export interface Subscription {
   type: SubscriptionType;
   type_detail?: string;
   price: number;
+  initial_price?: number;
   currency: Currency;
   start_date: string;
   end_date: string;
@@ -44,6 +45,7 @@ export interface SubscriptionFormData {
   type: SubscriptionType;
   type_detail?: string;
   price: number;
+  initial_price?: number | null;
   currency: Currency;
   start_date: number | null;
   end_date: number | null;

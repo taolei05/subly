@@ -149,9 +149,21 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '价格',
     key: 'price',
-    minWidth: 120,
+    minWidth: 140,
     render(row) {
-      return `${currencySymbols[row.currency]}${row.price.toFixed(2)}`;
+      const symbol = currencySymbols[row.currency];
+      const renewPrice = `${symbol}${row.price.toFixed(2)}`;
+      if (row.initial_price != null) {
+        return h('div', { style: { lineHeight: '1.4' } }, [
+          h(
+            'div',
+            { style: { fontSize: '12px', color: '#999' } },
+            `首付 ${symbol}${row.initial_price.toFixed(2)}`,
+          ),
+          h('div', {}, `续费 ${renewPrice}`),
+        ]);
+      }
+      return renewPrice;
     },
   },
   {

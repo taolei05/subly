@@ -123,6 +123,7 @@ export interface Subscription {
 	type: SubscriptionType;
 	type_detail?: string;
 	price: number;
+	initial_price?: number;
 	currency: Currency;
 	start_date: string;
 	end_date: string;
@@ -194,6 +195,7 @@ export interface SubscriptionRequest {
 	type: SubscriptionType;
 	type_detail?: string;
 	price: number;
+	initial_price?: number;
 	currency: Currency;
 	start_date: string;
 	end_date: string;

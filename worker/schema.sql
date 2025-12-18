@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS exchangerate_config (
 );
 
 -- 订阅表
+-- price: 续费价格, initial_price: 首付款价格（可选）
 CREATE TABLE IF NOT EXISTS subscriptions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -83,6 +84,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     type TEXT NOT NULL CHECK (type IN ('domain', 'server', 'membership', 'software', 'other')),
     type_detail TEXT,
     price REAL NOT NULL DEFAULT 0,
+    initial_price REAL,
     currency TEXT NOT NULL DEFAULT 'CNY' CHECK (currency IN ('CNY', 'HKD', 'USD', 'EUR', 'GBP')),
     start_date TEXT NOT NULL,
     end_date TEXT NOT NULL,

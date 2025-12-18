@@ -38,9 +38,22 @@
         <n-input v-model:value="formData.type_detail" :placeholder="typeDetailPlaceholder" :disabled="readonly" />
       </n-form-item>
       
-      <n-grid cols="1 s:2" responsive="screen" :x-gap="24" :y-gap="0">
+      <n-grid cols="1 s:3" responsive="screen" :x-gap="24" :y-gap="0">
         <n-gi>
-          <n-form-item path="price" label="价格">
+          <n-form-item path="initial_price" label="首付价格">
+            <n-input-number 
+              v-model:value="formData.initial_price" 
+              :precision="2" 
+              :min="0"
+              placeholder="可选"
+              style="width: 100%;"
+              :disabled="readonly"
+              clearable
+            />
+          </n-form-item>
+        </n-gi>
+        <n-gi>
+          <n-form-item path="price" label="续费价格">
             <n-input-number 
               v-model:value="formData.price" 
               :precision="2" 
@@ -174,6 +187,7 @@ const defaultFormData = (): SubscriptionFormData => ({
   type: 'membership' as SubscriptionType,
   type_detail: '',
   price: 0,
+  initial_price: null,
   currency: 'CNY' as Currency,
   start_date: Date.now(),
   end_date: Date.now() + 365 * 24 * 60 * 60 * 1000,
@@ -281,6 +295,7 @@ watch(
           type: props.subscription.type,
           type_detail: props.subscription.type_detail || '',
           price: props.subscription.price,
+          initial_price: props.subscription.initial_price || null,
           currency: props.subscription.currency,
           start_date: new Date(props.subscription.start_date).getTime(),
           // 永久授权时，end_date 设为 null（不显示日期）
