@@ -44,12 +44,16 @@ import {
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
+import { useWindowSize } from '@vueuse/core';
 import { computed, ref } from 'vue';
 
 type ChartType = 'monthly' | 'onetime' | 'trend';
 const chartType = ref<ChartType>('monthly');
 
 import VChart from 'vue-echarts';
+
+const { width } = useWindowSize();
+const isMobile = computed(() => width.value < 768);
 import { useSubscriptionStore } from '../../stores/subscription';
 import { useThemeStore } from '../../stores/theme';
 import type { Currency, Subscription, SubscriptionType } from '../../types';
@@ -145,16 +149,14 @@ const monthlyTypeChartOption = computed(() => {
       formatter: (params: { name: string; value: number; percent: number }) =>
         `${params.name}<br/>${currencySymbol.value}${params.value.toFixed(2)}/月 (${params.percent}%)`,
     },
-    legend: {
-      orient: 'vertical',
-      left: 10,
-      top: 'center',
-    },
+    legend: isMobile.value
+      ? { show: false }
+      : { orient: 'vertical', left: 10, top: 'center' },
     series: [
       {
         type: 'pie',
-        radius: '65%',
-        center: ['60%', '50%'],
+        radius: isMobile.value ? '60%' : '65%',
+        center: isMobile.value ? ['50%', '50%'] : ['60%', '50%'],
         itemStyle: {
           borderRadius: 4,
           borderColor: '#fff',
@@ -205,16 +207,14 @@ const oneTimeTypeChartOption = computed(() => {
       formatter: (params: { name: string; value: number; percent: number }) =>
         `${params.name}<br/>${currencySymbol.value}${params.value.toFixed(2)} (${params.percent}%)`,
     },
-    legend: {
-      orient: 'vertical',
-      left: 10,
-      top: 'center',
-    },
+    legend: isMobile.value
+      ? { show: false }
+      : { orient: 'vertical', left: 10, top: 'center' },
     series: [
       {
         type: 'pie',
-        radius: '65%',
-        center: ['60%', '50%'],
+        radius: isMobile.value ? '60%' : '65%',
+        center: isMobile.value ? ['50%', '50%'] : ['60%', '50%'],
         itemStyle: {
           borderRadius: 4,
           borderColor: '#fff',
