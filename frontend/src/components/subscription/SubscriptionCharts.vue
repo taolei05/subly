@@ -35,6 +35,7 @@
 </template>
 
 <script setup lang="ts">
+import { useWindowSize } from '@vueuse/core';
 import { LineChart, PieChart } from 'echarts/charts';
 import {
   GridComponent,
@@ -44,7 +45,6 @@ import {
 } from 'echarts/components';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { useWindowSize } from '@vueuse/core';
 import { computed, ref } from 'vue';
 
 type ChartType = 'monthly' | 'onetime' | 'trend';
@@ -54,6 +54,7 @@ import VChart from 'vue-echarts';
 
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
+
 import { useSubscriptionStore } from '../../stores/subscription';
 import { useThemeStore } from '../../stores/theme';
 import type { Currency, Subscription, SubscriptionType } from '../../types';

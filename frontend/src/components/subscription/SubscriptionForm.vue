@@ -3,7 +3,7 @@
     :show="show" 
     preset="card"
     :title="readonly ? '查看订阅' : (subscription ? '编辑订阅' : '添加订阅')"
-    :style="{ width: '600px', maxWidth: '90vw' }"
+    :style="{ width: '700px', maxWidth: '90vw' }"
     :mask-closable="false"
     @update:show="$emit('update:show', $event)"
   >
@@ -138,6 +138,18 @@
           :disabled="readonly"
         />
       </n-form-item>
+
+      <!-- 附件上传（仅编辑模式显示） -->
+      <n-form-item v-if="subscription" label="附件">
+        <AttachmentUpload
+          ref="attachmentRef"
+          :subscription-id="subscription.id"
+          :readonly="readonly"
+        />
+      </n-form-item>
+      <n-alert v-else type="info" style="margin-bottom: 0;">
+        保存订阅后可上传附件（发票、合同等）
+      </n-alert>
     </n-form>
     
     <template #footer>
@@ -165,6 +177,7 @@ import type {
   SubscriptionFormData,
   SubscriptionType,
 } from '../../types';
+import type AttachmentUpload from '../attachment/AttachmentUpload.vue';
 
 const props = defineProps<{
   show: boolean;
@@ -179,6 +192,7 @@ const emit = defineEmits<{
 }>();
 
 const formRef = ref<FormInst | null>(null);
+const attachmentRef = ref<InstanceType<typeof AttachmentUpload> | null>(null);
 const submitting = ref(false);
 
 const defaultFormData = (): SubscriptionFormData => ({

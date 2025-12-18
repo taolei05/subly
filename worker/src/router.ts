@@ -31,6 +31,12 @@ import {
 	updateSystemConfig,
 } from "./routes";
 import {
+	deleteAttachment,
+	downloadAttachment,
+	getAttachments,
+	uploadAttachment,
+} from "./routes/attachments";
+import {
 	checkAndSendEmailReminders,
 	checkAndSendServerChanReminders,
 } from "./services";
@@ -151,6 +157,27 @@ const paramRoutes: ParamRoute[] = [
 		pattern: /^\/subscriptions\/(\d+)\/status$/,
 		method: "PUT",
 		handler: (req, env, id) => updateSubscriptionStatus(req, env, id),
+	},
+	// 附件路由
+	{
+		pattern: /^\/subscriptions\/(\d+)\/attachments$/,
+		method: "GET",
+		handler: (req, env, id) => getAttachments(req, env, id),
+	},
+	{
+		pattern: /^\/subscriptions\/(\d+)\/attachments$/,
+		method: "POST",
+		handler: (req, env, id) => uploadAttachment(req, env, id),
+	},
+	{
+		pattern: /^\/attachments\/(\d+)$/,
+		method: "GET",
+		handler: (req, env, id) => downloadAttachment(req, env, id),
+	},
+	{
+		pattern: /^\/attachments\/(\d+)$/,
+		method: "DELETE",
+		handler: (req, env, id) => deleteAttachment(req, env, id),
 	},
 ];
 

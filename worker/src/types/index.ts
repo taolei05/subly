@@ -215,3 +215,29 @@ export interface ExchangeRateResponse {
 		rates: Record<string, number>;
 	};
 }
+
+// ==================== 附件相关 ====================
+export interface Attachment {
+	id: number;
+	user_id: number;
+	subscription_id: number;
+	filename: string;
+	original_name: string;
+	mime_type: string;
+	size: number;
+	r2_key: string;
+	created_at: string;
+}
+
+// 允许的附件类型
+export const ALLOWED_MIME_TYPES = [
+	"application/pdf",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
+	"image/png",
+	"image/jpeg",
+] as const;
+
+export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
+// 最大文件大小 10MB
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;

@@ -162,6 +162,29 @@ export interface SystemConfig {
   registration_enabled: boolean;
 }
 
+// 附件类型
+export interface Attachment {
+  id: number;
+  user_id: number;
+  subscription_id: number;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  r2_key: string;
+  created_at: string;
+}
+
+// 允许的附件类型
+export const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+  'image/png',
+  'image/jpeg',
+] as const;
+
+export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
+
 export interface ExchangeRates {
   base: Currency;
   rates: Record<Currency, number>;
