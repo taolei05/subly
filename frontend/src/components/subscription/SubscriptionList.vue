@@ -103,6 +103,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '服务名称',
     key: 'name',
     minWidth: 150,
+    align: 'center',
     ellipsis: { tooltip: true },
     render(row) {
       if (row.url) {
@@ -152,6 +153,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '类型',
     key: 'type',
     minWidth: 100,
+    align: 'center',
     render(row) {
       return typeLabels[row.type] || row.type;
     },
@@ -160,6 +162,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '详情',
     key: 'type_detail',
     minWidth: 120,
+    align: 'center',
     render(row) {
       return row.type_detail || '-';
     },
@@ -168,6 +171,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '续费价格',
     key: 'price',
     minWidth: 140,
+    align: 'center',
     render(row) {
       const symbol = currencySymbols[row.currency];
       const renewPrice = `${symbol}${row.price.toFixed(2)}`;
@@ -188,6 +192,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '到期日期',
     key: 'end_date',
     minWidth: 120,
+    align: 'center',
     render(row) {
       return row.one_time ? '永久' : formatDate(row.end_date);
     },
@@ -196,6 +201,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '续订类型',
     key: 'renew_type',
     minWidth: 100,
+    align: 'center',
     render(row) {
       if (row.one_time) {
         return h(
@@ -224,6 +230,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '状态',
     key: 'status',
     minWidth: 100,
+    align: 'center',
     render(row) {
       return h(
         NTag,
@@ -241,7 +248,8 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '附件',
     key: 'attachments',
-    minWidth: 100,
+    minWidth: 70,
+    align: 'center',
     render(row) {
       return h(
         NButton,
@@ -280,6 +288,7 @@ const baseColumns: DataTableColumns<Subscription> = [
     title: '操作',
     key: 'actions',
     minWidth: 100,
+    align: 'center',
     fixed: 'right',
     render(row) {
       const buttons = [
