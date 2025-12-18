@@ -241,7 +241,7 @@ const baseColumns: DataTableColumns<Subscription> = [
   {
     title: '附件',
     key: 'attachments',
-    width: 70,
+    minWidth: 100,
     render(row) {
       return h(
         NButton,
