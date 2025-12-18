@@ -89,6 +89,7 @@
       :readonly="authStore.isDemo"
       @submit="handleFormSubmit"
       @close="handleFormClose"
+      @update:show="handleModalShowChange"
     />
 
     <!-- 批量修改提醒天数模态框 -->
@@ -324,6 +325,13 @@ async function handleFormSubmit(
 function handleFormClose() {
   showAddModal.value = false;
   editingSubscription.value = null;
+}
+
+function handleModalShowChange(show: boolean) {
+  if (!show) {
+    // 模态框关闭时清空编辑状态
+    editingSubscription.value = null;
+  }
 }
 
 function handleBatchDelete() {

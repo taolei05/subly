@@ -1,27 +1,36 @@
 <template>
-  <n-data-table
-    :columns="computedColumns"
-    :data="subscriptions"
-    :row-key="(row: Subscription) => row.id"
-    :bordered="false"
-    :scroll-x="700"
-    :checked-row-keys="selectable ? selectedIds : undefined"
-    @update:checked-row-keys="handleCheckedChange"
-    striped
-  >
-    <template #empty>
-      <n-empty description="暂无订阅数据" />
-    </template>
-  </n-data-table>
+  <div>
+    <n-data-table
+      :columns="computedColumns"
+      :data="subscriptions"
+      :row-key="(row: Subscription) => row.id"
+      :bordered="false"
+      :scroll-x="800"
+      :checked-row-keys="selectable ? selectedIds : undefined"
+      @update:checked-row-keys="handleCheckedChange"
+      striped
+    >
+      <template #empty>
+        <n-empty description="暂无订阅数据" />
+      </template>
+    </n-data-table>
+
+    <!-- 附件预览弹窗 -->
+    <AttachmentPreviewModal
+      v-model:show="attachmentModalVisible"
+      :subscription-id="attachmentSubscriptionId"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import type { DataTableColumns } from 'naive-ui';
 import { NButton, NEmpty, NIcon, NPopconfirm, NSpace, NTag } from 'naive-ui';
-import { computed, h } from 'vue';
+import { computed, h, ref } from 'vue';
 import { CURRENCY_SYMBOLS, TYPE_LABELS } from '../../constants';
 import type { Subscription } from '../../types';
 import Icon from '../common/Icon.vue';
+import AttachmentPreviewModal from '../attachment/AttachmentPreviewModal.vue';
 
 const props = defineProps<{
   subscriptions: Subscription[];
@@ -39,6 +48,15 @@ const emit = defineEmits<{
 
 function handleCheckedChange(keys: (string | number)[]) {
   emit('update:selectedIds', keys as number[]);
+}
+
+// 附件弹窗
+const attachmentModalVisible = ref(false);
+const attachmentSubscriptionId = ref<number | null>(null);
+
+function showAttachmentModal(subscriptionId: number) {
+  attachmentSubscriptionId.value = subscriptionId;
+  attachmentModalVisible.value = true;
 }
 
 const typeLabels = TYPE_LABELS;
@@ -217,6 +235,44 @@ const baseColumns: DataTableColumns<Subscription> = [
           onClick: () => !props.readonly && emit('toggle-status', row),
         },
         { default: () => getStatusText(row) },
+      );
+    },
+  },
+  {
+    title: '附件',
+    key: 'attachments',
+    width: 70,
+    render(row) {
+      return h(
+        NButton,
+        {
+          size: 'small',
+          quaternary: true,
+          onClick: () => showAttachmentModal(row.id),
+        },
+        {
+          icon: () =>
+            h(
+              NIcon,
+              { size: 18 },
+              {
+                default: () =>
+                  h(
+                    'svg',
+                    {
+                      xmlns: 'http://www.w3.org/2000/svg',
+                      viewBox: '0 0 24 24',
+                      fill: 'currentColor',
+                    },
+                    [
+                      h('path', {
+                        d: 'M14.8284 7.75735L9.17154 13.4142C8.78101 13.8047 8.78101 14.4379 9.17154 14.8284C9.56206 15.219 10.1952 15.219 10.5858 14.8284L16.2426 9.17156C17.4142 8.00001 17.4142 6.10052 16.2426 4.92894C15.0711 3.75737 13.1716 3.75737 12 4.92894L6.34313 10.5858C4.39051 12.5384 4.39051 15.7042 6.34313 17.6568C8.29576 19.6095 11.4616 19.6095 13.4142 17.6568L19.0711 12L20.4853 13.4142L14.8284 19.0711C12.0948 21.8047 7.66261 21.8047 4.92894 19.0711C2.19527 16.3374 2.19527 11.9052 4.92894 9.17156L10.5858 3.51473C12.5384 1.56211 15.7042 1.56211 17.6568 3.51473C19.6095 5.46735 19.6095 8.63317 17.6568 10.5858L12 16.2426C10.8284 17.4142 8.92894 17.4142 7.75736 16.2426C6.58578 15.0711 6.58578 13.1716 7.75736 12L13.4142 6.34314L14.8284 7.75735Z',
+                      }),
+                    ],
+                  ),
+              },
+            ),
+        },
       );
     },
   },
